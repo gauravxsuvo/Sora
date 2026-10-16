@@ -6,8 +6,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Automation;
 using System.Windows.Input;
 using System.Windows.Media;
+using Ellipse = System.Windows.Shapes.Ellipse;
 using Microsoft.Win32;
 using Sora.Core;
 
@@ -42,69 +44,181 @@ public partial class KeyboardPanel : UserControl
     {
         InitializeComponent();
         ModelPicker.ItemsSource = KreoModel.All; ModelPicker.SelectedItem = model;
+        BuildBrushSwatches();
         ready = true; DrawBoard(); UpdateAvailability();
     }
 
+    // Board geometry: one key unit in design pixels and the gap between caps. The Viewbox scales the whole board uniformly.
+    private const double Unit = 54, Gap = 6;
+    private IReadOnlyList<KeyPlacement> layout = [];
+    private readonly Dictionary<int, KeyParts> keyParts = new();
+    private sealed record KeyParts(Border Glow, TextBlock Legend, TextBlock Remap, Ellipse Dot);
+    private static readonly string[] BrushColors = ["#FFFFFF", "#FF453A", "#FF9F0A", "#FFD60A", "#30D158", "#64D2FF", "#0A84FF", "#BF5AF2", "#FF375F"];
+
     private void DrawBoard()
     {
-        Board.Children.Clear(); keyButtons.Clear();
-        var keys = model.Keys.Where(k => k.Width > 0 && k.Height > 0).ToArray();
-        var minX = keys.Min(k => k.X); var minY = keys.Min(k => k.Y);
-        Board.Width = (keys.Max(k => k.X + k.Width) - minX + 8) * 1.45;
-        Board.Height = (keys.Max(k => k.Y + k.Height) - minY + 4) * 0.73;
-        foreach (var key in keys)
+        Board.Children.Clear(); keyButtons.Clear(); keyParts.Clear();
+        layout = KreoLayout.Build(model);
+        var (width, height) = KreoLayout.Size(layout);
+        Board.Width = width * Unit; Board.Height = height * Unit;
+        foreach (var place in layout)
         {
-            var button = new Button { Width = (key.Width + 3) * 1.45, Height = (key.Height - 2) * 0.73, FontSize = key.Label.Length > 5 ? 9 : 11, Padding = new Thickness(1), MinHeight = 0 };
-            Canvas.SetLeft(button, (key.X - minX) * 1.45); Canvas.SetTop(button, (key.Y - minY) * 0.73);
-            button.Click += (_, _) => SelectKey(key);
-            Board.Children.Add(button); keyButtons[key.Index] = button;
+            var key = place.Key;
+            var legend = new TextBlock { Text = Legend(key), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontSize = FitFont(Legend(key), place.Width * Unit - Gap - 14), Tag = FitFont(Legend(key), place.Width * Unit - Gap - 14), Margin = new Thickness(2, 0, 2, 2) };
+            var remap = new TextBlock { FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(2, 0, 2, 1), TextTrimming = TextTrimming.CharacterEllipsis, Foreground = (Brush)FindResource("AccentTextBrush"), Visibility = Visibility.Collapsed };
+            var dot = new Ellipse { Width = 7, Height = 7, Fill = (Brush)FindResource("AccentBrush"), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 5, 5, 0), Visibility = Visibility.Collapsed };
+            var glow = new Border { CornerRadius = new CornerRadius(6) };
+            var content = new Grid(); content.Children.Add(glow); content.Children.Add(legend); content.Children.Add(remap); content.Children.Add(dot);
+            var button = new Button { Style = (Style)FindResource("Keycap"), Width = place.Width * Unit - Gap, Height = place.Height * Unit - Gap, Content = content };
+            AutomationProperties.SetName(button, FullName(key));
+            Canvas.SetLeft(button, place.X * Unit + Gap / 2); Canvas.SetTop(button, place.Y * Unit + Gap / 2);
+            button.Click += (_, _) => SelectKey(selected?.Index == key.Index ? null : key);
+            Board.Children.Add(button); keyButtons[key.Index] = button; keyParts[key.Index] = new KeyParts(glow, legend, remap, dot);
         }
         UpdateKeys();
     }
 
-    private void SelectKey(KreoKey key)
+    // Largest legend size (16 down to 11 design px) that fits the cap without trimming.
+    private double FitFont(string text, double available)
+    {
+        var typeface = new Typeface((FontFamily)FindResource("UIFont"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+        for (var size = 16.0; size > 11; size--)
+            if (new FormattedText(text, System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface, size, Brushes.White, 1).Width <= available) return size;
+        return 11;
+    }
+
+    // Short legends for the cap; the full name stays in the tooltip and accessibility name.
+    private static string Legend(KreoKey key) => key.Label switch
+    {
+        "LShift" or "RShift" => "Shift", "LCtrl" or "RCtrl" => "Ctrl", "LAlt" or "RAlt" => "Alt", "LWin" => "Win", "FN" => "Fn",
+        "CapsLock" => "Caps Lock", "Delete" => "Del", "Up" => "↑", "Down" => "↓", "Left" => "←", "Right" => "→", "Space" => "", _ => key.Label,
+    };
+    private static string FullName(KreoKey key) => key.Label switch { "LShift" => "Left Shift", "RShift" => "Right Shift", "LCtrl" => "Left Ctrl", "RCtrl" => "Right Ctrl", "LAlt" => "Left Alt", "RAlt" => "Right Alt", "LWin" => "Windows", "FN" => "Fn", "CapsLock" => "Caps Lock", _ => key.Label };
+
+    private void SelectKey(KreoKey? key)
     {
         selected = key;
-        if (edited != null)
+        if (edited != null && key != null)
         {
             updating = true;
             var action = edited.Keys.AsSpan(key.Index * 4, 4).ToArray();
             TargetKey.SelectedItem = (TargetKey.ItemsSource as IReadOnlyList<KreoAction>)?.FirstOrDefault(a => a.Bytes.SequenceEqual(action));
-            if (edited.Lighting[10] == 21) PaintColor.Text = "#" + Convert.ToHexString(new[] { edited.Colors[key.Index], edited.Colors[key.Index + 126], edited.Colors[key.Index + 252] });
             updating = false;
         }
         UpdateKeys(); UpdateAvailability();
     }
+    private void ClearSelection(object sender, RoutedEventArgs e) => SelectKey(null);
+
+    // The colour a key is lit with right now, or null when it is unlit or the colour isn't known (multicolour animation).
+    private Color? KeyColor(KreoKey key)
+    {
+        if (edited == null) return null;
+        var effect = edited.Lighting[10];
+        if (effect == 21) return Color.FromRgb(edited.Colors[key.Index], edited.Colors[key.Index + 126], edited.Colors[key.Index + 252]);
+        if (effect is > 0 and <= 18 && edited.EffectPalette != null)
+        {
+            var slot = edited.Lighting[57 + 2 * effect] & 15;
+            if (slot < 7) { var offset = effect * 21 + slot * 3; return Color.FromRgb(edited.EffectPalette[offset], edited.EffectPalette[offset + 1], edited.EffectPalette[offset + 2]); }
+        }
+        return null;
+    }
 
     private void UpdateKeys()
     {
-        foreach (var key in model.Keys)
+        var assigning = ModeAssign.IsChecked == true;
+        foreach (var place in layout)
         {
-            if (!keyButtons.TryGetValue(key.Index, out var button)) continue;
-            var color = Color.FromRgb(32, 46, 68);
-            if (edited?.Lighting[10] == 21) color = Color.FromRgb(edited.Colors[key.Index], edited.Colors[key.Index + 126], edited.Colors[key.Index + 252]);
-            else if (edited != null && edited.Lighting[10] is > 0 and <= 18 && edited.EffectPalette != null)
-            {
-                var id = edited.Lighting[10]; var slot = edited.Lighting[57 + 2 * id] & 15;
-                if (slot < 7) { var offset = id * 21 + slot * 3; color = Color.FromRgb(edited.EffectPalette[offset], edited.EffectPalette[offset + 1], edited.EffectPalette[offset + 2]); }
-            }
+            var key = place.Key;
+            if (!keyButtons.TryGetValue(key.Index, out var button) || !keyParts.TryGetValue(key.Index, out var parts)) continue;
+            var lit = KeyColor(key) is { } c && c.R + c.G + c.B > 24 ? c : (Color?)null;
+            // Lit keys glow in their real colour; the legend takes a lighter tint of it so it stays readable.
+            parts.Glow.Background = lit is { } glow ? new RadialGradientBrush(Color.FromArgb(125, glow.R, glow.G, glow.B), Color.FromArgb(30, glow.R, glow.G, glow.B)) { RadiusX = 0.75, RadiusY = 0.9, Center = new Point(0.5, 0.45), GradientOrigin = new Point(0.5, 0.45) } : null;
+            parts.Legend.Foreground = lit is { } tint ? new SolidColorBrush(Mix(tint, Colors.White, 0.55)) : new SolidColorBrush(edited == null || edited.Lighting[10] != 0 ? Color.FromRgb(0xD1, 0xD1, 0xD6) : Color.FromRgb(0x8E, 0x8E, 0x93));
+            var mappingChanged = edited != null && baseline != null && !edited.Keys.AsSpan(key.Index * 4, 4).SequenceEqual(baseline.Keys.AsSpan(key.Index * 4, 4));
+            var action = edited == null ? key.Label : KreoActions.Describe(model, edited.Keys.AsSpan(key.Index * 4, 4).ToArray());
+            parts.Remap.Text = mappingChanged ? "→ " + action : "";
+            parts.Remap.Visibility = mappingChanged ? Visibility.Visible : Visibility.Collapsed;
+            parts.Legend.VerticalAlignment = mappingChanged ? VerticalAlignment.Top : VerticalAlignment.Center;
+            parts.Legend.Margin = mappingChanged ? new Thickness(2, 1, 2, 0) : new Thickness(2, 0, 2, 2);
+            parts.Legend.FontSize = mappingChanged ? Math.Min(13, (double)parts.Legend.Tag) : (double)parts.Legend.Tag;
+            // Colour edits are visible on the cap itself; the dot marks a staged remap.
+            parts.Dot.Visibility = mappingChanged ? Visibility.Visible : Visibility.Collapsed;
             var chosen = selected?.Index == key.Index;
-            var changed = edited != null && baseline != null && !edited.Keys.AsSpan(key.Index * 4, 4).SequenceEqual(baseline.Keys.AsSpan(key.Index * 4, 4));
-            var label = edited == null ? key.Label : KreoActions.Describe(model, edited.Keys.AsSpan(key.Index * 4, 4).ToArray());
-            // Keep key outlines and legends readable even for black/off lighting.
-            button.Background = new SolidColorBrush(chosen ? Color.FromRgb(98, 128, 214) : Blend(color));
-            button.Foreground = Brushes.White;
-            button.Content = changed && label.Length < 9 ? key.Label + "→" + label : key.Label;
-            button.FontWeight = chosen || changed ? FontWeights.Bold : FontWeights.Normal;
-            button.ToolTip = edited == null ? key.Label : key.Label + " → " + label;
+            button.Tag = chosen ? "Selected" : null;
+            Panel.SetZIndex(button, chosen ? 1 : 0);
+            // The Fn key keeps its layer function, so it is dimmed while assigning.
+            button.Opacity = assigning && key.VirtualKey == 0xfa ? 0.45 : 1;
+            button.ToolTip = FullName(key) + (mappingChanged ? " → " + action : edited != null && action != key.Label ? " · sends " + action : "") + (lit is { } hex && edited?.Lighting[10] == 21 ? " · #" + Hex(hex) : "");
         }
-        SelectedKeyLabel.Text = selected == null ? "Click a key to select it" : selected.Label + " selected";
-        PaintTarget.Text = selected == null ? "Select a key on the keyboard" : "Paint " + selected.Label;
-        ActionLabel.Text = selected == null || edited == null ? "Select a key on the keyboard above" : selected.Label + " → " + KreoActions.Describe(model, edited.Keys.AsSpan(selected.Index * 4, 4).ToArray());
+        var name = selected == null ? null : FullName(selected);
+        BoardHint.Text = edited == null ? "Connect the keyboard to edit it"
+            : ModeProfiles.IsChecked == true ? "Profiles cover the whole keyboard"
+            : name != null ? name + " selected"
+            : assigning ? "Click a key to change what it sends" : "Click a key to paint it";
+        ClearSelectionButton.Visibility = selected != null && ModeProfiles.IsChecked != true ? Visibility.Visible : Visibility.Collapsed;
+        PaintTarget.Text = name == null ? "No key selected" : name + " selected";
+        PaintSelectedButton.Content = name == null ? "Paint selected key" : "Paint " + name;
+        PaintAllButton.Content = "Fill all " + layout.Count + " keys";
+        if (selected != null && edited != null)
+        {
+            KeyColorRow.Visibility = Visibility.Visible;
+            var stored = Color.FromRgb(edited.Colors[selected.Index], edited.Colors[selected.Index + 126], edited.Colors[selected.Index + 252]);
+            KeyColorSwatch.Background = new SolidColorBrush(stored);
+            KeyColorInfo.Text = edited.Lighting[10] == 21 ? "Current color #" + Hex(stored) : "Stored color #" + Hex(stored) + " · shows in Custom per-key";
+        }
+        else KeyColorRow.Visibility = Visibility.Collapsed;
+        AssignEmpty.Visibility = selected == null ? Visibility.Visible : Visibility.Collapsed;
+        AssignEditor.Visibility = selected == null ? Visibility.Collapsed : Visibility.Visible;
+        ActionLabel.Text = selected == null || edited == null ? "" : name + " sends " + KreoActions.Describe(model, edited.Keys.AsSpan(selected.Index * 4, 4).ToArray());
         UpdateMappingPreview(); UpdatePaintPreview();
     }
 
-    private static Color Blend(Color color) => Color.FromRgb((byte)(20 + color.R * 0.34), (byte)(27 + color.G * 0.34), (byte)(40 + color.B * 0.34));
+    private static Color Mix(Color a, Color b, double amount) => Color.FromRgb((byte)(a.R + (b.R - a.R) * amount), (byte)(a.G + (b.G - a.G) * amount), (byte)(a.B + (b.B - a.B) * amount));
+    private static string Hex(Color color) => Convert.ToHexString(new[] { color.R, color.G, color.B });
+
+    // Gives the keyboard card at least 300 px; the editors take what remains and scroll beyond that.
+    private void PanelSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        var fixedHeight = ((FrameworkElement)Content is Grid root ? root.Children.OfType<FrameworkElement>().Where(c => Grid.GetRow(c) is 0 or 5).Sum(c => c.ActualHeight + c.Margin.Top + c.Margin.Bottom) : 0) + 20 + 16;
+        EditorsScroll.MaxHeight = Math.Max(120, ActualHeight - fixedHeight - 300);
+    }
+
+    private void ModeChanged(object sender, RoutedEventArgs e)
+    {
+        if (!ready) return;
+        Editors.SelectedIndex = ModeAssign.IsChecked == true ? 1 : ModeProfiles.IsChecked == true ? 2 : 0;
+        UpdateKeys();
+    }
+
+    // Arrow keys move between caps by position; Space or Enter selects; Esc clears the selection.
+    private void BoardKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && selected != null) { SelectKey(null); e.Handled = true; return; }
+        if (e.Key is not (Key.Left or Key.Right or Key.Up or Key.Down)) return;
+        var current = layout.FirstOrDefault(p => keyButtons.TryGetValue(p.Key.Index, out var b) && b.IsKeyboardFocused) ?? layout.FirstOrDefault(p => p.Key.Index == selected?.Index) ?? layout.FirstOrDefault();
+        if (current == null) return;
+        var (cx, cy) = (current.X + current.Width / 2, current.Y + current.Height / 2);
+        var (dx, dy) = e.Key switch { Key.Left => (-1, 0), Key.Right => (1, 0), Key.Up => (0, -1), _ => (0, 1) };
+        var next = layout.Where(p => p != current)
+            .Select(p => (Place: p, X: p.X + p.Width / 2 - cx, Y: p.Y + p.Height / 2 - cy))
+            .Where(p => p.X * dx + p.Y * dy > 0.3)
+            .OrderBy(p => Math.Abs(p.X * dx + p.Y * dy) + 2.5 * Math.Abs(p.X * dy + p.Y * dx))
+            .Select(p => p.Place).FirstOrDefault();
+        if (next != null && keyButtons.TryGetValue(next.Key.Index, out var target)) target.Focus();
+        e.Handled = true;
+    }
+
+    private void BuildBrushSwatches()
+    {
+        foreach (var hex in BrushColors)
+        {
+            var rgb = KreoProtocol.ParseHex(hex);
+            var swatch = new Button { Style = (Style)FindResource("Swatch"), Width = 18, Height = 18, Padding = new Thickness(0), Margin = new Thickness(0, 2, 5, 2), Background = new SolidColorBrush(Color.FromRgb(rgb[0], rgb[1], rgb[2])), ToolTip = hex };
+            AutomationProperties.SetName(swatch, "Brush " + hex);
+            swatch.Click += (_, _) => PaintColor.Text = hex;
+            BrushSwatches.Children.Add(swatch);
+        }
+    }
     private void ModelChanged(object sender, SelectionChangedEventArgs e) { if (!ready || updating || ModelPicker.SelectedItem is not KreoModel choice) return; model = choice; selected = null; DrawBoard(); }
 
     public Task ReadAsync()
@@ -122,7 +236,7 @@ public partial class KeyboardPanel : UserControl
             device = result.Device; model = result.Model; baseline = result.State; edited = baseline.Copy(); selected = null;
             updating = true; ModelPicker.SelectedItem = model; TargetKey.ItemsSource = KreoActions.ForModel(model); updating = false;
             LoadControls(); DrawBoard();
-            SetStatus(model.Name + " · USB", "Good"); BoardTitle.Text = model.Name + " · Click a key to edit";
+            SetStatus(model.Name + " · USB", "Good");
             KeyboardDetail.Text = "Ready. Changes stay in the editor until you apply them.";
         });
         return PendingOperation;
@@ -208,7 +322,7 @@ public partial class KeyboardPanel : UserControl
         {
             var index = slot; var offset = effect.Id * 21 + slot * 3;
             var rgb = edited.EffectPalette!.AsSpan(offset, 3).ToArray();
-            var button = new Button { Width = 26, Height = 26, MinHeight = 0, Padding = new Thickness(0), Margin = new Thickness(0, 0, 5, 5), Background = new SolidColorBrush(Color.FromRgb(rgb[0], rgb[1], rgb[2])), Content = slot == colorSlot && ColorMode.SelectedIndex == 0 ? "✓" : "", Foreground = rgb.Sum(b => b) > 460 ? Brushes.Black : Brushes.White, ToolTip = "#" + Convert.ToHexString(rgb) };
+            var button = new Button { Style = (Style)FindResource("Swatch"), Width = 20, Height = 20, Padding = new Thickness(0), Margin = new Thickness(0, 2, 3, 2), Background = new SolidColorBrush(Color.FromRgb(rgb[0], rgb[1], rgb[2])), Content = slot == colorSlot && ColorMode.SelectedIndex == 0 ? "✓" : "", Foreground = rgb.Sum(b => b) > 460 ? Brushes.Black : Brushes.White, ToolTip = "#" + Convert.ToHexString(rgb) };
             button.Click += (_, _) =>
             {
                 colorSlot = index; updating = true; EffectHex.Text = "#" + Convert.ToHexString(rgb); ColorMode.SelectedIndex = 0; updating = false;
@@ -337,19 +451,32 @@ public partial class KeyboardPanel : UserControl
         TargetKey.SelectedItem = TargetKey.Items.Cast<KreoAction>().Single(k => k.Label == "B");
         AssignButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         if (!edited.Keys.AsSpan(a.Index * 4, 4).SequenceEqual(KreoActions.ForVirtualKey(0x42)) || edited.Keys[510] != 0x5a || edited.Keys[511] != 0xa5) throw new IOException("Assignment did not produce a complete key-map block.");
+        if (keyButtons.Count != layout.Count || keyButtons[a.Index].Tag as string != "Selected" || keyButtons.Values.Count(b => b.Tag as string == "Selected") != 1) throw new IOException("Key selection is not shown on exactly one keycap.");
+        var mappingBeforePaint = edited.Keys.ToArray();
         PaintColor.Text = "#F012AB"; PaintSelectedButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        if (!edited.Keys.SequenceEqual(mappingBeforePaint)) throw new IOException("Painting changed a key assignment.");
         if (edited.Colors[a.Index] != 0xf0 || edited.Colors[a.Index + 126] != 0x12 || edited.Colors[a.Index + 252] != 0xab || edited.Lighting[10] != 21) throw new IOException("Per-key hex editor failed.");
+        keyButtons[a.Index].RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        if (selected != null || keyButtons.Values.Any(b => b.Tag != null) || PaintSelectedButton.IsEnabled) throw new IOException("Clicking the selected key did not clear the selection.");
         var changes = PendingChanges();
         DiscardButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         if (PendingChanges() != 0 || ApplyButton.IsEnabled) throw new IOException("Discard did not reset the editor.");
-        return new { uniqueEffectLabels = true, singleOff = true, effectHex = true, completeKeyMap = true, perKeyHex = true, stagedChanges = changes, discard = true, configurationWrites = 0 };
+        return new { uniqueEffectLabels = true, singleOff = true, effectHex = true, completeKeyMap = true, perKeyHex = true, paintKeepsMapping = true, singleSelection = true, toggleDeselect = true, keycaps = keyButtons.Count, stagedChanges = changes, discard = true, configurationWrites = 0 };
     }
 
     public void PreparePreview(string scenario)
     {
         if (edited == null) return;
         SelectKey(model.Keys.Single(k => k.Label == "A"));
-        if (scenario == "assignment") { Editors.SelectedIndex = 1; TargetKey.SelectedItem = TargetKey.Items.Cast<KreoAction>().Single(k => k.Label == "B"); AssignButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
+        if (scenario == "assignment") { ModeAssign.IsChecked = true; TargetKey.SelectedItem = TargetKey.Items.Cast<KreoAction>().Single(k => k.Label == "B"); AssignButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
         else if (scenario == "effects") EffectPicker.IsDropDownOpen = true;
+        else if (scenario == "paint")
+        {
+            // Staged only, for screenshots: a blue keyboard with a few painted keys. Nothing is applied.
+            PaintColor.Text = "#0A84FF"; PaintAllButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            foreach (var (label, hex) in new[] { ("W", "#FF9F0A"), ("A", "#FF9F0A"), ("S", "#FF9F0A"), ("D", "#FF9F0A"), ("Esc", "#FF453A") })
+            { SelectKey(model.Keys.Single(k => k.Label == label)); PaintColor.Text = hex; PaintSelectedButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
+            SelectKey(model.Keys.Single(k => k.Label == "A"));
+        }
     }
 }

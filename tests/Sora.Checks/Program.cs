@@ -292,6 +292,27 @@ await Check("stop waits for an in-flight write before closing", async () =>
     await Task.WhenAll(start, stop);
     Require(transport.Disposed && transport.Reports[^1].SequenceEqual(LdProtocol.Close()));
 });
+await Check("keyboard layouts snap to a key-unit grid without losing or overlapping keys", () =>
+{
+    foreach (var model in KreoModel.All)
+    {
+        var layout = KreoLayout.Build(model);
+        var visible = model.Keys.Where(k => k.Width > 0 && k.Height > 0).ToArray();
+        Require(layout.Count == visible.Length && layout.Select(p => p.Key).SequenceEqual(visible), model.Name + ": keys changed");
+        Require(layout.All(p => p.X * 4 % 1 == 0 && p.Y * 4 % 1 == 0 && p.Width >= 1 && p.Height >= 1), model.Name + ": off-grid key");
+        for (var i = 0; i < layout.Count; i++)
+            for (var j = i + 1; j < layout.Count; j++)
+            {
+                var (a, b) = (layout[i], layout[j]);
+                Require(!(a.X < b.X + b.Width && b.X < a.X + a.Width && a.Y < b.Y + b.Height && b.Y < a.Y + a.Height), $"{model.Name}: {a.Key.Label} overlaps {b.Key.Label}");
+            }
+    }
+    var swarm = KreoLayout.Build(KreoModel.All.Single(m => m.Name == "Swarm 75")).ToDictionary(p => p.Key.Label);
+    Require(swarm["Backspace"].Width == 2 && swarm["Space"].Width == 6.25 && swarm["LShift"].Width == 2.25 && swarm["Enter"].Width == 2.25 && swarm["Tab"].Width == 1.5 && swarm["CapsLock"].Width == 1.75);
+    Require(swarm["Up"].Y == swarm["RShift"].Y + 0.25 && swarm["Left"].Y == swarm["Space"].Y + 0.25, "Swarm 75 arrow cluster offset lost");
+    Require(KreoLayout.Size(KreoLayout.Build(KreoModel.All.Single(m => m.Name == "Swarm 75"))) == (16.5, 6.5));
+    return Task.CompletedTask;
+});
 Console.WriteLine($"{passed} passed, {failures} failed");
 return failures == 0 ? 0 : 1;
 

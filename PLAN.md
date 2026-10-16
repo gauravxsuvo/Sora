@@ -8,8 +8,8 @@ Working plan for the 0.5 redesign. Each phase ends with real screenshots and wai
 |---|---|---|
 | 1 | Audit of code and 0.4 screenshots | Done, approved |
 | 2 | Design tokens + app shell (sidebar, shared page header) | Done, approved |
-| 3 | Sensor / display state model + Cooler Display page | Done, awaiting approval (live-readings state needs a check on the elevated build) |
-| 4 | Keyboard: geometry, keycaps, editing workflow | Not started |
+| 3 | Sensor / display state model + Cooler Display page | Done, approved |
+| 4 | Keyboard: geometry, keycaps, editing workflow | Done, awaiting approval |
 | 5 | State logic and action feedback (Apply/Discard, connection) | Not started |
 | 6 | Motion system | Not started |
 | 7 | Accessibility, resizing, final verification, README | Not started |
@@ -61,3 +61,4 @@ Working plan for the 0.5 redesign. Each phase ends with real screenshots and wai
 - 2026-10-17: `Kreo-keyboard.md` moved to `docs/` so a clean clone builds.
 - 2026-10-17: phase 2 shell done. Known carry-over: at 1080×720 both page bodies scroll internally (same as 0.4); fixed in phases 3–4. Screenshot mode accepts `--size WxH`.
 - 2026-10-17: phase 3. Sensors report Starting/Live/Unavailable with a cause; readings are cleared on failure; sensor changes are logged. LD360 presence is a read-only USB scan every 3 s while the window is open. Turning on start-at-sign-in no longer silently turns on the display (a hint explains instead). About sensors is inline, not a MessageBox.
+- 2026-10-17: phase 4. KreoLayout snaps vendor hotspots to a 0.25u grid (checked for all three models: no lost or overlapping keys). Keycaps glow in their real colour; selection is an outer ring; remaps show "→ X" and a dot; Fn dims while assigning. Mode switch lives on the board toolbar. Editors scroll on short windows so the board keeps ~300 px. Preview flags: --keyboard-paint-preview, --keyboard-assignment-preview (staged only, never applied).

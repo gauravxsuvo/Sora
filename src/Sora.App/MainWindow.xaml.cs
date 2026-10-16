@@ -75,6 +75,8 @@ public partial class MainWindow : Window
             catch (Exception error) { File.WriteAllText(screenshotPath + ".checks.json", JsonSerializer.Serialize(new { error = error.ToString() })); }
         }
         if (Array.IndexOf(arguments, "--keyboard-assignment-preview") >= 0) Keyboard.PreparePreview("assignment");
+        if (Array.IndexOf(arguments, "--keyboard-paint-preview") >= 0) Keyboard.PreparePreview("paint");
+        if (Array.IndexOf(arguments, "--keyboard-select-preview") >= 0) Keyboard.PreparePreview("select");
         await Task.Delay(3500);
         await host.TickAsync();
         UpdateLayout();
