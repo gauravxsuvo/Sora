@@ -23,7 +23,7 @@ internal static class StartupTask
         return match.Success ? SecurityElement.FromString("<c>" + match.Groups[1].Value + "</c>")?.Text?.Trim('"') : "";
     }
 
-    public static bool IsEnabled => RegisteredPath() != null;
+    public static bool IsEnabled => Run("/Query", "/TN", Name).Code == 0;
 
     public static void Enable()
     {
@@ -70,11 +70,21 @@ internal static class StartupTask
         if (code != 0) throw new IOException("Windows did not remove the startup task: " + output.Trim());
     }
 
-    // After an update the task may still point at an older Sora.exe.
-    public static void RepointIfMoved()
+    // After an update the task may still point at an older Sora.exe. Returns what happened, for the log.
+    public static string RepointIfMoved()
     {
         var registered = RegisteredPath();
-        if (registered != null && !string.Equals(registered, Environment.ProcessPath, StringComparison.OrdinalIgnoreCase)) Enable();
+        if (registered == null)
+        {
+            // The XML query can fail where a plain existence query works; re-register rather than leave a stale path.
+            if (Run("/Query", "/TN", Name).Code != 0) return "not enabled";
+            Enable();
+            return "re-registered for " + Environment.ProcessPath + " (path query failed)";
+        }
+        if (string.Equals(registered, Environment.ProcessPath, StringComparison.OrdinalIgnoreCase)) return "up to date";
+        Enable();
+        var now = RegisteredPath();
+        return string.Equals(now, Environment.ProcessPath, StringComparison.OrdinalIgnoreCase) ? "moved from " + registered : "update did not take effect; still " + now;
     }
 
     private static (int Code, string Output) Run(params string[] arguments)

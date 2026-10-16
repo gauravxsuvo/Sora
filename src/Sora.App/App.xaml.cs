@@ -89,7 +89,7 @@ public partial class App : Application
             tray = new NativeTray("Sora", TrayMenu);
             tray.Activated += () => ShowWindow();
             host.Updated += UpdateTray;
-            if (measure == null) try { StartupTask.RepointIfMoved(); } catch (Exception error) when (error is IOException or InvalidOperationException or System.ComponentModel.Win32Exception) { host.Log("Startup task: " + error.Message); }
+            if (measure == null) try { host.Log("Startup task: " + StartupTask.RepointIfMoved()); } catch (Exception error) when (error is not OutOfMemoryException) { host.Log("Startup task failed: " + error); }
         }
         if (measure != null) _ = MemoryReport.RunAsync(this, measure);
         if (screenshot != null)

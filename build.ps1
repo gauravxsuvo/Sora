@@ -1,4 +1,4 @@
-param([string]$OutputDirectory = 'dist\Sora-0.5.3', [switch]$NoRestore)
+param([string]$OutputDirectory = 'dist\Sora-0.5.4', [switch]$NoRestore)
 $ErrorActionPreference = 'Stop'
 $TaskRoot = $PSScriptRoot
 $env:DOTNET_CLI_HOME = Join-Path $TaskRoot '.dotnet'
@@ -14,13 +14,13 @@ if ($NoRestore) { $PublishArguments += '--no-restore' }
 & dotnet @PublishArguments
 if ($LASTEXITCODE -ne 0) { throw 'Sora build failed' }
 & (Join-Path $TaskRoot 'scripts\Write-ThirdPartyNotices.ps1') -ReleaseDirectory (Join-Path $TaskRoot $OutputDirectory)
-$PriorSettings = Join-Path $TaskRoot 'dist\Sora-0.5.2\data\settings.json'
+$PriorSettings = Join-Path $TaskRoot 'dist\Sora-0.5.3\data\settings.json'
 $NewSettings = Join-Path $TaskRoot (Join-Path $OutputDirectory 'data\settings.json')
 if ((Test-Path -LiteralPath $PriorSettings) -and -not (Test-Path -LiteralPath $NewSettings)) {
     New-Item -ItemType Directory -Force -Path (Split-Path $NewSettings -Parent) | Out-Null
     Copy-Item -LiteralPath $PriorSettings -Destination $NewSettings
 }
-$PriorKeyboardData = Join-Path $TaskRoot 'dist\Sora-0.5.2\data\keyboard'
+$PriorKeyboardData = Join-Path $TaskRoot 'dist\Sora-0.5.3\data\keyboard'
 $NewKeyboardData = Join-Path $TaskRoot (Join-Path $OutputDirectory 'data\keyboard')
 if ((Test-Path -LiteralPath $PriorKeyboardData) -and -not (Test-Path -LiteralPath $NewKeyboardData)) {
     New-Item -ItemType Directory -Force -Path (Split-Path $NewKeyboardData -Parent) | Out-Null

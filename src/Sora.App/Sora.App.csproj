@@ -5,7 +5,7 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>Sora</AssemblyName>
-    <Version>0.5.3</Version>
+    <Version>0.5.4</Version>
     <Product>Sora</Product>
     <Description>DeepCool LD360 and Kreo keyboard controls</Description>
     <ApplicationIcon>../../assets/Sora.ico</ApplicationIcon>
