@@ -26,6 +26,9 @@ public partial class KeyboardPanel : UserControl
     private string statusTone = "Idle";
     // Set when only the 2.4 GHz receiver is present: the keyboard works, but its settings can't be reached.
     private bool wirelessOnly;
+    // Connected through the 2.4 GHz receiver: lighting is editable; per-key colours can't be read, keys and palette aren't written yet.
+    private bool wireless;
+    private int? battery;
     private readonly Dictionary<int, Button> keyButtons = new();
     private readonly string dataDirectory = Path.Combine(AppContext.BaseDirectory, "data", "keyboard");
     public Task PendingOperation { get; private set; } = Task.CompletedTask;
@@ -33,7 +36,7 @@ public partial class KeyboardPanel : UserControl
     public bool IsBusy => busy;
     public bool HasPendingEdits => PendingChanges() > 0;
     // Short status for the sidebar; the page header chip carries the same tone.
-    public string SidebarStatus => busy ? "Kreo · Working…" : wirelessOnly ? "Kreo · 2.4 GHz receiver" : statusTone == "Bad" ? "Kreo · Needs attention" : baseline != null ? model.Name + " · USB" : "Kreo · Not connected";
+    public string SidebarStatus => busy ? "Kreo · Working…" : wirelessOnly ? "Kreo · 2.4 GHz receiver" : statusTone == "Bad" ? "Kreo · Needs attention" : baseline != null ? model.Name + (wireless ? " · 2.4 GHz" : " · USB") : "Kreo · Not connected";
     public string StatusTone => busy ? "Warn" : statusTone;
 
     private void SetStatus(string text, string tone)
@@ -116,7 +119,8 @@ public partial class KeyboardPanel : UserControl
     {
         if (edited == null) return null;
         var effect = edited.Lighting[10];
-        if (effect == 21) return Color.FromRgb(edited.Colors[key.Index], edited.Colors[key.Index + 126], edited.Colors[key.Index + 252]);
+        // Per-key colours can't be read over the receiver, so they are not shown rather than guessed.
+        if (effect == 21) return wireless ? null : Color.FromRgb(edited.Colors[key.Index], edited.Colors[key.Index + 126], edited.Colors[key.Index + 252]);
         if (effect is > 0 and <= 18 && edited.EffectPalette != null)
         {
             var slot = edited.Lighting[57 + 2 * effect] & 15;
@@ -156,12 +160,14 @@ public partial class KeyboardPanel : UserControl
         BoardHint.Text = wirelessOnly ? "Editing needs the USB cable" : edited == null || device == null ? "Connect the keyboard to edit it"
             : ModeProfiles.IsChecked == true ? "Profiles cover the whole keyboard"
             : name != null ? name + " selected"
+            : wireless ? (assigning ? "Remapping needs the USB cable" : "Per-key painting needs the USB cable")
             : assigning ? "Click a key to change what it sends" : "Click a key to paint it";
         ClearSelectionButton.Visibility = selected != null && ModeProfiles.IsChecked != true ? Visibility.Visible : Visibility.Collapsed;
         PaintTarget.Text = name == null ? "No key selected" : name + " selected";
         PaintSelectedButton.Content = name == null ? "Paint selected key" : "Paint " + name;
         PaintAllButton.Content = "Fill all " + layout.Count + " keys";
-        if (selected != null && edited != null)
+        if (wireless) PaintTarget.Text = "Needs the USB cable";
+        if (selected != null && edited != null && !wireless)
         {
             KeyColorRow.Visibility = Visibility.Visible;
             var stored = Color.FromRgb(edited.Colors[selected.Index], edited.Colors[selected.Index + 126], edited.Colors[selected.Index + 252]);
@@ -228,19 +234,30 @@ public partial class KeyboardPanel : UserControl
         if (busy) return PendingOperation;
         PendingOperation = RunOperation(async () =>
         {
-            var result = await Task.Run(() =>
+            var result = await Task.Run(async () =>
             {
                 var devices = KreoKeyboard.Enumerate();
+                // Only the Swarm 75 is paired with the 2.4 GHz receiver in KB Hub's definitions.
+                if (devices.Count == 0 && KreoReceiver.Find() is { } receiverDevice)
+                {
+                    if (KreoKeyboard.FindConflict() is { } conflict) throw new IOException(conflict);
+                    var swarm = KreoModel.All.Single(m => m.Name == "Swarm 75");
+                    using var receiver = new KreoReceiver(receiverDevice);
+                    var snapshot = await receiver.ReadStateAsync(swarm);
+                    return (Device: receiverDevice, Model: swarm, State: snapshot.State, Wireless: true, Battery: snapshot.BatteryPercent);
+                }
                 if (devices.Count == 0 && KreoKeyboard.ReceiverPresent()) throw new KreoWirelessOnlyException();
                 if (devices.Count != 1) throw new IOException(devices.Count == 0 ? "Connect one supported keyboard by USB and switch it to wired mode." : "Connect one Kreo keyboard at a time.");
                 using var keyboard = new KreoKeyboard(devices[0]);
-                return (Device: devices[0], Model: keyboard.Definition, State: keyboard.ReadState());
+                return (Device: devices[0], Model: keyboard.Definition, State: keyboard.ReadState(), Wireless: false, Battery: (int?)null);
             });
-            wirelessOnly = false; device = result.Device; model = result.Model; baseline = result.State; edited = baseline.Copy(); selected = null;
+            wirelessOnly = false; wireless = result.Wireless; battery = result.Battery;
+            device = result.Device; model = result.Model; baseline = result.State; edited = baseline.Copy(); selected = null;
             updating = true; ModelPicker.SelectedItem = model; TargetKey.ItemsSource = KreoActions.ForModel(model); updating = false;
             LoadControls(); DrawBoard();
-            SetStatus(model.Name + " · USB", "Good");
-            KeyboardDetail.Text = "Ready. Changes stay in the editor until you apply them.";
+            SetStatus(model.Name + (wireless ? " · 2.4 GHz" + (battery is { } level ? $" · {level}%" : "") : " · USB"), "Good");
+            KeyboardDetail.Text = wireless ? "Connected through the 2.4 GHz receiver. Lighting can be changed here; key assignments, effect colors and per-key colors need the USB cable."
+                : "Ready. Changes stay in the editor until you apply them.";
         });
         return PendingOperation;
     }
@@ -255,10 +272,16 @@ public partial class KeyboardPanel : UserControl
     {
         busy = true; UpdateAvailability(); SetStatus("Working…", "Warn");
         try { await action(); }
+        catch (KreoReceiverTimeoutException error)
+        {
+            // Not a fault: the keyboard is asleep or out of range. Nothing can be applied until it answers.
+            wirelessOnly = true; wireless = false; device = null;
+            SetStatus("2.4 GHz · not responding", "Warn"); KeyboardDetail.Text = error.Message;
+        }
         catch (KreoWirelessOnlyException error)
         {
             // Staged edits are kept, but nothing can be applied until the cable is back.
-            wirelessOnly = true; device = null;
+            wirelessOnly = true; wireless = false; device = null;
             SetStatus("2.4 GHz · settings need USB", "Warn"); KeyboardDetail.Text = error.Message;
         }
         catch (Exception error) when (error is not OutOfMemoryException) { wirelessOnly = false; SetStatus("Needs attention", "Bad"); KeyboardDetail.Text = error.Message; }
@@ -331,7 +354,7 @@ public partial class KeyboardPanel : UserControl
         {
             var index = slot; var offset = effect.Id * 21 + slot * 3;
             var rgb = edited.EffectPalette!.AsSpan(offset, 3).ToArray();
-            var button = new Button { Style = (Style)FindResource("Swatch"), Width = 20, Height = 20, Padding = new Thickness(0), Margin = new Thickness(0, 2, 3, 2), Background = new SolidColorBrush(Color.FromRgb(rgb[0], rgb[1], rgb[2])), Content = slot == colorSlot && ColorMode.SelectedIndex == 0 ? "✓" : "", Foreground = rgb.Sum(b => b) > 460 ? Brushes.Black : Brushes.White, ToolTip = "#" + Convert.ToHexString(rgb) };
+            var button = new Button { Style = (Style)FindResource("Swatch"), Width = 19, Height = 19, Padding = new Thickness(0), Margin = new Thickness(0, 2, 3, 2), Background = new SolidColorBrush(Color.FromRgb(rgb[0], rgb[1], rgb[2])), Content = slot == colorSlot && ColorMode.SelectedIndex == 0 ? "✓" : "", Foreground = rgb.Sum(b => b) > 460 ? Brushes.Black : Brushes.White, ToolTip = "#" + Convert.ToHexString(rgb) };
             button.Click += (_, _) =>
             {
                 colorSlot = index; updating = true; EffectHex.Text = "#" + Convert.ToHexString(rgb); ColorMode.SelectedIndex = 0; updating = false;
@@ -367,7 +390,7 @@ public partial class KeyboardPanel : UserControl
     private void TargetChanged(object sender, SelectionChangedEventArgs e) { if (ready) { UpdateMappingPreview(); UpdateAvailability(); } }
     private void UpdateMappingPreview()
     {
-        MappingPreview.Text = selected == null ? "First select a key on the keyboard." : TargetKey.SelectedItem is not KreoAction target ? "Choose its new action." : selected.Label + " will send " + target.Label + " after you apply.";
+        MappingPreview.Text = wireless ? "Key assignments are saved over the USB cable for now. Connect it and switch the keyboard to wired mode to remap keys." : selected == null ? "First select a key on the keyboard." : TargetKey.SelectedItem is not KreoAction target ? "Choose its new action." : selected.Label + " will send " + target.Label + " after you apply.";
     }
     private void AssignKey(object sender, RoutedEventArgs e)
     {
@@ -413,6 +436,13 @@ public partial class KeyboardPanel : UserControl
         ChangeSummary.Text = changes == 0 ? "No pending changes" : changes + (changes == 1 ? " pending change" : " pending changes");
         ApplyButton.IsEnabled = connected && !busy && changes > 0 && (!(effect?.Color == true) || EffectColorError.Text.Length == 0);
         DiscardButton.IsEnabled = changes > 0 && !busy;
+        if (wireless)
+        {
+            // Over 2.4 GHz only the lighting block is written; anything else waits for the cable.
+            PaintSelectedButton.IsEnabled = PaintAllButton.IsEnabled = EffectHex.IsEnabled = AssignButton.IsEnabled = false;
+            var needsCable = edited != null && baseline != null && (!edited.Keys.SequenceEqual(baseline.Keys) || !edited.Colors.SequenceEqual(baseline.Colors) || !edited.EffectPalette!.SequenceEqual(baseline.EffectPalette!));
+            if (needsCable) { ApplyButton.IsEnabled = false; KeyboardDetail.Text = "These edits include key assignments or colors, which need the USB cable. Discard them or connect the cable."; }
+        }
     }
     private void DiscardEdits(object sender, RoutedEventArgs e) { if (baseline == null) return; edited = baseline.Copy(); LoadControls(); UpdateKeys(); UpdateAvailability(); KeyboardDetail.Text = "Edits discarded. The keyboard was not changed."; }
 
@@ -429,15 +459,36 @@ public partial class KeyboardPanel : UserControl
         return KreoProtocol.Import(profile, baseline!);
     }
     private void ProfileAction(Action action) { try { action(); } catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException) { KeyboardDetail.Text = error.Message; } }
-    private void SaveProfile(object sender, RoutedEventArgs e) => ProfileAction(() => { if (edited == null) return; var dialog = new SaveFileDialog { Filter = "Sora keyboard profile|*.json", FileName = model.Name + " setup.json" }; if (dialog.ShowDialog() == true) { Save(dialog.FileName, edited); KeyboardDetail.Text = "Profile saved."; } });
-    private void LoadProfile(object sender, RoutedEventArgs e) => ProfileAction(() => { var dialog = new OpenFileDialog { Filter = "Sora keyboard profile|*.json" }; if (dialog.ShowDialog() == true) { edited = Load(dialog.FileName); LoadControls(); Changed(); } });
-    private void RestoreBackup(object sender, RoutedEventArgs e) => ProfileAction(() => { edited = Load(BackupPath); LoadControls(); Changed(); KeyboardDetail.Text = "Backup loaded. Apply to keyboard restores it."; });
+    private void SaveProfile(object sender, RoutedEventArgs e) => ProfileAction(() => { if (wireless) { KeyboardDetail.Text = "Profiles need the USB cable: per-key colors can't be read over 2.4 GHz, so a profile saved or loaded now could be incomplete."; return; } if (edited == null) return; var dialog = new SaveFileDialog { Filter = "Sora keyboard profile|*.json", FileName = model.Name + " setup.json" }; if (dialog.ShowDialog() == true) { Save(dialog.FileName, edited); KeyboardDetail.Text = "Profile saved."; } });
+    private void LoadProfile(object sender, RoutedEventArgs e) => ProfileAction(() => { if (wireless) { KeyboardDetail.Text = "Profiles need the USB cable: per-key colors can't be read over 2.4 GHz, so a profile saved or loaded now could be incomplete."; return; } var dialog = new OpenFileDialog { Filter = "Sora keyboard profile|*.json" }; if (dialog.ShowDialog() == true) { edited = Load(dialog.FileName); LoadControls(); Changed(); } });
+    private void RestoreBackup(object sender, RoutedEventArgs e) => ProfileAction(() => { if (wireless) { KeyboardDetail.Text = "Profiles need the USB cable: per-key colors can't be read over 2.4 GHz, so a profile saved or loaded now could be incomplete."; return; } edited = Load(BackupPath); LoadControls(); Changed(); KeyboardDetail.Text = "Backup loaded. Apply to keyboard restores it."; });
 
     private async void ApplyChanges(object sender, RoutedEventArgs e) => await ApplyAsync();
     public Task ApplyAsync()
     {
         if (busy || device == null || edited == null || baseline == null || !ApplyButton.IsEnabled) return PendingOperation;
         var desired = edited.Copy(); var expected = baseline.Copy(); var selectedDevice = device; var backupPath = BackupPath;
+        if (wireless)
+        {
+            // A separate lighting-only backup: a full profile would carry placeholder per-key colours.
+            var lightingBackup = Path.Combine(dataDirectory, model.Name.Replace(' ', '-') + "-2.4GHz-lighting-backup.json");
+            PendingOperation = RunOperation(async () =>
+            {
+                var lighting = await Task.Run(async () =>
+                {
+                    using var receiver = new KreoReceiver(selectedDevice);
+                    return await receiver.ApplyLightingAsync(expected.Lighting, desired.Lighting, current =>
+                    {
+                        Directory.CreateDirectory(dataDirectory);
+                        File.WriteAllText(lightingBackup, JsonSerializer.Serialize(new { model = model.Name, lighting = Convert.ToHexString(current) }));
+                    });
+                });
+                baseline = expected with { Lighting = lighting }; edited = baseline.Copy(); LoadControls(); UpdateKeys();
+                SetStatus(model.Name + " · Saved over 2.4 GHz", "Good");
+                KeyboardDetail.Text = "Lighting saved through the receiver; device readback matches.";
+            });
+            return PendingOperation;
+        }
         PendingOperation = RunOperation(async () =>
         {
             var actual = await Task.Run(() => { using var keyboard = new KreoKeyboard(selectedDevice); return keyboard.Apply(expected, desired, state => Save(backupPath, state)); });

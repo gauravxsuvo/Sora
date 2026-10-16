@@ -10,6 +10,150 @@ if (args.Contains("--keyboard-inspect-extended"))
     return 0;
 }
 
+if (args.Contains("--keyboard-wireless-verify-blocks"))
+{
+    // Reversible receiver writes: one effect-palette colour (cmd 9) and F12 -> F11 (cmd 1), each read back and restored.
+    var outputIndex = Array.IndexOf(args, "--output");
+    var output = Path.GetFullPath(outputIndex >= 0 && outputIndex + 1 < args.Length ? args[outputIndex + 1] : "kreo-wireless-blocks.json");
+    using var receiver = new KreoReceiver(KreoReceiver.Find() ?? throw new IOException("No Kreo receiver found."));
+    var timeout = TimeSpan.FromSeconds(4);
+    var palette = await receiver.ReadAsync(KreoReceiver.ReadColors, 0, 490, timeout);
+    var matrix = await receiver.ReadAsync(KreoReceiver.ReadMatrix, 0, 504, timeout);
+    if (!palette.Complete || palette.Data.Length != 490 || !matrix.Complete || matrix.Data.Length != 504) throw new IOException("Could not read complete palette and key map; nothing was written.");
+    Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+    File.WriteAllText(output + ".backup.json", JsonSerializer.Serialize(new { palette = Convert.ToHexString(palette.Data), matrix = Convert.ToHexString(matrix.Data) }));
+    var swarm = KreoModel.All.Single(m => m.Name == "Swarm 75");
+    var confirmed = new List<string>(); var problems = new List<string>(); var logs = new Dictionary<string, IReadOnlyList<string>>();
+    async Task Trial(string name, byte write, byte read, byte[] original, byte[] changed)
+    {
+        try
+        {
+            logs[name] = await receiver.WriteAsync(write, 0, changed);
+            await Task.Delay(300);
+            var after = await receiver.ReadAsync(read, 0, original.Length, timeout);
+            if (!after.Complete || !after.Data.SequenceEqual(changed)) throw new IOException(name + " readback mismatch: " + Convert.ToHexString(after.Data));
+            confirmed.Add(name + ": readback matches all " + changed.Length + " bytes");
+        }
+        catch (Exception error) { problems.Add(name + ": " + error.Message); }
+        finally
+        {
+            try
+            {
+                logs[name + " restore"] = await receiver.WriteAsync(write, 0, original);
+                await Task.Delay(300);
+                var restored = await receiver.ReadAsync(read, 0, original.Length, timeout);
+                if (!restored.Complete || !restored.Data.SequenceEqual(original)) throw new IOException("restore readback mismatch");
+                confirmed.Add(name + ": original restored and read back");
+            }
+            catch (Exception error) { problems.Add(name + " restore: " + error.Message); }
+        }
+    }
+    var newPalette = palette.Data.ToArray();
+    newPalette[21] ^= 0x10; // Static effect, first colour, red channel nudged.
+    await Trial("Effect palette", 0x09, KreoReceiver.ReadColors, palette.Data, newPalette);
+    var newMatrix = matrix.Data.ToArray();
+    var f12 = swarm.Keys.Single(k => k.Label == "F12"); var f11 = swarm.Keys.Single(k => k.Label == "F11");
+    matrix.Data.AsSpan(f11.Index * 4, 4).CopyTo(newMatrix.AsSpan(f12.Index * 4));
+    await Trial("Key map F12 -> F11", 0x01, KreoReceiver.ReadMatrix, matrix.Data, newMatrix);
+    File.WriteAllText(output, JsonSerializer.Serialize(new { receiver.Device, confirmed, failures = problems, logs }, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new { confirmed, failures = problems }, new JsonSerializerOptions { WriteIndented = true }));
+    return problems.Count == 0 ? 0 : 1;
+}
+
+if (args.Contains("--keyboard-wireless-verify-lighting"))
+{
+    // One reversible write over the 2.4 GHz receiver: dim the current effect by one step, read back, restore, read back.
+    var outputIndex = Array.IndexOf(args, "--output");
+    var output = Path.GetFullPath(outputIndex >= 0 && outputIndex + 1 < args.Length ? args[outputIndex + 1] : "kreo-wireless-lighting.json");
+    using var receiver = new KreoReceiver(KreoReceiver.Find() ?? throw new IOException("No Kreo receiver found."));
+    var timeout = TimeSpan.FromSeconds(4);
+    var before = await receiver.ReadAsync(KreoReceiver.ReadLighting, 0, 128, timeout);
+    if (!before.Complete || before.Data.Length != 128 || before.Data[126] != 0x5a || before.Data[127] != 0xa5) throw new IOException("Could not read a complete lighting block; nothing was written.");
+    Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+    File.WriteAllText(output + ".backup.json", JsonSerializer.Serialize(new { lighting = Convert.ToHexString(before.Data) }));
+    var effect = before.Data[10];
+    if (effect is 0 or > 18) throw new IOException($"Current effect {effect} has no brightness slot; nothing was written.");
+    var changed = before.Data.ToArray();
+    var slot = 57 + 2 * effect;
+    var brightness = changed[slot] >> 4;
+    changed[slot] = (byte)(((brightness > 0 ? brightness - 1 : 1) << 4) | (changed[slot] & 15));
+    string? failure = null, restoreFailure = null;
+    var confirmed = new List<string>();
+    IReadOnlyList<string> writeLog = [], restoreLog = [];
+    try
+    {
+        writeLog = await receiver.WriteAsync(0x04, 0, changed);
+        await Task.Delay(300);
+        var after = await receiver.ReadAsync(KreoReceiver.ReadLighting, 0, 128, timeout);
+        if (!after.Complete || !after.Data.SequenceEqual(changed)) throw new IOException("Readback did not match the written lighting block: " + Convert.ToHexString(after.Data));
+        confirmed.Add($"Effect {effect} brightness {brightness} -> {changed[slot] >> 4}: readback matches all 128 bytes");
+        await Task.Delay(800);
+    }
+    catch (Exception error) { failure = error.ToString(); }
+    finally
+    {
+        try
+        {
+            restoreLog = await receiver.WriteAsync(0x04, 0, before.Data);
+            await Task.Delay(300);
+            var restored = await receiver.ReadAsync(KreoReceiver.ReadLighting, 0, 128, timeout);
+            if (!restored.Complete || !restored.Data.SequenceEqual(before.Data)) throw new IOException("Restore readback mismatch: " + Convert.ToHexString(restored.Data));
+            confirmed.Add("Original lighting restored; readback matches all 128 bytes");
+        }
+        catch (Exception error) { restoreFailure = error.ToString(); }
+    }
+    File.WriteAllText(output, JsonSerializer.Serialize(new { receiver.Device, effect, confirmed, failure, restoreFailure, writeLog, restoreLog }, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new { confirmed, failure, restoreFailure }, new JsonSerializerOptions { WriteIndented = true }));
+    return failure == null && restoreFailure == null ? 0 : 1;
+}
+
+if (args.Contains("--keyboard-wireless-probe"))
+{
+    // Read-only: sends only read commands (0x4x) over the 2.4 GHz receiver and records every reply.
+    var outputIndex = Array.IndexOf(args, "--output");
+    var output = Path.GetFullPath(outputIndex >= 0 && outputIndex + 1 < args.Length ? args[outputIndex + 1] : "kreo-wireless-probe.json");
+    var device = KreoReceiver.Find();
+    object result;
+    if (device == null) result = new { error = "No Kreo receiver configuration channel found.", descriptors = KreoKeyboard.Descriptors() };
+    else
+    {
+        using var receiver = new KreoReceiver(device);
+        var timeout = TimeSpan.FromSeconds(4);
+        var power = await receiver.ReadAsync(KreoReceiver.ReadPower, 0, 2, timeout);
+        await Task.Delay(150);
+        var lighting = await receiver.ReadAsync(KreoReceiver.ReadLighting, 0, 128, timeout);
+        await Task.Delay(150);
+        var matrix = await receiver.ReadAsync(KreoReceiver.ReadMatrix, 0, 512, timeout);
+        await Task.Delay(150);
+        var colors = await receiver.ReadAsync(KreoReceiver.ReadColors, 0, 378, timeout);
+        if (!colors.Complete) { await Task.Delay(500); colors = await receiver.ReadAsync(KreoReceiver.ReadColors, 0, 378, timeout); }
+        await Task.Delay(150);
+        var perKey = await receiver.ReadAsync(0x46, 0, 378, timeout);
+        static bool Marker(byte[] data, int at) => data.Length > at + 1 && data[at] == 0x5a && data[at + 1] == 0xa5;
+        var wired = SwarmFixture();
+        object Summary(ReceiverReply reply) => new { command = "0x" + reply.Command.ToString("X2"), reply.Complete, reply.Error, length = reply.Data.Length, reply.Packets, reply.PacketsReceived, reply.BadChecksums, hex = Convert.ToHexString(reply.Data), reply.RawReports };
+        result = new
+        {
+            device,
+            writesSent = "read requests only",
+            power = Summary(power), lighting = Summary(lighting), matrix = Summary(matrix), colors = Summary(colors), perKey = Summary(perKey),
+            checks = new
+            {
+                lightingMarkerAt126 = Marker(lighting.Data, 126),
+                matrixMarkerAt510 = Marker(matrix.Data, 510),
+                matrixMatchesWiredFixturePrefix = matrix.Data.Length >= 64 && matrix.Data.AsSpan(0, 64).SequenceEqual(wired.Keys.AsSpan(0, 64)),
+                lightingEffectId = lighting.Data.Length > 10 ? lighting.Data[10] : -1,
+                paletteMatchesWiredFixture = colors.Data.Length >= 420 && colors.Data.AsSpan(0, 420).SequenceEqual(wired.EffectPalette!.AsSpan(0, 420)),
+                perKeyMatchesWiredFixture = perKey.Data.Length >= 378 && perKey.Data.AsSpan(0, 378).SequenceEqual(wired.Colors),
+            },
+        };
+    }
+    Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+    File.WriteAllText(output, JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(File.ReadAllText(output));
+    return 0;
+}
+
 if (args.Contains("--keyboard-probe"))
 {
     Console.WriteLine(JsonSerializer.Serialize(new { descriptors = KreoKeyboard.Descriptors(), probes = KreoKeyboard.Probe() }, new JsonSerializerOptions { WriteIndented = true }));
@@ -291,6 +435,19 @@ await Check("stop waits for an in-flight write before closing", async () =>
     transport.Continue.TrySetResult();
     await Task.WhenAll(start, stop);
     Require(transport.Disposed && transport.Reports[^1].SequenceEqual(LdProtocol.Close()));
+});
+await Check("receiver packets match captured 2.4 GHz traffic", () =>
+{
+    // Replies captured from a Swarm 75 through its receiver (lighting read, battery read, lighting write acknowledgement).
+    foreach (var hex in new[] { "13440A000E0003030000000404070006200100AB", "134A0100026401000000000000000000000000C5", "13040A010E010000000100040200FF060000003D" })
+    {
+        var packet = Convert.FromHexString(hex);
+        Require(KreoReceiver.Checksum(packet) == packet[^1], "checksum " + hex);
+    }
+    var request = KreoReceiver.Request(KreoReceiver.ReadLighting, 0);
+    Require(request.Length == 20 && request[0] == 0x13 && request[1] == 0x44 && request[2] == 1 && request[3] == 0 && request[4] == 0 && request[^1] == KreoReceiver.Checksum(request));
+    Require(KreoReceiver.Request(KreoReceiver.ReadMatrix, 2)[4] == 0x20, "selector goes in the high nibble");
+    return Task.CompletedTask;
 });
 await Check("keyboard layouts snap to a key-unit grid without losing or overlapping keys", () =>
 {

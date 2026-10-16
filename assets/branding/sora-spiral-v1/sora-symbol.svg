@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Sora spiral symbol</title>
+  <desc id="desc">Two interlocking shaded curves form a spiral S. Transparent background; all artwork is vector.</desc>
+  <defs>
+    <linearGradient id="blade-tone" x1="0" y1="0" x2="0" y2="250" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ededed"/>
+      <stop offset="0.43" stop-color="#878787"/>
+      <stop offset="0.86" stop-color="#090909"/>
+      <stop offset="1" stop-color="#000000"/>
+    </linearGradient>
+    <linearGradient id="curl-tone" x1="126" y1="185" x2="155" y2="233" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#000000"/>
+      <stop offset="0.36" stop-color="#333333"/>
+      <stop offset="0.8" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+    <path id="blade" d="M186 0 C83 0 0 83 0 183 C0 252 46 301 111 301 C152 301 186 271 186 235 C186 211 172 195 152 190 C167 194 175 202 174 213 C172 228 155 238 139 234 C117 230 102 214 102 192 C102 157 128 129 162 121 Z"/>
+  </defs>
+  <g transform="translate(112 46)">
+    <ellipse cx="144" cy="210" rx="49" ry="40" fill="#000000"/>
+    <use href="#blade" fill="url(#blade-tone)"/>
+    <use href="#blade" fill="url(#blade-tone)" transform="rotate(180 144 210)"/>
+    <path d="M151 189 C125 169 101 166 101 192 C101 215 117 231 139 235 C156 239 173 229 175 213 C176 201 167 193 151 189 Z" fill="url(#curl-tone)"/>
+  </g>
+</svg>
