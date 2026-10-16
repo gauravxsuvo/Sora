@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>Sora</AssemblyName>
+    <Version>0.4.0</Version>
+    <Product>Sora</Product>
+    <Description>DeepCool LD360 and Kreo keyboard controls</Description>
+    <ApplicationIcon>../../assets/Sora.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Sora mostly idles in the tray: no background GC thread, and the GC hands memory back more readily. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>false</TieredPGO>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../Sora.Core/Sora.Core.csproj" /></ItemGroup>
+  <ItemGroup><None Include="../../kreo-re/USAGE.md" Link="Kreo-keyboard.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+</Project>

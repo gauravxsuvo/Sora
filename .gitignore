@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+dist/
+.dotnet/
+.nuget/
+artifacts/
+tools/
+rea/
+v8asm/
+v8-source/
+vendor/
+kreo-re/
+deepcool-re/
+*.log
+*.tmp
+.vs/
+*.user

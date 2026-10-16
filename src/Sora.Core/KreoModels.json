@@ -1,0 +1,3304 @@
+[
+  {
+    "Name": "Hive 75",
+    "Identities": [
+      "03000000052F",
+      "030000000302"
+    ],
+    "Keys": [
+      {
+        "Label": "Esc",
+        "X": 33,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 27,
+        "Index": 0,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F1",
+        "X": 101,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 112,
+        "Index": 12,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F2",
+        "X": 142,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 113,
+        "Index": 18,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F3",
+        "X": 180,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 114,
+        "Index": 24,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F4",
+        "X": 220,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 115,
+        "Index": 30,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F5",
+        "X": 276,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 116,
+        "Index": 36,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F6",
+        "X": 316,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 117,
+        "Index": 42,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F7",
+        "X": 355,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 118,
+        "Index": 48,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F8",
+        "X": 395,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 119,
+        "Index": 54,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F9",
+        "X": 452,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 120,
+        "Index": 60,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F10",
+        "X": 491,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 121,
+        "Index": 66,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F11",
+        "X": 531,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 122,
+        "Index": 72,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F12",
+        "X": 569,
+        "Y": 23,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 123,
+        "Index": 78,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "`",
+        "X": 35,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 192,
+        "Index": 1,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "1",
+        "X": 74,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 49,
+        "Index": 7,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "2",
+        "X": 113,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 50,
+        "Index": 13,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "3",
+        "X": 152,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 51,
+        "Index": 19,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "4",
+        "X": 191,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 52,
+        "Index": 25,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "5",
+        "X": 230,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 53,
+        "Index": 31,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "6",
+        "X": 269,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 54,
+        "Index": 37,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "7",
+        "X": 309,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 55,
+        "Index": 43,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "8",
+        "X": 348,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 56,
+        "Index": 49,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "9",
+        "X": 387,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 57,
+        "Index": 55,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "0",
+        "X": 426,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 48,
+        "Index": 61,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "-",
+        "X": 466,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 189,
+        "Index": 67,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "=",
+        "X": 505,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 187,
+        "Index": 73,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Backspace",
+        "X": 544,
+        "Y": 72,
+        "Width": 73,
+        "Height": 34,
+        "VirtualKey": 8,
+        "Index": 79,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Home",
+        "X": 621,
+        "Y": 72,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 36,
+        "Index": 91,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Tab",
+        "X": 34,
+        "Y": 111,
+        "Width": 55,
+        "Height": 34,
+        "VirtualKey": 9,
+        "Index": 2,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Q",
+        "X": 93,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 81,
+        "Index": 8,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "W",
+        "X": 132,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 87,
+        "Index": 14,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "E",
+        "X": 171,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 69,
+        "Index": 20,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "R",
+        "X": 211,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 82,
+        "Index": 26,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "T",
+        "X": 250,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 84,
+        "Index": 32,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Y",
+        "X": 289,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 89,
+        "Index": 38,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "U",
+        "X": 328,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 85,
+        "Index": 44,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "I",
+        "X": 368,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 73,
+        "Index": 50,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "O",
+        "X": 407,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 79,
+        "Index": 56,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "P",
+        "X": 446,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 80,
+        "Index": 62,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "[",
+        "X": 485,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 219,
+        "Index": 68,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "]",
+        "X": 523,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 221,
+        "Index": 74,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "\\",
+        "X": 561,
+        "Y": 110,
+        "Width": 56,
+        "Height": 34,
+        "VirtualKey": 220,
+        "Index": 80,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "PgUp",
+        "X": 621,
+        "Y": 111,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 33,
+        "Index": 92,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "CapsLock",
+        "X": 34,
+        "Y": 150,
+        "Width": 64,
+        "Height": 34,
+        "VirtualKey": 20,
+        "Index": 3,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "A",
+        "X": 104,
+        "Y": 150,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 65,
+        "Index": 9,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "S",
+        "X": 143,
+        "Y": 150,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 83,
+        "Index": 15,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "D",
+        "X": 182,
+        "Y": 150,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 68,
+        "Index": 21,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F",
+        "X": 221,
+        "Y": 150,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 70,
+        "Index": 27,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "G",
+        "X": 260,
+        "Y": 150,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 71,
+        "Index": 33,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "H",
+        "X": 299,
+        "Y": 150,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 72,
+        "Index": 39,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "J",
+        "X": 338,
+        "Y": 150,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 74,
+        "Index": 45,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "K",
+        "X": 377,
+        "Y": 150,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 75,
+        "Index": 51,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "L",
+        "X": 417,
+        "Y": 150,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 76,
+        "Index": 57,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": ";",
+        "X": 456,
+        "Y": 150,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 186,
+        "Index": 63,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "'",
+        "X": 495,
+        "Y": 150,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 222,
+        "Index": 69,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Enter",
+        "X": 533,
+        "Y": 150,
+        "Width": 85,
+        "Height": 34,
+        "VirtualKey": 13,
+        "Index": 81,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "PgDn",
+        "X": 621,
+        "Y": 150,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 34,
+        "Index": 93,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "LShift",
+        "X": 34,
+        "Y": 188,
+        "Width": 85,
+        "Height": 34,
+        "VirtualKey": 160,
+        "Index": 4,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Z",
+        "X": 123,
+        "Y": 188,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 90,
+        "Index": 10,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "X",
+        "X": 162,
+        "Y": 188,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 88,
+        "Index": 16,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "C",
+        "X": 201,
+        "Y": 188,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 67,
+        "Index": 22,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "V",
+        "X": 240,
+        "Y": 188,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 86,
+        "Index": 28,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "B",
+        "X": 279,
+        "Y": 188,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 66,
+        "Index": 34,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "N",
+        "X": 319,
+        "Y": 188,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 78,
+        "Index": 40,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "M",
+        "X": 358,
+        "Y": 188,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 77,
+        "Index": 46,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": ",",
+        "X": 397,
+        "Y": 188,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 188,
+        "Index": 52,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": ".",
+        "X": 436,
+        "Y": 188,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 190,
+        "Index": 58,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "/",
+        "X": 475,
+        "Y": 188,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 191,
+        "Index": 64,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "RShift",
+        "X": 514,
+        "Y": 188,
+        "Width": 64,
+        "Height": 34,
+        "VirtualKey": 161,
+        "Index": 82,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Up",
+        "X": 583,
+        "Y": 189,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 38,
+        "Index": 88,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Delete",
+        "X": 621,
+        "Y": 189,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 46,
+        "Index": 94,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "LCtrl",
+        "X": 34,
+        "Y": 228,
+        "Width": 43,
+        "Height": 34,
+        "VirtualKey": 162,
+        "Index": 5,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "LWin",
+        "X": 84,
+        "Y": 228,
+        "Width": 43,
+        "Height": 34,
+        "VirtualKey": 91,
+        "Index": 11,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "LAlt",
+        "X": 133,
+        "Y": 228,
+        "Width": 43,
+        "Height": 34,
+        "VirtualKey": 164,
+        "Index": 17,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Space",
+        "X": 179,
+        "Y": 228,
+        "Width": 242,
+        "Height": 34,
+        "VirtualKey": 32,
+        "Index": 35,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "RAlt",
+        "X": 427,
+        "Y": 228,
+        "Width": 43,
+        "Height": 34,
+        "VirtualKey": 165,
+        "Index": 53,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "FN",
+        "X": 476,
+        "Y": 228,
+        "Width": 43,
+        "Height": 34,
+        "VirtualKey": 250,
+        "Index": 59,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Left",
+        "X": 544,
+        "Y": 228,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 37,
+        "Index": 83,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Down",
+        "X": 583,
+        "Y": 228,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 40,
+        "Index": 89,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Right",
+        "X": 622,
+        "Y": 229,
+        "Width": 33,
+        "Height": 34,
+        "VirtualKey": 39,
+        "Index": 95,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Mute",
+        "X": 0,
+        "Y": 0,
+        "Width": 0,
+        "Height": 0,
+        "VirtualKey": 1,
+        "Index": 90,
+        "Type": 9,
+        "PresetAction": 33554658
+      }
+    ],
+    "Effects": [
+      {
+        "Id": 1,
+        "Name": "Static",
+        "Speed": false,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 2,
+        "Name": "Breathing",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 3,
+        "Name": "Color Cycle",
+        "Speed": true,
+        "Brightness": true,
+        "Color": false
+      },
+      {
+        "Id": 4,
+        "Name": "Reactive Line",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 5,
+        "Name": "Raindrops",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 6,
+        "Name": "Color Wheel",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 7,
+        "Name": "Reactive Ripples",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 8,
+        "Name": "Twinkling Stars",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 9,
+        "Name": "Shadow",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 10,
+        "Name": "Retro Snake",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 11,
+        "Name": "Neon Stream",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 12,
+        "Name": "Reaction Single Key",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 13,
+        "Name": "Sinewave",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 14,
+        "Name": "Retinue scanning",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 15,
+        "Name": "Color Windmill",
+        "Speed": true,
+        "Brightness": true,
+        "Color": false
+      },
+      {
+        "Id": 16,
+        "Name": "Color Waterfall",
+        "Speed": true,
+        "Brightness": true,
+        "Color": false
+      },
+      {
+        "Id": 17,
+        "Name": "Blossom",
+        "Speed": true,
+        "Brightness": true,
+        "Color": false
+      },
+      {
+        "Id": 18,
+        "Name": "Rotating storm",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      }
+    ]
+  },
+  {
+    "Name": "Swarm 75",
+    "Identities": [
+      "0300000001BE"
+    ],
+    "Keys": [
+      {
+        "Label": "Esc",
+        "X": 21,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 27,
+        "Index": 0,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F1",
+        "X": 66,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 112,
+        "Index": 12,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F2",
+        "X": 101,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 113,
+        "Index": 18,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F3",
+        "X": 137,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 114,
+        "Index": 24,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F4",
+        "X": 173,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 115,
+        "Index": 30,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F5",
+        "X": 219,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 116,
+        "Index": 36,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F6",
+        "X": 254,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 117,
+        "Index": 42,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F7",
+        "X": 290,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 118,
+        "Index": 48,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F8",
+        "X": 327,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 119,
+        "Index": 54,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F9",
+        "X": 371,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 120,
+        "Index": 60,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F10",
+        "X": 409,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 121,
+        "Index": 66,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F11",
+        "X": 443,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 122,
+        "Index": 72,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F12",
+        "X": 478,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 123,
+        "Index": 78,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "PrtSc",
+        "X": 524,
+        "Y": 28,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 44,
+        "Index": 84,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "`",
+        "X": 21,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 192,
+        "Index": 1,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "1",
+        "X": 57,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 49,
+        "Index": 7,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "2",
+        "X": 93,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 50,
+        "Index": 13,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "3",
+        "X": 129,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 51,
+        "Index": 19,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "4",
+        "X": 165,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 52,
+        "Index": 25,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "5",
+        "X": 201,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 53,
+        "Index": 31,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "6",
+        "X": 237,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 54,
+        "Index": 37,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "7",
+        "X": 272,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 55,
+        "Index": 43,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "8",
+        "X": 309,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 56,
+        "Index": 49,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "9",
+        "X": 344,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 57,
+        "Index": 55,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "0",
+        "X": 380,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 48,
+        "Index": 61,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "-",
+        "X": 416,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 189,
+        "Index": 67,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "=",
+        "X": 452,
+        "Y": 75,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 187,
+        "Index": 73,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Backspace",
+        "X": 489,
+        "Y": 75,
+        "Width": 57,
+        "Height": 27,
+        "VirtualKey": 8,
+        "Index": 79,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Delete",
+        "X": 579,
+        "Y": 76,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 46,
+        "Index": 91,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Tab",
+        "X": 22,
+        "Y": 111,
+        "Width": 40,
+        "Height": 27,
+        "VirtualKey": 9,
+        "Index": 2,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Q",
+        "X": 76,
+        "Y": 111,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 81,
+        "Index": 8,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "W",
+        "X": 112,
+        "Y": 111,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 87,
+        "Index": 14,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "E",
+        "X": 148,
+        "Y": 111,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 69,
+        "Index": 20,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "R",
+        "X": 184,
+        "Y": 111,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 82,
+        "Index": 26,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "T",
+        "X": 219,
+        "Y": 111,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 84,
+        "Index": 32,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Y",
+        "X": 256,
+        "Y": 111,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 89,
+        "Index": 38,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "U",
+        "X": 290,
+        "Y": 111,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 85,
+        "Index": 44,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "I",
+        "X": 327,
+        "Y": 111,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 73,
+        "Index": 50,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "O",
+        "X": 362,
+        "Y": 111,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 79,
+        "Index": 56,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "P",
+        "X": 398,
+        "Y": 111,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 80,
+        "Index": 62,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "[",
+        "X": 434,
+        "Y": 111,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 219,
+        "Index": 68,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "]",
+        "X": 470,
+        "Y": 111,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 221,
+        "Index": 74,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "\\",
+        "X": 506,
+        "Y": 111,
+        "Width": 41,
+        "Height": 27,
+        "VirtualKey": 220,
+        "Index": 80,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "PgUp",
+        "X": 579,
+        "Y": 112,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 33,
+        "Index": 92,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "CapsLock",
+        "X": 22,
+        "Y": 147,
+        "Width": 49,
+        "Height": 27,
+        "VirtualKey": 20,
+        "Index": 3,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "A",
+        "X": 85,
+        "Y": 147,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 65,
+        "Index": 9,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "S",
+        "X": 120,
+        "Y": 147,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 83,
+        "Index": 15,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "D",
+        "X": 156,
+        "Y": 147,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 68,
+        "Index": 21,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F",
+        "X": 192,
+        "Y": 147,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 70,
+        "Index": 27,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "G",
+        "X": 227,
+        "Y": 147,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 71,
+        "Index": 33,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "H",
+        "X": 263,
+        "Y": 147,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 72,
+        "Index": 39,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "J",
+        "X": 300,
+        "Y": 147,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 74,
+        "Index": 45,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "K",
+        "X": 336,
+        "Y": 147,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 75,
+        "Index": 51,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "L",
+        "X": 372,
+        "Y": 147,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 76,
+        "Index": 57,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": ";",
+        "X": 407,
+        "Y": 147,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 186,
+        "Index": 63,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "'",
+        "X": 443,
+        "Y": 147,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 222,
+        "Index": 69,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Enter",
+        "X": 479,
+        "Y": 146,
+        "Width": 68,
+        "Height": 27,
+        "VirtualKey": 13,
+        "Index": 81,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "PgDn",
+        "X": 579,
+        "Y": 147,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 34,
+        "Index": 93,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "LShift",
+        "X": 23,
+        "Y": 182,
+        "Width": 66,
+        "Height": 27,
+        "VirtualKey": 160,
+        "Index": 4,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Z",
+        "X": 103,
+        "Y": 182,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 90,
+        "Index": 10,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "X",
+        "X": 138,
+        "Y": 182,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 88,
+        "Index": 16,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "C",
+        "X": 173,
+        "Y": 182,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 67,
+        "Index": 22,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "V",
+        "X": 210,
+        "Y": 182,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 86,
+        "Index": 28,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "B",
+        "X": 245,
+        "Y": 182,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 66,
+        "Index": 34,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "N",
+        "X": 281,
+        "Y": 182,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 78,
+        "Index": 40,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "M",
+        "X": 317,
+        "Y": 182,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 77,
+        "Index": 46,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": ",",
+        "X": 354,
+        "Y": 182,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 188,
+        "Index": 52,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": ".",
+        "X": 389,
+        "Y": 182,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 190,
+        "Index": 58,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "/",
+        "X": 425,
+        "Y": 182,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 191,
+        "Index": 64,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "RShift",
+        "X": 462,
+        "Y": 182,
+        "Width": 48,
+        "Height": 27,
+        "VirtualKey": 161,
+        "Index": 82,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Up",
+        "X": 534,
+        "Y": 192,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 38,
+        "Index": 88,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "End",
+        "X": 578,
+        "Y": 183,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 35,
+        "Index": 94,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "LCtrl",
+        "X": 22,
+        "Y": 219,
+        "Width": 31,
+        "Height": 27,
+        "VirtualKey": 162,
+        "Index": 5,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "LWin",
+        "X": 68,
+        "Y": 219,
+        "Width": 31,
+        "Height": 27,
+        "VirtualKey": 91,
+        "Index": 11,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "LAlt",
+        "X": 112,
+        "Y": 219,
+        "Width": 31,
+        "Height": 27,
+        "VirtualKey": 164,
+        "Index": 17,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Space",
+        "X": 158,
+        "Y": 218,
+        "Width": 208,
+        "Height": 27,
+        "VirtualKey": 32,
+        "Index": 35,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "RAlt",
+        "X": 381,
+        "Y": 219,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 165,
+        "Index": 53,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "FN",
+        "X": 416,
+        "Y": 219,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 250,
+        "Index": 59,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Left",
+        "X": 498,
+        "Y": 228,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 37,
+        "Index": 83,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Down",
+        "X": 533,
+        "Y": 228,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 40,
+        "Index": 89,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Right",
+        "X": 569,
+        "Y": 228,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 39,
+        "Index": 95,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "RCtrl",
+        "X": 452,
+        "Y": 219,
+        "Width": 23,
+        "Height": 27,
+        "VirtualKey": 163,
+        "Index": 65,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Mute",
+        "X": 0,
+        "Y": 0,
+        "Width": 0,
+        "Height": 0,
+        "VirtualKey": 143,
+        "Index": 90,
+        "Type": 2,
+        "PresetAction": 0
+      }
+    ],
+    "Effects": [
+      {
+        "Id": 1,
+        "Name": "Static",
+        "Speed": false,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 2,
+        "Name": "Breathing",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 3,
+        "Name": "Color Cycle",
+        "Speed": true,
+        "Brightness": true,
+        "Color": false
+      },
+      {
+        "Id": 4,
+        "Name": "Reactive Line",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 5,
+        "Name": "Raindrops",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 6,
+        "Name": "Color Wheel",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 7,
+        "Name": "Reactive Ripples",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 8,
+        "Name": "Twinkling Stars",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 9,
+        "Name": "Shadow",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 10,
+        "Name": "Retro Snake",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 11,
+        "Name": "Neon Stream",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 12,
+        "Name": "Reaction Single Key",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 13,
+        "Name": "Sinewave",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 14,
+        "Name": "Retinue scanning",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 15,
+        "Name": "Color Windmill",
+        "Speed": true,
+        "Brightness": true,
+        "Color": false
+      },
+      {
+        "Id": 16,
+        "Name": "Color Waterfall",
+        "Speed": true,
+        "Brightness": true,
+        "Color": false
+      },
+      {
+        "Id": 17,
+        "Name": "Blossom",
+        "Speed": true,
+        "Brightness": true,
+        "Color": false
+      },
+      {
+        "Id": 18,
+        "Name": "Rotating storm",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      }
+    ]
+  },
+  {
+    "Name": "Hive 98",
+    "Identities": [
+      "03000000011A"
+    ],
+    "Keys": [
+      {
+        "Label": "Esc",
+        "X": 19,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 27,
+        "Index": 0,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F1",
+        "X": 53,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 112,
+        "Index": 6,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F2",
+        "X": 85,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 113,
+        "Index": 12,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F3",
+        "X": 119,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 114,
+        "Index": 18,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F4",
+        "X": 151,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 115,
+        "Index": 24,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F5",
+        "X": 183,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 116,
+        "Index": 30,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F6",
+        "X": 216,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 117,
+        "Index": 36,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F7",
+        "X": 249,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 118,
+        "Index": 42,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F8",
+        "X": 282,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 119,
+        "Index": 48,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F9",
+        "X": 316,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 120,
+        "Index": 54,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F10",
+        "X": 348,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 121,
+        "Index": 60,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F11",
+        "X": 381,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 122,
+        "Index": 66,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F12",
+        "X": 414,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 123,
+        "Index": 72,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "`",
+        "X": 19,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 192,
+        "Index": 1,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "1",
+        "X": 52,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 49,
+        "Index": 7,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "2",
+        "X": 85,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 50,
+        "Index": 13,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "3",
+        "X": 118,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 51,
+        "Index": 19,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "4",
+        "X": 151,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 52,
+        "Index": 25,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "5",
+        "X": 183,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 53,
+        "Index": 31,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "6",
+        "X": 217,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 54,
+        "Index": 37,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "7",
+        "X": 250,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 55,
+        "Index": 43,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "8",
+        "X": 282,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 56,
+        "Index": 49,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "9",
+        "X": 315,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 57,
+        "Index": 55,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "0",
+        "X": 348,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 48,
+        "Index": 61,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "-",
+        "X": 381,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 189,
+        "Index": 67,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "=",
+        "X": 414,
+        "Y": 69,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 187,
+        "Index": 73,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Backspace",
+        "X": 447,
+        "Y": 69,
+        "Width": 61,
+        "Height": 29,
+        "VirtualKey": 8,
+        "Index": 79,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Home",
+        "X": 524,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 36,
+        "Index": 90,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "NumLock",
+        "X": 525,
+        "Y": 68,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 144,
+        "Index": 91,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num /",
+        "X": 558,
+        "Y": 68,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 111,
+        "Index": 97,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num*",
+        "X": 590,
+        "Y": 68,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 106,
+        "Index": 103,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num-",
+        "X": 624,
+        "Y": 68,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 109,
+        "Index": 109,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Tab",
+        "X": 19,
+        "Y": 101,
+        "Width": 44,
+        "Height": 29,
+        "VirtualKey": 9,
+        "Index": 2,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Q",
+        "X": 68,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 81,
+        "Index": 8,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "W",
+        "X": 101,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 87,
+        "Index": 14,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "E",
+        "X": 134,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 69,
+        "Index": 20,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "R",
+        "X": 167,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 82,
+        "Index": 26,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "T",
+        "X": 200,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 84,
+        "Index": 32,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Y",
+        "X": 233,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 89,
+        "Index": 38,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "U",
+        "X": 266,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 85,
+        "Index": 44,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "I",
+        "X": 299,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 73,
+        "Index": 50,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "O",
+        "X": 332,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 79,
+        "Index": 56,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "P",
+        "X": 365,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 80,
+        "Index": 62,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "[",
+        "X": 397,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 219,
+        "Index": 68,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "]",
+        "X": 431,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 221,
+        "Index": 74,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "\\",
+        "X": 462,
+        "Y": 101,
+        "Width": 46,
+        "Height": 29,
+        "VirtualKey": 220,
+        "Index": 80,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Delete",
+        "X": 481,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 46,
+        "Index": 84,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num7",
+        "X": 525,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 103,
+        "Index": 92,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num8",
+        "X": 558,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 104,
+        "Index": 98,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num9",
+        "X": 591,
+        "Y": 101,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 105,
+        "Index": 104,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num+",
+        "X": 624,
+        "Y": 101,
+        "Width": 28,
+        "Height": 60,
+        "VirtualKey": 107,
+        "Index": 110,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "CapsLock",
+        "X": 19,
+        "Y": 134,
+        "Width": 52,
+        "Height": 29,
+        "VirtualKey": 20,
+        "Index": 3,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "A",
+        "X": 76,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 65,
+        "Index": 9,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "S",
+        "X": 109,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 83,
+        "Index": 15,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "D",
+        "X": 142,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 68,
+        "Index": 21,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "F",
+        "X": 175,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 70,
+        "Index": 27,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "G",
+        "X": 208,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 71,
+        "Index": 33,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "H",
+        "X": 241,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 72,
+        "Index": 39,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "J",
+        "X": 274,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 74,
+        "Index": 45,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "K",
+        "X": 307,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 75,
+        "Index": 51,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "L",
+        "X": 340,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 76,
+        "Index": 57,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": ";",
+        "X": 373,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 186,
+        "Index": 63,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "'",
+        "X": 405,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 222,
+        "Index": 69,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Enter",
+        "X": 440,
+        "Y": 134,
+        "Width": 68,
+        "Height": 29,
+        "VirtualKey": 13,
+        "Index": 81,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num4",
+        "X": 525,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 100,
+        "Index": 93,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num5",
+        "X": 558,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 101,
+        "Index": 99,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num6",
+        "X": 590,
+        "Y": 134,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 102,
+        "Index": 105,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "LShift",
+        "X": 20,
+        "Y": 167,
+        "Width": 66,
+        "Height": 29,
+        "VirtualKey": 160,
+        "Index": 4,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Z",
+        "X": 93,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 90,
+        "Index": 10,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "X",
+        "X": 126,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 88,
+        "Index": 16,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "C",
+        "X": 159,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 67,
+        "Index": 22,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "V",
+        "X": 192,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 86,
+        "Index": 28,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "B",
+        "X": 225,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 66,
+        "Index": 34,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "N",
+        "X": 258,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 78,
+        "Index": 40,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "M",
+        "X": 291,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 77,
+        "Index": 46,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": ",",
+        "X": 324,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 188,
+        "Index": 52,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": ".",
+        "X": 357,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 190,
+        "Index": 58,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "/",
+        "X": 390,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 191,
+        "Index": 64,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "RShift",
+        "X": 422,
+        "Y": 167,
+        "Width": 52,
+        "Height": 29,
+        "VirtualKey": 161,
+        "Index": 82,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Up",
+        "X": 486,
+        "Y": 172,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 38,
+        "Index": 88,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num1",
+        "X": 525,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 97,
+        "Index": 94,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num2",
+        "X": 558,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 98,
+        "Index": 100,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num3",
+        "X": 591,
+        "Y": 167,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 99,
+        "Index": 106,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "LCtrl",
+        "X": 19,
+        "Y": 201,
+        "Width": 36,
+        "Height": 29,
+        "VirtualKey": 162,
+        "Index": 5,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "LWin",
+        "X": 60,
+        "Y": 201,
+        "Width": 36,
+        "Height": 29,
+        "VirtualKey": 91,
+        "Index": 11,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "LAlt",
+        "X": 101,
+        "Y": 201,
+        "Width": 36,
+        "Height": 29,
+        "VirtualKey": 164,
+        "Index": 17,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Space",
+        "X": 143,
+        "Y": 201,
+        "Width": 200,
+        "Height": 29,
+        "VirtualKey": 32,
+        "Index": 35,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "FN",
+        "X": 390,
+        "Y": 201,
+        "Width": 36,
+        "Height": 29,
+        "VirtualKey": 250,
+        "Index": 59,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Left",
+        "X": 454,
+        "Y": 205,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 37,
+        "Index": 83,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Down",
+        "X": 487,
+        "Y": 205,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 40,
+        "Index": 89,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Right",
+        "X": 519,
+        "Y": 205,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 39,
+        "Index": 95,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num0",
+        "X": 558,
+        "Y": 200,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 96,
+        "Index": 101,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Num .",
+        "X": 591,
+        "Y": 200,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 110,
+        "Index": 107,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Enter",
+        "X": 625,
+        "Y": 169,
+        "Width": 28,
+        "Height": 58,
+        "VirtualKey": 253,
+        "Index": 112,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "PrtSc",
+        "X": 448,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 44,
+        "Index": 78,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "RAlt",
+        "X": 350,
+        "Y": 201,
+        "Width": 36,
+        "Height": 29,
+        "VirtualKey": 165,
+        "Index": 53,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "PgUp",
+        "X": 558,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 33,
+        "Index": 96,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "PgDn",
+        "X": 590,
+        "Y": 24,
+        "Width": 28,
+        "Height": 29,
+        "VirtualKey": 34,
+        "Index": 102,
+        "Type": 2,
+        "PresetAction": 0
+      },
+      {
+        "Label": "Mute",
+        "X": 0,
+        "Y": 0,
+        "Width": 0,
+        "Height": 0,
+        "VirtualKey": 143,
+        "Index": 108,
+        "Type": 2,
+        "PresetAction": 0
+      }
+    ],
+    "Effects": [
+      {
+        "Id": 1,
+        "Name": "Static",
+        "Speed": false,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 2,
+        "Name": "Breathing",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 3,
+        "Name": "Color Cycle",
+        "Speed": true,
+        "Brightness": true,
+        "Color": false
+      },
+      {
+        "Id": 4,
+        "Name": "Reactive Line",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 5,
+        "Name": "Raindrops",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 6,
+        "Name": "Color Wheel",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 7,
+        "Name": "Reactive Ripples",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 8,
+        "Name": "Twinkling Stars",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 9,
+        "Name": "Shadow",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 10,
+        "Name": "Retro Snake",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 11,
+        "Name": "Neon Stream",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 12,
+        "Name": "Reaction Single Key",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 13,
+        "Name": "Sinewave",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 14,
+        "Name": "Retinue scanning",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      },
+      {
+        "Id": 15,
+        "Name": "Color Windmill",
+        "Speed": true,
+        "Brightness": true,
+        "Color": false
+      },
+      {
+        "Id": 16,
+        "Name": "Color Waterfall",
+        "Speed": true,
+        "Brightness": true,
+        "Color": false
+      },
+      {
+        "Id": 17,
+        "Name": "Blossom",
+        "Speed": true,
+        "Brightness": true,
+        "Color": false
+      },
+      {
+        "Id": 18,
+        "Name": "Rotating storm",
+        "Speed": true,
+        "Brightness": true,
+        "Color": true
+      }
+    ]
+  }
+]
