@@ -15,5 +15,5 @@
     <TieredPGO>false</TieredPGO>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../Sora.Core/Sora.Core.csproj" /></ItemGroup>
-  <ItemGroup><None Include="../../kreo-re/USAGE.md" Link="Kreo-keyboard.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Kreo-keyboard.md" Link="Kreo-keyboard.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
 </Project>

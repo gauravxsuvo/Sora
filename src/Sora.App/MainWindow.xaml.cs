@@ -3,10 +3,12 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Sora.Core;
@@ -117,10 +119,30 @@ public partial class MainWindow : Window
         ConnectionTitle.Foreground = (Brush)FindResource(status.Sending ? "Good" : "TextBrush");
         StartButton.Content = requested ? "Stop display" : "Start display";
         DisplayDot.Fill = NavDisplayDot.Fill = (Brush)FindResource(status.Sending ? "Good" : requested ? "Warn" : "Idle");
-        NavDisplayStatus.Text = status.Sending && sample != null ? $"LD360 · showing {TemperatureValue.Text}{unit}" : requested ? "LD360 · waiting" : "LD360 · stopped";
-        NavKeyboardStatus.Text = Keyboard.IsBusy ? "Kreo · working…" : Keyboard.HasSnapshot ? Keyboard.KeyboardStatus.Text.Replace("Connected over USB", "USB") : "Kreo · not connected";
-        NavKeyboardDot.Fill = (Brush)FindResource(Keyboard.HasSnapshot ? "Good" : "Idle");
+        // Header chip names the output state; the sidebar keeps it to a glanceable word or reading.
+        DeviceLabel.Text = status.Sending ? "Sending to LD360" : requested ? status.Title : "Display off";
+        NavDisplayStatus.Text = status.Sending && sample != null ? $"LD360 · Showing {TemperatureValue.Text}{unit}" : requested ? "LD360 · Waiting" : "LD360 · Off";
+        RenderKeyboardStatus();
     }
+
+    internal void RenderKeyboardStatus()
+    {
+        NavKeyboardStatus.Text = Keyboard.SidebarStatus;
+        NavKeyboardDot.Fill = (Brush)FindResource(Keyboard.StatusTone);
+    }
+
+    // Dark caption that matches the window background (Windows 11; ignored where unsupported).
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        var handle = new WindowInteropHelper(this).Handle;
+        int dark = 1, caption = ToColorRef((Color)FindResource("WindowColor")), text = ToColorRef(Color.FromRgb(0xF5, 0xF5, 0xF7));
+        DwmSetWindowAttribute(handle, 20, ref dark, sizeof(int));
+        DwmSetWindowAttribute(handle, 35, ref caption, sizeof(int));
+        DwmSetWindowAttribute(handle, 36, ref text, sizeof(int));
+    }
+    private static int ToColorRef(Color color) => color.R | color.G << 8 | color.B << 16;
+    [DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
     private async void NavChanged(object sender, RoutedEventArgs e)
     {

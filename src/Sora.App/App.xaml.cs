@@ -92,7 +92,13 @@ public partial class App : Application
             if (measure == null) try { StartupTask.RepointIfMoved(); } catch (Exception error) when (error is IOException or InvalidOperationException or System.ComponentModel.Win32Exception) { host.Log("Startup task: " + error.Message); }
         }
         if (measure != null) _ = MemoryReport.RunAsync(this, measure);
-        if (screenshot != null) ShowWindow(screenshot);
+        if (screenshot != null)
+        {
+            ShowWindow(screenshot);
+            // --size WxH renders the screenshot at a specific window size.
+            var sizeIndex = Array.IndexOf(e.Args, "--size");
+            if (sizeIndex >= 0 && sizeIndex + 1 < e.Args.Length && e.Args[sizeIndex + 1].Split('x') is [var w, var h] && double.TryParse(w, out var width) && double.TryParse(h, out var height)) { window!.Width = width; window.Height = height; }
+        }
         else if (!startup) ShowWindow();
         else _ = TrimAsync(15000);
     }

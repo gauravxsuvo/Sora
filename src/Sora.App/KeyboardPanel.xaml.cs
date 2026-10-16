@@ -21,12 +21,22 @@ public partial class KeyboardPanel : UserControl
     private KreoKey? selected;
     private bool updating, busy, ready;
     private int colorSlot;
+    private string statusTone = "Idle";
     private readonly Dictionary<int, Button> keyButtons = new();
     private readonly string dataDirectory = Path.Combine(AppContext.BaseDirectory, "data", "keyboard");
     public Task PendingOperation { get; private set; } = Task.CompletedTask;
     public bool HasSnapshot => baseline != null;
     public bool IsBusy => busy;
     public bool HasPendingEdits => PendingChanges() > 0;
+    // Short status for the sidebar; the page header chip carries the same tone.
+    public string SidebarStatus => busy ? "Kreo · Working…" : statusTone == "Bad" ? "Kreo · Needs attention" : baseline != null ? model.Name + " · USB" : "Kreo · Not connected";
+    public string StatusTone => busy ? "Warn" : statusTone;
+
+    private void SetStatus(string text, string tone)
+    {
+        statusTone = tone; KeyboardStatus.Text = text; KeyboardDot.Fill = (Brush)FindResource(tone);
+        (Window.GetWindow(this) as MainWindow)?.RenderKeyboardStatus();
+    }
 
     public KeyboardPanel()
     {
@@ -44,7 +54,7 @@ public partial class KeyboardPanel : UserControl
         Board.Height = (keys.Max(k => k.Y + k.Height) - minY + 4) * 0.73;
         foreach (var key in keys)
         {
-            var button = new Button { Width = (key.Width + 3) * 1.45, Height = (key.Height - 2) * 0.73, FontSize = key.Label.Length > 5 ? 9 : 11, Padding = new Thickness(1) };
+            var button = new Button { Width = (key.Width + 3) * 1.45, Height = (key.Height - 2) * 0.73, FontSize = key.Label.Length > 5 ? 9 : 11, Padding = new Thickness(1), MinHeight = 0 };
             Canvas.SetLeft(button, (key.X - minX) * 1.45); Canvas.SetTop(button, (key.Y - minY) * 0.73);
             button.Click += (_, _) => SelectKey(key);
             Board.Children.Add(button); keyButtons[key.Index] = button;
@@ -112,7 +122,7 @@ public partial class KeyboardPanel : UserControl
             device = result.Device; model = result.Model; baseline = result.State; edited = baseline.Copy(); selected = null;
             updating = true; ModelPicker.SelectedItem = model; TargetKey.ItemsSource = KreoActions.ForModel(model); updating = false;
             LoadControls(); DrawBoard();
-            KeyboardStatus.Text = model.Name + " · Connected over USB"; BoardTitle.Text = model.Name.ToUpperInvariant() + " · CLICK A KEY TO EDIT";
+            SetStatus(model.Name + " · USB", "Good"); BoardTitle.Text = model.Name + " · Click a key to edit";
             KeyboardDetail.Text = "Ready. Changes stay in the editor until you apply them.";
         });
         return PendingOperation;
@@ -126,9 +136,9 @@ public partial class KeyboardPanel : UserControl
 
     private async Task RunOperation(Func<Task> action)
     {
-        busy = true; UpdateAvailability(); KeyboardStatus.Text = "Reading / saving keyboard settings…";
+        busy = true; UpdateAvailability(); SetStatus("Working…", "Warn");
         try { await action(); }
-        catch (Exception error) when (error is not OutOfMemoryException) { KeyboardStatus.Text = "Keyboard needs attention"; KeyboardDetail.Text = error.Message; }
+        catch (Exception error) when (error is not OutOfMemoryException) { SetStatus("Needs attention", "Bad"); KeyboardDetail.Text = error.Message; }
         finally { busy = false; UpdateAvailability(); }
     }
 
@@ -198,7 +208,7 @@ public partial class KeyboardPanel : UserControl
         {
             var index = slot; var offset = effect.Id * 21 + slot * 3;
             var rgb = edited.EffectPalette!.AsSpan(offset, 3).ToArray();
-            var button = new Button { Width = 25, Height = 25, Padding = new Thickness(0), Margin = new Thickness(0, 0, 5, 5), Background = new SolidColorBrush(Color.FromRgb(rgb[0], rgb[1], rgb[2])), Content = slot == colorSlot && ColorMode.SelectedIndex == 0 ? "✓" : "", Foreground = rgb.Sum(b => b) > 460 ? Brushes.Black : Brushes.White, ToolTip = "#" + Convert.ToHexString(rgb) };
+            var button = new Button { Width = 26, Height = 26, MinHeight = 0, Padding = new Thickness(0), Margin = new Thickness(0, 0, 5, 5), Background = new SolidColorBrush(Color.FromRgb(rgb[0], rgb[1], rgb[2])), Content = slot == colorSlot && ColorMode.SelectedIndex == 0 ? "✓" : "", Foreground = rgb.Sum(b => b) > 460 ? Brushes.Black : Brushes.White, ToolTip = "#" + Convert.ToHexString(rgb) };
             button.Click += (_, _) =>
             {
                 colorSlot = index; updating = true; EffectHex.Text = "#" + Convert.ToHexString(rgb); ColorMode.SelectedIndex = 0; updating = false;
@@ -266,6 +276,8 @@ public partial class KeyboardPanel : UserControl
         var connected = edited != null && device != null;
         Editors.IsEnabled = connected && !busy; Board.IsEnabled = !busy;
         ReadButton.IsEnabled = !busy; ModelPicker.IsEnabled = !connected && !busy;
+        ReadButton.Content = connected ? "Refresh" : "Connect";
+        LayoutPreview.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
         var effect = EffectPicker.SelectedItem as KreoEffect;
         Brightness.IsEnabled = effect?.Brightness == true; Speed.IsEnabled = effect?.Speed == true;
         ColorMode.IsEnabled = EffectSwatches.IsEnabled = EffectHex.IsEnabled = effect?.Color == true;
@@ -307,7 +319,7 @@ public partial class KeyboardPanel : UserControl
         {
             var actual = await Task.Run(() => { using var keyboard = new KreoKeyboard(selectedDevice); return keyboard.Apply(expected, desired, state => Save(backupPath, state)); });
             baseline = actual; edited = actual.Copy(); LoadControls(); UpdateKeys();
-            KeyboardStatus.Text = model.Name + " · Settings saved";
+            SetStatus(model.Name + " · Saved", "Good");
             KeyboardDetail.Text = "Device readback matches. To check a remap, use the test field in Key assignment.";
         });
         return PendingOperation;
