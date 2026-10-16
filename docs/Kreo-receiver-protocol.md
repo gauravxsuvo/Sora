@@ -21,10 +21,12 @@ A write sends the block in 14-byte packets. Each packet is acknowledged by a rep
 | Data | Write | Read | Block | Status in Sora |
 |---|---|---|---|---|
 | Lighting | `0x04` | `0x44` | 128 bytes, same layout as the wired block, `5A A5` at 126 | read and write verified on a Swarm 75 |
-| Key map, layer in selector | `0x01` | `0x41` | 504 bytes (126 keys × 4) | read verified; write not yet enabled |
-| Effect palette | `0x09` | `0x49` | 490 bytes; first 420 match the wired palette | read verified; write not yet enabled |
+| Key map, layer in selector | `0x01` | `0x41` | 504 bytes (126 keys × 4) | read verified; write enabled with readback and automatic rollback |
+| Effect palette | `0x09` | `0x49` | 490 bytes; first 420 match the wired palette | read verified; write enabled with readback and automatic rollback |
 | Battery | — | `0x4A` | 2 bytes, byte 0 = percent | read |
-| Per-key colors | `0x06` | none | sent without acknowledgement | not supported (cannot be read back) |
+| Per-key colors | — | — | no command in KB Hub's receiver class | not possible over 2.4 GHz; Sora shows the colors from the last USB read |
+| Reset device | `0x06` | — | sent without acknowledgement | never sent by Sora |
+| Live color frames (SetRealData) | `0x88`, `0x8E` | — | not stored by the keyboard | not used |
 
 The wired configuration channel (`258A:010C`, 520-byte feature reports) is unchanged; Sora prefers it whenever the cable is connected.
 

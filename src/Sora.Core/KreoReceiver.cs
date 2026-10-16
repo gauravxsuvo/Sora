@@ -158,26 +158,76 @@ public sealed class KreoReceiver : IDisposable
         return new(state, battery);
     }
 
-    /// <summary>Writes a lighting block after checking the keyboard still has the expected one, then confirms it by readback.</summary>
-    public async Task<byte[]> ApplyLightingAsync(byte[] expected, byte[] desired, Action<byte[]> backup)
+    // Receiver block sizes: the wired blocks without their 8-byte tails (keys) or 22-byte tail (palette).
+    public const int MatrixBytes = 504, PaletteBytes = 490;
+
+    /// <summary>
+    /// Saves lighting (04), key map (01) and effect palette (09) through the receiver. The keyboard must still hold the
+    /// expected blocks; the originals are backed up before the first write; every written block is read back, and on any
+    /// mismatch the originals are written back before the error is reported. Per-key colours are not part of the receiver
+    /// protocol (KB Hub's CDev3632 has no such command) and are never sent.
+    /// </summary>
+    public async Task<KreoState> ApplyAsync(KreoState expected, KreoState desired, KreoModel model, Action<ReceiverBackup> backup)
     {
-        if (desired.Length != 128 || desired[126] != 0x5a || desired[127] != 0xa5) throw new InvalidDataException("Invalid lighting block.");
+        desired.Validate();
+        if (!desired.Colors.SequenceEqual(expected.Colors)) throw new InvalidOperationException("Per-key colors can't be saved through the 2.4 GHz receiver.");
+        const string asleep = "The keyboard didn't answer through its 2.4 GHz receiver. Press a key to wake it, then try again.";
         var timeout = TimeSpan.FromSeconds(4);
-        var current = await ReadAsync(ReadLighting, 0, 128, timeout);
-        if (!current.Complete || current.Data.Length < 128) throw new IOException("The keyboard didn't answer through its 2.4 GHz receiver. Press a key to wake it, then try again.");
-        if (!current.Data.AsSpan(0, 128).SequenceEqual(expected)) throw new IOException("Keyboard lighting changed since it was read. Refresh before applying edits.");
-        backup(current.Data[..128]); // The backup must reach disk before the first write.
-        await WriteAsync(0x04, 0, desired);
-        await Task.Delay(200);
-        var after = await ReadAsync(ReadLighting, 0, 128, timeout);
-        if (!after.Complete || !after.Data.AsSpan(0, 128).SequenceEqual(desired)) throw new IOException("The keyboard did not confirm the new lighting. Refresh to see its current state; the backup is saved.");
-        return after.Data[..128];
+        async Task<byte[]> Read(byte command, int length)
+        {
+            var reply = await ReadAsync(command, 0, length, timeout);
+            if (!reply.Complete || reply.Data.Length < length) throw new KreoReceiverTimeoutException(asleep);
+            return reply.Data[..length];
+        }
+        var lighting = await Read(ReadLighting, 128);
+        var keys = await Read(ReadMatrix, MatrixBytes);
+        var palette = await Read(ReadColors, PaletteBytes);
+        if (!lighting.SequenceEqual(expected.Lighting) || !keys.SequenceEqual(expected.Keys.AsSpan(0, MatrixBytes).ToArray()) || !palette.AsSpan(0, 420).SequenceEqual(expected.EffectPalette!.AsSpan(0, 420)))
+            throw new IOException("Keyboard settings changed since they were read. Refresh before applying edits.");
+        foreach (var key in model.Keys.Where(k => k.VirtualKey == 0xfa))
+            if (!keys.AsSpan(key.Index * 4, 4).SequenceEqual(desired.Keys.AsSpan(key.Index * 4, 4)))
+                throw new IOException("These edits change the Fn key. Sora preserves its layer function.");
+        backup(new ReceiverBackup(model.Name, DateTimeOffset.Now, Convert.ToHexString(lighting), Convert.ToHexString(keys), Convert.ToHexString(palette)));
+
+        var newPalette = palette.ToArray(); desired.EffectPalette!.AsSpan(0, 420).CopyTo(newPalette);
+        var newKeys = desired.Keys[..MatrixBytes];
+        var plan = new List<(byte Write, byte Read, byte[] Original, byte[] Desired)>();
+        if (!newPalette.SequenceEqual(palette)) plan.Add((0x09, ReadColors, palette, newPalette));
+        if (!newKeys.SequenceEqual(keys)) plan.Add((0x01, ReadMatrix, keys, newKeys));
+        if (!desired.Lighting.SequenceEqual(lighting)) plan.Add((0x04, ReadLighting, lighting, desired.Lighting));
+        var written = new List<(byte Write, byte Read, byte[] Original, byte[] Desired)>();
+        try
+        {
+            foreach (var step in plan)
+            {
+                written.Add(step);
+                await WriteAsync(step.Write, 0, step.Desired);
+                await Task.Delay(200);
+                if (!(await Read(step.Read, step.Desired.Length)).SequenceEqual(step.Desired))
+                    throw new IOException($"The keyboard did not confirm command 0x{step.Write:X2}.");
+            }
+        }
+        catch (Exception error) when (error is IOException or OperationCanceledException)
+        {
+            // Put back everything already sent, newest first, then report the original problem.
+            var restored = true;
+            foreach (var step in Enumerable.Reverse(written))
+            {
+                try { await WriteAsync(step.Write, 0, step.Original); await Task.Delay(200); restored &= (await Read(step.Read, step.Original.Length)).SequenceEqual(step.Original); }
+                catch (Exception restoreError) when (restoreError is IOException or OperationCanceledException) { restored = false; }
+            }
+            throw new IOException(error.Message + (restored ? " The previous settings were restored." : " Restoring the previous settings also failed; the backup is saved in data\\keyboard."), error);
+        }
+        var result = desired.Copy();
+        newPalette.AsSpan(0, Math.Min(newPalette.Length, 504)).CopyTo(result.EffectPalette!);
+        return result;
     }
 
     public void Dispose() => stream.Dispose();
 }
 
 public sealed record ReceiverSnapshot(KreoState State, int? BatteryPercent);
+public sealed record ReceiverBackup(string Model, DateTimeOffset Saved, string Lighting, string Keys, string Palette);
 
 /// <summary>The receiver is present but the keyboard did not answer (usually asleep or out of range).</summary>
 public sealed class KreoReceiverTimeoutException(string message) : IOException(message);

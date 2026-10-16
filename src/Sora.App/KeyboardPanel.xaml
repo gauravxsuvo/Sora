@@ -83,7 +83,7 @@
               <Button x:Name="PaintSelectedButton" Content="Paint selected key" Click="PaintKey"/>
               <Button x:Name="PaintAllButton" Grid.Column="2" Content="Fill all keys" Click="PaintAll"/>
             </Grid>
-            <TextBlock Text="Painting switches lighting to Custom per-key." Style="{StaticResource CaptionText}" Margin="0,8,0,0"/>
+            <TextBlock x:Name="PaintHint" Text="Painting switches lighting to Custom per-key." Style="{StaticResource CaptionText}" Margin="0,8,0,0"/>
           </StackPanel>
         </Border>
       </Grid></TabItem>
