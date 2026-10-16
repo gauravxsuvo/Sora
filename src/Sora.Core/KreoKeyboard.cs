@@ -5,6 +5,9 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Sora.Core;
 
+/// <summary>The keyboard is reachable only through its 2.4 GHz receiver, whose settings protocol Sora does not speak yet.</summary>
+public sealed class KreoWirelessOnlyException() : IOException("The keyboard is connected through its 2.4 GHz receiver. Sora can change settings only over the USB cable for now: plug it in and switch the keyboard to wired mode.");
+
 public sealed record KreoProbe(DeviceInfo Device, string? Model, string? Identity, string? LightingHex, string? Error, KreoState? State = null);
 
 /// <summary>KB Hub Fw=24 configuration channel, recovered from OemDrv.exe. No keyboard input is opened.</summary>
@@ -22,6 +25,9 @@ public sealed class KreoKeyboard : IDisposable
 
     public static IReadOnlyList<DeviceInfo> Enumerate() => Descriptors()
         .Where(d => d.VendorId == 0x258a && d.ProductId == 0x010c && d.UsagePage == 0xff00 && d.Usage == 1 && d.FeatureReportLength == 520).ToArray();
+
+    /// <summary>True when a Kreo 2.4 GHz receiver is plugged in. Read-only descriptor scan.</summary>
+    public static bool ReceiverPresent() => Descriptors().Any(d => d.VendorId == 0x3554 && d.ProductId == 0xfa09);
 
     public static string? FindConflict()
     {

@@ -24,6 +24,8 @@ public partial class KeyboardPanel : UserControl
     private bool updating, busy, ready;
     private int colorSlot;
     private string statusTone = "Idle";
+    // Set when only the 2.4 GHz receiver is present: the keyboard works, but its settings can't be reached.
+    private bool wirelessOnly;
     private readonly Dictionary<int, Button> keyButtons = new();
     private readonly string dataDirectory = Path.Combine(AppContext.BaseDirectory, "data", "keyboard");
     public Task PendingOperation { get; private set; } = Task.CompletedTask;
@@ -31,7 +33,7 @@ public partial class KeyboardPanel : UserControl
     public bool IsBusy => busy;
     public bool HasPendingEdits => PendingChanges() > 0;
     // Short status for the sidebar; the page header chip carries the same tone.
-    public string SidebarStatus => busy ? "Kreo · Working…" : statusTone == "Bad" ? "Kreo · Needs attention" : baseline != null ? model.Name + " · USB" : "Kreo · Not connected";
+    public string SidebarStatus => busy ? "Kreo · Working…" : wirelessOnly ? "Kreo · 2.4 GHz receiver" : statusTone == "Bad" ? "Kreo · Needs attention" : baseline != null ? model.Name + " · USB" : "Kreo · Not connected";
     public string StatusTone => busy ? "Warn" : statusTone;
 
     private void SetStatus(string text, string tone)
@@ -151,7 +153,7 @@ public partial class KeyboardPanel : UserControl
             button.ToolTip = FullName(key) + (mappingChanged ? " → " + action : edited != null && action != key.Label ? " · sends " + action : "") + (lit is { } hex && edited?.Lighting[10] == 21 ? " · #" + Hex(hex) : "");
         }
         var name = selected == null ? null : FullName(selected);
-        BoardHint.Text = edited == null ? "Connect the keyboard to edit it"
+        BoardHint.Text = wirelessOnly ? "Editing needs the USB cable" : edited == null || device == null ? "Connect the keyboard to edit it"
             : ModeProfiles.IsChecked == true ? "Profiles cover the whole keyboard"
             : name != null ? name + " selected"
             : assigning ? "Click a key to change what it sends" : "Click a key to paint it";
@@ -229,11 +231,12 @@ public partial class KeyboardPanel : UserControl
             var result = await Task.Run(() =>
             {
                 var devices = KreoKeyboard.Enumerate();
+                if (devices.Count == 0 && KreoKeyboard.ReceiverPresent()) throw new KreoWirelessOnlyException();
                 if (devices.Count != 1) throw new IOException(devices.Count == 0 ? "Connect one supported keyboard by USB and switch it to wired mode." : "Connect one Kreo keyboard at a time.");
                 using var keyboard = new KreoKeyboard(devices[0]);
                 return (Device: devices[0], Model: keyboard.Definition, State: keyboard.ReadState());
             });
-            device = result.Device; model = result.Model; baseline = result.State; edited = baseline.Copy(); selected = null;
+            wirelessOnly = false; device = result.Device; model = result.Model; baseline = result.State; edited = baseline.Copy(); selected = null;
             updating = true; ModelPicker.SelectedItem = model; TargetKey.ItemsSource = KreoActions.ForModel(model); updating = false;
             LoadControls(); DrawBoard();
             SetStatus(model.Name + " · USB", "Good");
@@ -252,8 +255,14 @@ public partial class KeyboardPanel : UserControl
     {
         busy = true; UpdateAvailability(); SetStatus("Working…", "Warn");
         try { await action(); }
-        catch (Exception error) when (error is not OutOfMemoryException) { SetStatus("Needs attention", "Bad"); KeyboardDetail.Text = error.Message; }
-        finally { busy = false; UpdateAvailability(); }
+        catch (KreoWirelessOnlyException error)
+        {
+            // Staged edits are kept, but nothing can be applied until the cable is back.
+            wirelessOnly = true; device = null;
+            SetStatus("2.4 GHz · settings need USB", "Warn"); KeyboardDetail.Text = error.Message;
+        }
+        catch (Exception error) when (error is not OutOfMemoryException) { wirelessOnly = false; SetStatus("Needs attention", "Bad"); KeyboardDetail.Text = error.Message; }
+        finally { busy = false; UpdateKeys(); UpdateAvailability(); }
     }
 
     private void LoadControls()
