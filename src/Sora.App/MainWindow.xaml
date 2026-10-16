@@ -6,10 +6,7 @@
     <Border Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,0,1,0">
       <DockPanel Margin="12,22,12,16">
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="10,0,0,28">
-          <Border CornerRadius="8" Width="28" Height="28" Margin="0,0,10,0">
-            <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#4DA3FF" Offset="0"/><GradientStop Color="#0A6CFF" Offset="1"/></LinearGradientBrush></Border.Background>
-            <TextBlock Text="S" Foreground="White" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,1"/>
-          </Border>
+          <Path Data="{StaticResource SoraMark}" Fill="{StaticResource SoraSkyBrush}" Stretch="Uniform" Width="30" Height="30" Margin="0,0,10,0" VerticalAlignment="Center" AutomationProperties.Name="Sora logo"/>
           <TextBlock Text="Sora" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
         </StackPanel>
         <TextBlock DockPanel.Dock="Bottom" x:Name="VersionLabel" Text="Sora 0.4" Style="{StaticResource CaptionText}" Margin="10,0,0,0"/>

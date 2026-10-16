@@ -1,4 +1,7 @@
-# Sora 0.4
+<p align="center"><img src="assets/brand/sora-mark.svg" width="112" alt="Sora"></p>
+
+<h1 align="center">Sora</h1>
+
 
 A native Windows hardware hub for the **DeepCool LD360** display and **Kreo keyboards**. Sora reads CPU temperature, utilization, and package power independently through **LibreHardwareMonitor 0.9.6 and PawnIO**, and talks to the keyboard directly over USB; Kreo KB Hub does not need to run.
 
