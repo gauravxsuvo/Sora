@@ -183,7 +183,7 @@ public partial class App : Application
         var readings = new List<SensorSample>();
         var client = new SensorClient();
         var lastStatus = "Connecting";
-        client.StatusChanged += value => lastStatus = value;
+        client.StatusChanged += value => lastStatus = value.Message + (value.Detail == null ? "" : " · " + value.Detail);
         client.SampleReceived += sample => { readings.Add(sample); if (readings.Count >= requestedSamples) completion.TrySetResult(); };
         var devices = HidDevice.Enumerate();
         string? outputHandleError = null;

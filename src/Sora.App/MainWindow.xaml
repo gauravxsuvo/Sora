@@ -32,49 +32,103 @@
     </Border>
 
     <Grid Grid.Column="1" Margin="32,28,32,22">
-      <!-- Cooler display page. -->
+      <!-- Cooler display page: readings (left), device status (right), settings (bottom). -->
       <Grid x:Name="DisplayPage">
-        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="24"/><RowDefinition Height="Auto"/><RowDefinition Height="16"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <local:PageHeader Title="Cooler display" Subtitle="Live CPU temperature, load and power on your DeepCool LD360.">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="24"/><RowDefinition Height="*"/><RowDefinition Height="16"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <local:PageHeader Title="Cooler display" Subtitle="Shows live CPU readings on the screen of your DeepCool LD360.">
           <StackPanel Orientation="Horizontal">
             <Border Style="{StaticResource StatusChip}" Margin="0,0,12,0"><StackPanel Orientation="Horizontal"><Ellipse x:Name="DisplayDot" Style="{StaticResource StatusDot}" Margin="0,0,8,0"/><TextBlock x:Name="DeviceLabel" Text="Display off" FontSize="12" Foreground="{StaticResource SecondaryTextBrush}" VerticalAlignment="Center"/></StackPanel></Border>
             <Button x:Name="StartButton" Content="Start display" Style="{StaticResource PrimaryButton}" MinWidth="132" Click="ToggleDisplay"/>
           </StackPanel>
         </local:PageHeader>
+
         <Grid Grid.Row="2">
-          <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="16"/><ColumnDefinition/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions>
-          <Border Style="{StaticResource Card}" Padding="20,16"><StackPanel><TextBlock Text="CPU temperature" Style="{StaticResource Eyebrow}"/><StackPanel Orientation="Horizontal" Margin="0,6,0,2"><TextBlock x:Name="TemperatureValue" Text="—" FontSize="40" FontWeight="SemiBold" Style="{StaticResource NumericText}"/><TextBlock x:Name="TemperatureUnit" Text="°C" FontSize="18" Foreground="{StaticResource SecondaryTextBrush}" Margin="6,0,0,9" VerticalAlignment="Bottom"/></StackPanel><TextBlock Text="Package sensor" Style="{StaticResource CaptionText}"/></StackPanel></Border>
-          <Border Grid.Column="2" Style="{StaticResource Card}" Padding="20,16"><StackPanel><TextBlock Text="CPU usage" Style="{StaticResource Eyebrow}"/><StackPanel Orientation="Horizontal" Margin="0,6,0,2"><TextBlock x:Name="UsageValue" Text="—" FontSize="40" FontWeight="SemiBold" Style="{StaticResource NumericText}"/><TextBlock Text="%" FontSize="18" Foreground="{StaticResource SecondaryTextBrush}" Margin="6,0,0,9" VerticalAlignment="Bottom"/></StackPanel><TextBlock Text="Across all cores" Style="{StaticResource CaptionText}"/></StackPanel></Border>
-          <Border Grid.Column="4" Style="{StaticResource Card}" Padding="20,16"><StackPanel><TextBlock Text="CPU power" Style="{StaticResource Eyebrow}"/><StackPanel Orientation="Horizontal" Margin="0,6,0,2"><TextBlock x:Name="PowerValue" Text="—" FontSize="40" FontWeight="SemiBold" Style="{StaticResource NumericText}"/><TextBlock Text="W" FontSize="18" Foreground="{StaticResource SecondaryTextBrush}" Margin="6,0,0,9" VerticalAlignment="Bottom"/></StackPanel><TextBlock Text="Package power" Style="{StaticResource CaptionText}"/></StackPanel></Border>
-        </Grid>
-        <Grid Grid.Row="4">
-          <Grid.ColumnDefinitions><ColumnDefinition Width="1.15*"/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions>
-          <Border Style="{StaticResource Card}">
-            <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-              <TextBlock Text="On your cooler" Style="{StaticResource Eyebrow}"/>
-              <StackPanel Grid.Row="1" VerticalAlignment="Center">
-                <Viewbox Stretch="Uniform" StretchDirection="Both" MaxHeight="300" MaxWidth="560" Margin="0,16">
-                  <Border Background="{StaticResource InsetBrush}" CornerRadius="12" Padding="26,16" Width="380" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1">
-                    <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="CPU" FontSize="10" Foreground="{StaticResource TertiaryTextBrush}"/><TextBlock x:Name="PreviewTemperature" Text="— °C" FontFamily="Bahnschrift" FontSize="39" Margin="0,2,0,8"/><TextBlock x:Name="PreviewUsage" Text="— %  USAGE" FontFamily="Consolas" FontSize="16" Foreground="{StaticResource SecondaryTextBrush}"/><TextBlock x:Name="PreviewPower" Text="— W  POWER" FontFamily="Consolas" FontSize="16" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,6,0,0"/></StackPanel><Border Grid.Column="1" Background="{StaticResource AccentBrush}" Width="3" CornerRadius="2" Margin="15,8,0,8"/></Grid>
-                  </Border>
-                </Viewbox>
-                <Border Background="{StaticResource SurfaceRaisedBrush}" CornerRadius="8" Padding="14,12"><StackPanel><TextBlock x:Name="ConnectionTitle" Text="Ready to connect" FontSize="14" FontWeight="SemiBold"/><TextBlock x:Name="ConnectionDetail" Text="Exit DeepCool, then start the display." Style="{StaticResource SecondaryText}" Margin="0,4,0,0"/></StackPanel></Border>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="1.35*"/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions>
+
+          <!-- Readings: one hero value, two secondary metrics. Dashes, never stale numbers, when sensors are not live. -->
+          <Border Style="{StaticResource Card}" Padding="28,22,28,20">
+            <Grid>
+              <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+              <TextBlock Text="CPU temperature" Style="{StaticResource Eyebrow}"/>
+              <!-- Scales with the space available, up to roughly twice its base size. -->
+              <Viewbox Grid.Row="1" Stretch="Uniform" StretchDirection="Both" MaxHeight="210" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-4,4,0,8">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="TemperatureValue" Text="--" FontSize="92" FontWeight="Light" Style="{StaticResource NumericText}"/>
+                <TextBlock x:Name="TemperatureUnit" Text="°C" FontSize="30" FontWeight="Light" Foreground="{StaticResource SecondaryTextBrush}" VerticalAlignment="Top" Margin="4,20,0,0"/>
               </StackPanel>
+              </Viewbox>
+              <Grid Grid.Row="2" Margin="0,0,0,16">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                <Border Grid.ColumnSpan="3" BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,1,0,0" VerticalAlignment="Top"/>
+                <StackPanel Margin="0,14,0,0"><TextBlock Text="Usage" Style="{StaticResource CaptionText}"/><StackPanel Orientation="Horizontal" Margin="0,2,0,0"><TextBlock x:Name="UsageValue" Text="--" FontSize="30" FontWeight="Light" Style="{StaticResource NumericText}"/><TextBlock Text="%" FontSize="16" Foreground="{StaticResource SecondaryTextBrush}" VerticalAlignment="Bottom" Margin="4,0,0,6"/></StackPanel></StackPanel>
+                <Border Grid.Column="1" BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="1,0,0,0" Margin="0,14,24,0"/>
+                <StackPanel Grid.Column="2" Margin="0,14,0,0"><TextBlock Text="Package power" Style="{StaticResource CaptionText}"/><StackPanel Orientation="Horizontal" Margin="0,2,0,0"><TextBlock x:Name="PowerValue" Text="--" FontSize="30" FontWeight="Light" Style="{StaticResource NumericText}"/><TextBlock Text="W" FontSize="16" Foreground="{StaticResource SecondaryTextBrush}" VerticalAlignment="Bottom" Margin="4,0,0,6"/></StackPanel></StackPanel>
+              </Grid>
+              <Grid Grid.Row="3">
+                <TextBlock x:Name="CpuLabel" Text="CPU" Style="{StaticResource CaptionText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,140,0"/>
+                <TextBlock x:Name="LastUpdate" Text="No readings yet" HorizontalAlignment="Right" Style="{StaticResource CaptionText}" TextWrapping="NoWrap" Typography.NumeralAlignment="Tabular"/>
+              </Grid>
             </Grid>
           </Border>
-          <Border Grid.Column="2" Style="{StaticResource Card}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel><TextBlock Text="Preferences" Style="{StaticResource Eyebrow}"/><TextBlock Text="Display and app" Style="{StaticResource SectionText}" Margin="0,6,0,12"/>
-              <CheckBox x:Name="FahrenheitCheck" Content="Show temperature in Fahrenheit" Margin="0,0,0,6" Checked="SettingsChanged" Unchecked="SettingsChanged"/>
-              <CheckBox x:Name="ZerosCheck" Content="Keep leading zeros" Margin="0,0,0,6" Checked="SettingsChanged" Unchecked="SettingsChanged"/>
-              <CheckBox x:Name="TrayCheck" Content="Keep running in the tray when closed" Margin="0,0,0,6" Checked="SettingsChanged" Unchecked="SettingsChanged"/>
-              <CheckBox x:Name="StartupCheck" Content="Start Sora when I sign in" Margin="0,0,0,6" Checked="StartupChanged" Unchecked="StartupChanged" ToolTip="Starts in the tray with administrator rights, without a UAC prompt"/>
-              <CheckBox x:Name="AutoDisplayCheck" Content="Turn on the cooler display at start" Margin="0,0,0,18" Checked="SettingsChanged" Unchecked="SettingsChanged"/>
-              <TextBlock Text="Sensor source" Style="{StaticResource Eyebrow}" Margin="0,0,0,6"/><TextBlock x:Name="SensorStatus" Text="Starting independent CPU sensors…" Style="{StaticResource SecondaryText}"/>
-              <Button Content="About sensors" Click="OpenSensorInfo" Margin="-8,6,0,0" HorizontalAlignment="Left" Style="{StaticResource QuietButton}"/>
-            </StackPanel></ScrollViewer>
+
+          <!-- Status: three independent facts, each with its own state. -->
+          <Border Grid.Column="2" Style="{StaticResource Card}" Padding="20,18">
+            <StackPanel>
+              <Grid Margin="0,0,0,4"><TextBlock Text="Status" Style="{StaticResource Eyebrow}" VerticalAlignment="Center"/><Button x:Name="SensorInfoButton" Content="About sensors" Click="ToggleSensorInfo" Style="{StaticResource QuietButton}" HorizontalAlignment="Right" Margin="0,-6,-8,-6"/></Grid>
+              <Grid Margin="0,8,0,10">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <TextBlock Text="CPU sensors" FontSize="14"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Ellipse x:Name="SensorDot" Style="{StaticResource StatusDot}" Margin="0,0,7,0"/><TextBlock x:Name="SensorValue" Text="Starting" FontSize="13" Foreground="{StaticResource SecondaryTextBrush}"/></StackPanel>
+                <TextBlock x:Name="SensorDetail" Grid.Row="1" Grid.ColumnSpan="2" Text="" Style="{StaticResource CaptionText}" Margin="0,3,0,0"/>
+              </Grid>
+              <TextBlock x:Name="SensorInfo" Visibility="Collapsed" Style="{StaticResource CaptionText}" Margin="0,-4,0,12" Text="Sora reads CPU package temperature, power and usage itself, through LibreHardwareMonitor and the PawnIO driver. DeepCool's software and service are not needed. Reading CPU registers requires administrator rights, which is why Windows asks when Sora starts."/>
+              <Border BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,1,0,0"/>
+              <Grid Margin="0,10,0,10">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <TextBlock Text="LD360" FontSize="14"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Ellipse x:Name="CoolerDot" Style="{StaticResource StatusDot}" Margin="0,0,7,0"/><TextBlock x:Name="CoolerValue" Text="Checking" FontSize="13" Foreground="{StaticResource SecondaryTextBrush}"/></StackPanel>
+                <TextBlock x:Name="CoolerDetail" Grid.Row="1" Grid.ColumnSpan="2" Text="" Style="{StaticResource CaptionText}" Margin="0,3,0,0"/>
+              </Grid>
+              <Border BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,1,0,0"/>
+              <Grid Margin="0,10,0,12">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <TextBlock Text="Display output" FontSize="14"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Ellipse x:Name="OutputDot" Style="{StaticResource StatusDot}" Margin="0,0,7,0"/><TextBlock x:Name="OutputValue" Text="Off" FontSize="13" Foreground="{StaticResource SecondaryTextBrush}"/></StackPanel>
+                <TextBlock x:Name="OutputDetail" Grid.Row="1" Grid.ColumnSpan="2" Text="" Style="{StaticResource CaptionText}" Margin="0,3,0,0"/>
+              </Grid>
+              <!-- What the cooler's screen shows, with the current unit and leading-zero settings. -->
+              <Border Background="{StaticResource InsetBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1" CornerRadius="8" Padding="16,10,16,12">
+                <StackPanel>
+                  <TextBlock x:Name="PreviewCaption" Text="Preview · not being sent" Style="{StaticResource CaptionText}"/>
+                  <Grid Margin="0,4,0,0">
+                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBlock x:Name="PreviewTemperature" Text="— °C" FontFamily="Bahnschrift" FontSize="30" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock x:Name="PreviewUsage" Text="— %  USAGE" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource SecondaryTextBrush}"/><TextBlock x:Name="PreviewPower" Text="— W  POWER" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,3,0,0"/></StackPanel>
+                  </Grid>
+                </StackPanel>
+              </Border>
+            </StackPanel>
           </Border>
         </Grid>
-        <Grid Grid.Row="5" Margin="0,14,0,0"><TextBlock Text="Readings refresh once a second." Style="{StaticResource CaptionText}"/><TextBlock x:Name="LastUpdate" Text="Waiting for live readings" HorizontalAlignment="Right" Style="{StaticResource CaptionText}" Typography.NumeralAlignment="Tabular"/></Grid>
+
+        <!-- Settings, grouped by what they affect. -->
+        <Border Grid.Row="4" Style="{StaticResource Card}" Padding="24,16,24,12">
+          <Grid>
+            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="40"/><ColumnDefinition/></Grid.ColumnDefinitions>
+            <StackPanel>
+              <TextBlock Text="Cooler" Style="{StaticResource Eyebrow}" Margin="0,0,0,8"/>
+              <CheckBox x:Name="FahrenheitCheck" Margin="0,0,0,6" Checked="SettingsChanged" Unchecked="SettingsChanged" AutomationProperties.Name="Show Fahrenheit"><StackPanel><TextBlock Text="Show Fahrenheit" FontSize="14"/><TextBlock Text="Converts readings here and on the cooler." Style="{StaticResource CaptionText}"/></StackPanel></CheckBox>
+              <CheckBox x:Name="ZerosCheck" Margin="0,0,0,6" Checked="SettingsChanged" Unchecked="SettingsChanged" AutomationProperties.Name="Leading zeros"><StackPanel><TextBlock Text="Leading zeros" FontSize="14"/><TextBlock Text="Shows 045 instead of 45 on the cooler." Style="{StaticResource CaptionText}"/></StackPanel></CheckBox>
+              <CheckBox x:Name="AutoDisplayCheck" Checked="SettingsChanged" Unchecked="SettingsChanged" AutomationProperties.Name="Turn on when Sora starts"><StackPanel><TextBlock Text="Turn on when Sora starts" FontSize="14"/><TextBlock Text="Starts sending as soon as Sora opens or signs in." Style="{StaticResource CaptionText}"/></StackPanel></CheckBox>
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="App" Style="{StaticResource Eyebrow}" Margin="0,0,0,8"/>
+              <CheckBox x:Name="StartupCheck" Margin="0,0,0,6" Checked="StartupChanged" Unchecked="StartupChanged" AutomationProperties.Name="Start at sign-in"><StackPanel><TextBlock Text="Start at sign-in" FontSize="14"/><TextBlock Text="Opens in the tray with administrator rights, without a prompt." Style="{StaticResource CaptionText}"/></StackPanel></CheckBox>
+              <CheckBox x:Name="TrayCheck" Checked="SettingsChanged" Unchecked="SettingsChanged" AutomationProperties.Name="Keep running in the tray"><StackPanel><TextBlock Text="Keep running in the tray" FontSize="14"/><TextBlock Text="Closing the window keeps the cooler display running." Style="{StaticResource CaptionText}"/></StackPanel></CheckBox>
+              <TextBlock x:Name="StartupHint" Visibility="Collapsed" Style="{StaticResource CaptionText}" Foreground="{StaticResource WarnTextBrush}" Margin="0,10,0,0" Text="Sora will start at sign-in, but the cooler display stays off until “Turn on when Sora starts” is on."/>
+            </StackPanel>
+          </Grid>
+        </Border>
       </Grid>
 
       <local:KeyboardPanel x:Name="Keyboard" Visibility="Collapsed"/>

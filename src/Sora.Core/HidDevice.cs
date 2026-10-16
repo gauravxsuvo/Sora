@@ -62,10 +62,13 @@ public sealed class HidDevice : IDisplayTransport
         return results;
     }
 
+    /// <summary>LD-series display interfaces that are plugged in. Read-only: nothing is written and no handle is kept.</summary>
+    public static IReadOnlyList<DeviceInfo> FindDisplays() => Enumerate().Where(device => device.VendorId == LdProtocol.VendorId && device.ProductId == LdProtocol.ProductId && device.UsagePage is 0x00ff or 0xff00 && device.Usage == 1 && device.OutputReportLength >= 18).ToArray();
+
     public static IDisplayTransport Open()
     {
-        var devices = Enumerate().Where(device => device.VendorId == LdProtocol.VendorId && device.ProductId == LdProtocol.ProductId && device.UsagePage is 0x00ff or 0xff00 && device.Usage == 1 && device.OutputReportLength >= 18).ToArray();
-        if (devices.Length != 1) throw new IOException(devices.Length == 0 ? "LD360 not found. Check its USB connection." : "Multiple LD-series displays found. Connect one to use Sora.");
+        var devices = FindDisplays();
+        if (devices.Count != 1) throw new IOException(devices.Count == 0 ? "LD360 not found. Check its USB connection." : "Multiple LD-series displays found. Connect one to use Sora.");
         var device = devices[0];
         var handle = Native.CreateFile(device.Path, 0x40000000, 3, IntPtr.Zero, 3, 0x40000000, IntPtr.Zero);
         if (handle.IsInvalid) { handle.Dispose(); throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot open the LD360. Exit DeepCool and try again."); }

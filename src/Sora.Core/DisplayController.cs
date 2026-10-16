@@ -13,7 +13,7 @@ public sealed class DisplayController(Func<IDisplayTransport>? open = null) : IA
     private IDisplayTransport? device;
     private bool? leadingZeros;
     private long framesSent;
-    public DisplayStatus Status { get; private set; } = new("Ready", "Start when the original DeepCool app is closed.", false, 0);
+    public DisplayStatus Status { get; private set; } = new("Off", "Nothing is being sent to the cooler.", false, 0);
 
     public static string? FindConflict()
     {
@@ -46,7 +46,7 @@ public sealed class DisplayController(Func<IDisplayTransport>? open = null) : IA
                     try { if (conflict == null) await device.WriteAsync(LdProtocol.Close(), token); }
                     finally { await ReleaseAsync(); }
                 }
-                Set("Ready", conflict ?? "Display stopped. Live sensor readings are still available.", false);
+                Set("Off", conflict ?? "Nothing is being sent to the cooler.", false);
                 return;
             }
             if (conflict != null)
@@ -58,7 +58,7 @@ public sealed class DisplayController(Func<IDisplayTransport>? open = null) : IA
             if (sample == null || !sample.IsFresh(DateTimeOffset.UtcNow))
             {
                 await ReleaseAsync();
-                Set("Waiting for live sensors", "Check PawnIO access. Stale readings are never sent.", false);
+                Set("Waiting for sensors", "Nothing is sent until there is a live reading.", false);
                 return;
             }
             sample.Validate();
@@ -74,7 +74,7 @@ public sealed class DisplayController(Func<IDisplayTransport>? open = null) : IA
             }
             await device.WriteAsync(LdProtocol.Telemetry(sample, settings.Fahrenheit), token);
             framesSent++;
-            Set("Connected to LD360", "Sending live CPU readings · refreshes every second", true);
+            Set("Sending", "Live CPU readings, once a second.", true);
         }
         catch (Exception error) when (error is IOException or InvalidDataException or Win32Exception or OperationCanceledException or UnauthorizedAccessException or ArgumentException)
         {

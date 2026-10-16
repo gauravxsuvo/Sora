@@ -21,14 +21,16 @@ internal sealed class SoraHost
     private readonly string dataDirectory = Path.Combine(AppContext.BaseDirectory, "data");
     private Task sensorTask = Task.CompletedTask;
     private SensorSample? latest;
-    private DateTime conflictCheckedAt = DateTime.MinValue;
+    private DateTime conflictCheckedAt = DateTime.MinValue, presenceCheckedAt = DateTime.MinValue;
     private string? lastLoggedStatus;
     private bool stopping;
 
     public DisplaySettings Settings { get; private set; } = new();
     public bool Requested { get; private set; }
     public string? Conflict { get; private set; }
-    public string SensorStatus { get; private set; } = "Starting independent CPU sensors…";
+    public SensorStatus Sensors { get; private set; } = SensorStatus.Starting;
+    // Whether an LD360 is plugged in: true/false from a read-only USB scan, null until the first scan.
+    public bool? CoolerPresent { get; private set; }
     public string? CpuName => sensors.CpuName;
     public SensorSample? Latest => Volatile.Read(ref latest);
     public SensorSample? Fresh => Latest is { } sample && sample.IsFresh(DateTimeOffset.UtcNow) ? sample : null;
@@ -47,7 +49,14 @@ internal sealed class SoraHost
         }
         catch (Exception error) when (error is IOException or JsonException or UnauthorizedAccessException) { Log("Settings: " + error.Message); }
         sensors.SampleReceived += sample => Volatile.Write(ref latest, sample);
-        sensors.StatusChanged += status => SensorStatus = status;
+        sensors.StatusChanged += status =>
+        {
+            // Readings never outlive a sensor failure.
+            if (status.State != SensorState.Live) Volatile.Write(ref latest, null);
+            var previous = Sensors;
+            Sensors = status;
+            if (previous.State != status.State || previous.Problem != status.Problem) Log("Sensors: " + status.State + (status.State == SensorState.Unavailable ? " · " + status.Message + (status.Detail == null ? "" : " · " + status.Detail) : ""));
+        };
         timer.Tick += async (_, _) => await TickAsync();
     }
 
@@ -91,6 +100,14 @@ internal sealed class SoraHost
                 conflictCheckedAt = DateTime.UtcNow;
             }
             await display.TickAsync(Latest, Settings, Requested, Conflict, lifetime.Token);
+            // While sending, the writes themselves prove the cooler is there. Otherwise scan every 3 s, only while someone is looking.
+            if (display.Status.Sending) CoolerPresent = true;
+            else if (Watched && DateTime.UtcNow - presenceCheckedAt > TimeSpan.FromSeconds(3))
+            {
+                presenceCheckedAt = DateTime.UtcNow;
+                try { CoolerPresent = await Task.Run(() => HidDevice.FindDisplays().Count > 0); }
+                catch (Exception error) when (error is IOException or System.ComponentModel.Win32Exception) { CoolerPresent = null; Log("LD360 scan: " + error.Message); }
+            }
             var status = display.Status;
             if (lastLoggedStatus != status.Title) { Log(status.Title + " · " + status.Detail); lastLoggedStatus = status.Title; }
         }

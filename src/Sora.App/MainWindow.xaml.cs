@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -91,38 +92,61 @@ public partial class MainWindow : Window
     {
         var sample = host.Fresh;
         var unit = host.Unit;
-        if (sample != null)
-        {
-            TemperatureValue.Text = host.FormatTemperature(sample, "0.#");
-            UsageValue.Text = Math.Truncate(sample.UsagePercent).ToString("0", CultureInfo.InvariantCulture);
-            PowerValue.Text = Math.Truncate(sample.PowerW).ToString("0", CultureInfo.InvariantCulture);
-            var format = host.Settings.LeadingZeros ? "000" : "0";
-            PreviewTemperature.Text = host.FormatTemperature(sample, format) + " " + unit;
-            PreviewUsage.Text = Math.Truncate(sample.UsagePercent).ToString(format, CultureInfo.InvariantCulture) + " %  USAGE";
-            PreviewPower.Text = Math.Truncate(sample.PowerW).ToString(format, CultureInfo.InvariantCulture) + " W  POWER";
-            LastUpdate.Text = "Live sensors · " + sample.ReceivedAt.ToLocalTime().ToString("HH:mm:ss");
-        }
-        else
-        {
-            TemperatureValue.Text = UsageValue.Text = PowerValue.Text = "—";
-            PreviewTemperature.Text = "— " + unit;
-            PreviewUsage.Text = "— %  USAGE";
-            PreviewPower.Text = "— W  POWER";
-            LastUpdate.Text = host.Latest == null ? "Waiting for live readings" : "Sensor readings are stale";
-        }
-        TemperatureUnit.Text = unit;
-        SensorStatus.Text = host.SensorStatus;
+        var sensors = host.Sensors;
         var status = host.Status;
         var requested = host.Requested;
-        ConnectionTitle.Text = requested ? status.Title : host.Conflict != null ? "Close DeepCool to begin" : "Ready to connect";
-        ConnectionDetail.Text = requested ? status.Detail : host.Conflict ?? "Press Start display to send these readings to your LD360.";
-        ConnectionTitle.Foreground = (Brush)FindResource(status.Sending ? "Good" : "TextBrush");
-        StartButton.Content = requested ? "Stop display" : "Start display";
-        DisplayDot.Fill = NavDisplayDot.Fill = (Brush)FindResource(status.Sending ? "Good" : requested ? "Warn" : "Idle");
+
+        // Readings: only a fresh sample from live sensors is shown; otherwise dashes.
+        var format = host.Settings.LeadingZeros ? "000" : "0";
+        TemperatureValue.Text = sample == null ? "--" : host.FormatTemperature(sample, "0");
+        UsageValue.Text = sample == null ? "--" : Math.Truncate(sample.UsagePercent).ToString("0", CultureInfo.InvariantCulture);
+        PowerValue.Text = sample == null ? "--" : Math.Truncate(sample.PowerW).ToString("0", CultureInfo.InvariantCulture);
+        TemperatureValue.Foreground = UsageValue.Foreground = PowerValue.Foreground = (Brush)FindResource(sample == null ? "TertiaryTextBrush" : "TextBrush");
+        TemperatureUnit.Text = unit;
+        CpuLabel.Text = host.CpuName ?? "CPU package";
+        LastUpdate.Text = sample != null ? "Updated " + sample.ReceivedAt.ToLocalTime().ToString("HH:mm:ss")
+            : sensors.State == SensorState.Unavailable ? "No readings · sensors unavailable"
+            : host.Latest != null ? "Readings are stale" : "Waiting for the first reading";
+        PreviewTemperature.Text = (sample == null ? "—" : host.FormatTemperature(sample, format)) + " " + unit;
+        PreviewUsage.Text = (sample == null ? "—" : Math.Truncate(sample.UsagePercent).ToString(format, CultureInfo.InvariantCulture)) + " %  USAGE";
+        PreviewPower.Text = (sample == null ? "—" : Math.Truncate(sample.PowerW).ToString(format, CultureInfo.InvariantCulture)) + " W  POWER";
+        PreviewCaption.Text = status.Sending ? "On the cooler now" : "Preview · not being sent";
+
+        // Status rows: sensors, the physical cooler and the output are independent.
+        var (sensorValue, sensorTone, sensorDetail) = sensors.State switch
+        {
+            SensorState.Live => ("Live", "Good", "LibreHardwareMonitor via PawnIO, read every second."),
+            SensorState.Starting => ("Starting", "Idle", "Opening the sensor library."),
+            _ => sensors.Problem switch
+            {
+                SensorProblem.Permission => ("No access", "Bad", "Sora isn't running as administrator, so CPU registers can't be read. Open Sora from its shortcut and accept the Windows prompt."),
+                SensorProblem.DriverMissing => ("Driver missing", "Bad", "Install the PawnIO driver, then restart Sora."),
+                SensorProblem.Unsupported => ("Not supported", "Bad", sensors.Message),
+                _ => ("No reading", "Bad", sensors.Message + (sensors.Detail == null ? "" : " " + sensors.Detail)),
+            },
+        };
+        SetRow(SensorValue, SensorDot, SensorDetail, sensorValue, sensorTone, sensorDetail);
+        var (coolerValue, coolerTone, coolerDetail) = status.Sending || host.CoolerPresent == true ? ("Connected", "Good", "Plugged in over USB.")
+            : host.CoolerPresent == false ? ("Not found", "Warn", "Check the LD360's USB cable to the motherboard header.")
+            : ("Checking", "Idle", "Looking for the cooler on USB.");
+        SetRow(CoolerValue, CoolerDot, CoolerDetail, coolerValue, coolerTone, coolerDetail);
+        var (outputValue, outputTone, outputDetail) = status.Sending ? ("Sending", "Good", status.Detail)
+            : requested ? (status.Title, "Warn", status.Detail)
+            : ("Off", "Idle", host.Conflict ?? "Press Start display to show readings on the cooler.");
+        SetRow(OutputValue, OutputDot, OutputDetail, outputValue, outputTone, outputDetail);
+
         // Header chip names the output state; the sidebar keeps it to a glanceable word or reading.
+        StartButton.Content = requested ? "Stop display" : "Start display";
+        DisplayDot.Fill = NavDisplayDot.Fill = (Brush)FindResource(outputTone);
         DeviceLabel.Text = status.Sending ? "Sending to LD360" : requested ? status.Title : "Display off";
         NavDisplayStatus.Text = status.Sending && sample != null ? $"LD360 · Showing {TemperatureValue.Text}{unit}" : requested ? "LD360 · Waiting" : "LD360 · Off";
+        StartupHint.Visibility = StartupCheck.IsChecked == true && AutoDisplayCheck.IsChecked != true ? Visibility.Visible : Visibility.Collapsed;
         RenderKeyboardStatus();
+    }
+
+    private void SetRow(TextBlock value, System.Windows.Shapes.Ellipse dot, TextBlock detail, string text, string tone, string description)
+    {
+        value.Text = text; dot.Fill = (Brush)FindResource(tone); detail.Text = description;
     }
 
     internal void RenderKeyboardStatus()
@@ -158,6 +182,7 @@ public partial class MainWindow : Window
     {
         if (!initialized) return;
         await host.SaveSettingsAsync(new(FahrenheitCheck.IsChecked == true, ZerosCheck.IsChecked == true, TrayCheck.IsChecked == true, AutoDisplayCheck.IsChecked == true));
+        Render();
     }
 
     private async void StartupChanged(object sender, RoutedEventArgs e)
@@ -168,8 +193,6 @@ public partial class MainWindow : Window
         {
             StartupCheck.IsEnabled = false;
             await Task.Run(() => { if (enable) StartupTask.Enable(); else StartupTask.Disable(); });
-            // Starting with Windows is mostly useful when the cooler display comes on too; the user can untick it afterwards.
-            if (enable && AutoDisplayCheck.IsChecked != true) AutoDisplayCheck.IsChecked = true;
         }
         catch (Exception error) when (error is IOException or InvalidOperationException or System.ComponentModel.Win32Exception)
         {
@@ -177,12 +200,14 @@ public partial class MainWindow : Window
             initialized = false; StartupCheck.IsChecked = !enable; initialized = true;
             MessageBox.Show(this, error.Message, "Sora · Start with Windows", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
-        finally { StartupCheck.IsEnabled = true; }
+        finally { StartupCheck.IsEnabled = true; Render(); }
     }
 
-    private void OpenSensorInfo(object sender, RoutedEventArgs e)
+    private void ToggleSensorInfo(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show(this, "Sora reads CPU package temperature, power, and utilization directly through LibreHardwareMonitor and PawnIO.\n\nDeepCool software and its helper service are not required. Keep PawnIO installed. Windows requests administrator access when Sora starts so it can read the hardware counters.\n\nCPU: " + (host.CpuName ?? "Waiting for sensors"), "Sora · Independent sensors", MessageBoxButton.OK, MessageBoxImage.Information);
+        var show = SensorInfo.Visibility != Visibility.Visible;
+        SensorInfo.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        SensorInfoButton.Content = show ? "Hide details" : "About sensors";
     }
 
     // WPF forbids Close/Hide inside Closing, so the close either proceeds (window rebuilt later) or is deferred.
