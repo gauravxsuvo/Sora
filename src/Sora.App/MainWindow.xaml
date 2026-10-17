@@ -24,6 +24,12 @@
               <StackPanel Grid.Column="1"><TextBlock Text="Keyboard" FontSize="14"/><StackPanel Orientation="Horizontal" Margin="0,3,0,0"><Ellipse x:Name="NavKeyboardDot" Style="{StaticResource StatusDot}" Width="7" Height="7" Margin="0,1,7,0"/><TextBlock x:Name="NavKeyboardStatus" Text="Kreo · Not connected" FontSize="12" Foreground="{StaticResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis"/></StackPanel></StackPanel>
             </Grid>
           </RadioButton>
+          <RadioButton x:Name="NavLighting" Style="{StaticResource NavItem}" GroupName="Nav" Checked="NavChanged" AutomationProperties.Name="Lighting" ToolTip="Lighting  (Ctrl+3)">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="28"/><ColumnDefinition/></Grid.ColumnDefinitions>
+              <TextBlock Text="&#xE706;" Style="{StaticResource NavIcon}"/>
+              <StackPanel Grid.Column="1"><TextBlock Text="Lighting" FontSize="14"/><StackPanel Orientation="Horizontal" Margin="0,3,0,0"><Ellipse x:Name="NavLightingDot" Style="{StaticResource StatusDot}" Width="7" Height="7" Margin="0,1,7,0"/><TextBlock x:Name="NavLightingStatus" Text="RAM · Not checked" FontSize="12" Foreground="{StaticResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis"/></StackPanel></StackPanel>
+            </Grid>
+          </RadioButton>
         </StackPanel>
       </DockPanel>
     </Border>
@@ -129,6 +135,7 @@
       </Grid>
 
       <local:KeyboardPanel x:Name="Keyboard" Visibility="Collapsed"/>
+      <local:LightingPanel x:Name="Lighting" Visibility="Collapsed"/>
     </Grid>
   </Grid>
 </Window>

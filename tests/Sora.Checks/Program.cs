@@ -470,6 +470,85 @@ await Check("keyboard layouts snap to a key-unit grid without losing or overlapp
     Require(KreoLayout.Size(KreoLayout.Build(KreoModel.All.Single(m => m.Name == "Swarm 75"))) == (16.5, 6.5));
     return Task.CompletedTask;
 });
+await Check("Gigabyte RGB effect packets match GCC's DataFormat_8297 layout", () =>
+{
+    Require(Convert.ToHexString(GigabyteRgb.BuildEffect(BoardEffect.Static, 0x12, 0x34, 0x56, 8, 0)) == "FF070000000000000001FF005634120000000000000000000000000000000000", "static");
+    var wave = GigabyteRgb.BuildEffect(BoardEffect.Wave, 0, 0, 0, 4, 9);
+    Require(wave[9] == 6 && wave[10] == 128 && BitConverter.ToUInt16(wave, 20) == 30 && wave[28] == 7 && wave[29] == 1, "wave");
+    var doubleFlash = GigabyteRgb.BuildEffect(BoardEffect.DoubleFlash, 255, 0, 0, 0, 0);
+    Require(doubleFlash[9] == 3 && BitConverter.ToUInt16(doubleFlash, 24) == 2600 && doubleFlash[29] == 1 && doubleFlash[30] == 2, "double flash");
+    Require(GigabyteRgb.BuildEffect(BoardEffect.Pulse, 1, 2, 3, 0, 5)[10] == 100, "pulse peaks at GCC's fixed 100");
+    var off = GigabyteRgb.BuildEffect(BoardEffect.Off, 9, 9, 9, 3, 3);
+    Require(off[9] == 1 && BitConverter.ToUInt32(off, 12) == 0, "off is static black");
+    var threw = false;
+    try { GigabyteRgb.BuildEffect(BoardEffect.Static, 0, 0, 0, 9, 0); } catch (ArgumentOutOfRangeException) { threw = true; }
+    Require(threw, "brightness above GCC's table is refused");
+    return Task.CompletedTask;
+});
+
+await Check("Gigabyte RGB zone packets match GCC's captured exit sequence", () =>
+{
+    // From artifacts: Frida capture of GCC.exe HidD_SetFeature on exit (Static red, brightness level 6 = 0xB3).
+    Require(Convert.ToHexString(GigabyteRgb.BuildZonePacket(new BoardZoneEffect(0, BoardEffect.Static, 0xFF, 0, 0, 6, 0))).StartsWith("CC2001000000000000000001B3000000FF00"), "zone 0");
+    Require(Convert.ToHexString(GigabyteRgb.BuildZonePacket(new BoardZoneEffect(6, BoardEffect.Static, 0xFF, 0, 0, 6, 0))).StartsWith("CC2640000000000000000001B3000000FF00"), "zone 6");
+    Require(Convert.ToHexString(GigabyteRgb.BuildZonePacket(new BoardZoneEffect(9, BoardEffect.Static, 0xFF, 0, 0, 6, 0))).StartsWith("CC9100020000000000000001B3000000FF00"), "zone 9 uses header 0x91");
+    var zones = GigabyteRgb.ZonesFor("Z890 GAMING X WIFI7").Select(z => z.Number).Order().ToArray();
+    Require(zones.SequenceEqual(new[] { 0, 2, 4, 5, 6, 7, 9 }), "GCC's divsmap zones for MB_Id 31 layout 4");
+    return Task.CompletedTask;
+});
+
+await Check("Board rainbow wave is GCC's captured Wave17 packet; saved Wave is sent as colour cycle", () =>
+{
+    Require(Convert.ToHexString(GigabyteRgb.RainbowWavePacket()) == "CC220000000000000000000964000000000000000000260200000000000007000000", "Wave17 packet from frida-gcc-red-rainbow.jsonl");
+    foreach (var effect in new[] { BoardEffect.Rainbow, BoardEffect.Wave })
+        foreach (var zone in new[] { 0, 2, 4, 5, 6, 7, 9 })
+        {
+            var sent = GigabyteRgb.ForZone(new BoardZoneEffect(zone, effect, 0, 0, 0, 8, 8));
+            Require(sent.Effect == BoardEffect.ColorCycle && GigabyteRgb.BuildZonePacket(sent)[11] == 4, $"{effect} on zone {zone}");
+        }
+    Require((int)BoardEffect.Wave == 6 && (int)BoardEffect.Rainbow == 7, "saved effect numbers are stable");
+    return Task.CompletedTask;
+});
+
+await Check("Board Rainbow sends GCC's captured wave sequence, not per-zone colour cycles", () =>
+{
+    // Sora 0.6.2-0.6.3 converted Rainbow to Color cycle before applying, so the wave never reached the board.
+    var zones = GigabyteRgb.ZonesFor("Z890 GAMING X WIFI7").Select(z => new BoardZoneEffect(z.Number, BoardEffect.Rainbow, 10, 132, 255, 8, 8)).ToArray();
+    var sent = GigabyteRgb.Plan(zones).Select(step => Convert.ToHexString(step.Packet)).ToArray();
+    // frida-gcc-wave.jsonl / frida-ioctl.jsonl: what GCC sends when the fans flow.
+    var tail = new[] { "CC28FF07", "CC20FF070000000000000001FF000000000000000000000000000000000000000000", "CC28FF07", Convert.ToHexString(GigabyteRgb.RainbowWavePacket()), "CC280400" };
+    Require(sent.TakeLast(5).SequenceEqual(tail), "wave sequence: " + string.Join(" ", sent.TakeLast(5)));
+    Require(!sent.Any(p => p.Length > 30 && p.Substring(22, 2) == "04"), "no colour cycle packets");
+    Require(sent.Take(2).SequenceEqual(new[] { "CC340000", "CC3200" }), "GCC's connect setup first");
+    var cycle = GigabyteRgb.Plan(zones.Select(z => z with { Effect = BoardEffect.ColorCycle }).ToArray()).Select(step => Convert.ToHexString(step.Packet)).ToArray();
+    Require(!cycle.Contains(Convert.ToHexString(GigabyteRgb.RainbowWavePacket())) && cycle.Count(p => p.Length > 30 && p.Substring(22, 2) == "04") == zones.Length, "Color cycle stays per zone");
+    return Task.CompletedTask;
+});
+
+await Check("Sync frames are one Static packet per board light plus apply", () =>
+{
+    var zones = new[] { 0, 2, 4, 5, 6, 7, 9 };
+    var frame = GigabyteRgb.FramePackets(zones, 0x12, 0x34, 0x56).Select(Convert.ToHexString).ToArray();
+    Require(frame.Length == zones.Length + 1 && frame[^1] == "CC28FF07", "apply last");
+    Require(frame[0].StartsWith("CC2001000000000000000001FF0056341200"), "zone 0 Static, full level, colour 0x123456: " + frame[0][..40]);
+    Require(frame[^2].StartsWith("CC910002"), "zone 9 on header 0x91");
+    return Task.CompletedTask;
+});
+
+await Check("ENE writes are limited to the control block, apply byte and effect colours", () =>
+{
+    var dimm = new EneDimm(1, 0x71, "AUDA0-E6K5-0101", 0x6802, [0xA1, 0xD5, 0x08, 0x03, 0x00], 8, 0x8020, 0x8160, new EneSnapshot(new byte[4], new byte[24]));
+    foreach (var allowed in new ushort[] { 0x8020, 0x8021, 0x8022, 0x8023, 0x8029, 0x802F, 0x8160, 0x8177 }) Require(dimm.CanWrite(allowed), $"0x{allowed:X4} should be writable");
+    // 0x80A0 is apply/save-to-flash, 0x80F8/0x80F9 remap the I2C address, 0x1000 the name. 0x8029 (brightness) only on 0xD5 chips, as GCC.
+    Require(!(dimm with { Firmware = [0xA1, 0x00, 0x08, 0x03, 0x00] }).CanWrite(0x8029), "brightness is written only on 0xD5 chips");
+    Require(EneDram.GccBrightness(EneMode.Static, 0xCC, 0, 0) == 2, "GCC's captured red #CC0000 runs at brightness 2");
+    Require(EneDram.GccBrightness(EneMode.Static, 0xFF, 0, 0) == 3 && EneDram.GccBrightness(EneMode.Static, 0xFF, 0xFF, 0xFF) == 9, "(R+G+B)/84");
+    Require(EneDram.GccBrightness(EneMode.Rainbow, 0, 0, 0) == 9 && EneDram.GccBrightness(EneMode.Static, 1, 0, 0) == 1 && EneDram.GccBrightness(EneMode.Off, 0, 0, 0) == null, "rainbow 9, at least 1, Off untouched");
+    foreach (var refused in new ushort[] { 0x8024, 0x8028, 0x802A, 0x802E, 0x80A0, 0x80F8, 0x80F9, 0x8100, 0x815F, 0x8178, 0x1000, 0x1C00, 0xF01C, 0xE020 }) Require(!dimm.CanWrite(refused), $"0x{refused:X4} must be refused");
+    Require(EneDram.Encode(0x01, 0x02, 0x03, EneColorOrder.Rbg).SequenceEqual(new byte[] { 0x01, 0x03, 0x02 }), "ENE colour order is R, B, G");
+    return Task.CompletedTask;
+});
+
 Console.WriteLine($"{passed} passed, {failures} failed");
 return failures == 0 ? 0 : 1;
 

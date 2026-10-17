@@ -33,10 +33,12 @@ public partial class MainWindow : Window
         PreviewKeyDown += (_, e) =>
         {
             if (System.Windows.Input.Keyboard.Modifiers != ModifierKeys.Control) return;
-            var target = e.Key switch { Key.D1 or Key.NumPad1 => NavDisplay, Key.D2 or Key.NumPad2 => NavKeyboard, _ => null };
+            var target = e.Key switch { Key.D1 or Key.NumPad1 => NavDisplay, Key.D2 or Key.NumPad2 => NavKeyboard, Key.D3 or Key.NumPad3 => NavLighting, _ => null };
             if (target != null) { target.IsChecked = true; e.Handled = true; }
         };
-        (page == "keyboard" ? NavKeyboard : NavDisplay).IsChecked = true;
+        Lighting.StatusChanged += RenderLightingStatus;
+        Lighting.Attach(host.Lighting);
+        (page == "keyboard" ? NavKeyboard : page == "lighting" ? NavLighting : NavDisplay).IsChecked = true;
         if (screenshotPath != null) { WindowStartupLocation = WindowStartupLocation.Manual; Left = -12000; ShowInTaskbar = false; }
         var settings = host.Settings;
         FahrenheitCheck.IsChecked = settings.Fahrenheit;
@@ -55,7 +57,7 @@ public partial class MainWindow : Window
     }
 
     // Unsaved or in-flight keyboard edits must survive closing to the tray.
-    internal bool KeepAliveWhenHidden => Keyboard.IsBusy || Keyboard.HasPendingEdits;
+    internal bool KeepAliveWhenHidden => Keyboard.IsBusy || Keyboard.HasPendingEdits || Lighting.HasPendingEdits || host.Lighting.Busy;
 
     private bool SafeStartupEnabled()
     {
@@ -67,6 +69,8 @@ public partial class MainWindow : Window
     {
         await host.TickAsync();
         if (NavKeyboard.IsChecked == true) await Keyboard.ReadAsync();
+        // The sidebar shows lighting status on every page, so read it once even when another page is open.
+        if (!Lighting.HasState && (NavLighting.IsChecked == true || screenshotPath == null)) await Lighting.ReadAsync();
         if (screenshotPath == null) return;
         var arguments = Environment.GetCommandLineArgs();
         if (Array.IndexOf(arguments, "--keyboard-ui-check") >= 0)
@@ -151,6 +155,12 @@ public partial class MainWindow : Window
         value.Text = text; dot.Fill = (Brush)FindResource(tone); detail.Text = description;
     }
 
+    internal void RenderLightingStatus()
+    {
+        NavLightingStatus.Text = Lighting.SidebarStatus;
+        NavLightingDot.Fill = (Brush)FindResource(Lighting.StatusTone);
+    }
+
     internal void RenderKeyboardStatus()
     {
         NavKeyboardStatus.Text = Keyboard.SidebarStatus;
@@ -172,10 +182,12 @@ public partial class MainWindow : Window
 
     private async void NavChanged(object sender, RoutedEventArgs e)
     {
-        if (DisplayPage == null || Keyboard == null) return;
+        if (DisplayPage == null || Keyboard == null || Lighting == null) return;
         DisplayPage.Visibility = NavDisplay.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         Keyboard.Visibility = NavKeyboard.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        Lighting.Visibility = NavLighting.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         if (IsLoaded && NavKeyboard.IsChecked == true && !Keyboard.HasSnapshot && !Keyboard.IsBusy) await Keyboard.ReadAsync();
+        if (IsLoaded && NavLighting.IsChecked == true && !Lighting.HasState) await Lighting.ReadAsync();
     }
 
     private async void ToggleDisplay(object sender, RoutedEventArgs e) => await host.SetRequestedAsync(!host.Requested);

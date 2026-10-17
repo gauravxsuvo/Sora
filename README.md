@@ -3,7 +3,37 @@
 <h1 align="center">Sora</h1>
 
 
-A native Windows hardware hub for the **DeepCool LD360** display and **Kreo keyboards**. Sora reads CPU temperature, utilization, and package power independently through **LibreHardwareMonitor 0.9.6 and PawnIO**, and talks to the keyboard directly over USB; Kreo KB Hub does not need to run.
+A native Windows hardware hub for the **DeepCool LD360** display, **Kreo keyboards**, and **RGB memory and Gigabyte motherboard lighting**. Sora reads CPU temperature, utilization, and package power independently through **LibreHardwareMonitor 0.9.6 and PawnIO**, and talks to the keyboard directly over USB; Kreo KB Hub does not need to run.
+
+## What's new in 0.6: Lighting
+
+A **Lighting** page (sidebar, **Ctrl+3**) replaces GIGABYTE Control Center's RGB Fusion for RGB memory and the motherboard's RGB headers. It was reverse-engineered from GCC 26.08.11 and the ENE DRAM HAL it uses (`gcc-re/REPORT.md`, local only).
+
+- **Memory** (ENE-based DDR5 RGB, such as XPG Lancer Blade RGB): Static, Breathing, Flashing, Color cycle, Rainbow or Off, with colour, brightness, speed and direction. The page opens showing what the RAM is doing now.
+- **Motherboard** (Gigabyte RGB Fusion USB controller IT5711): Static, Pulse, Flash, Double flash, Color cycle, Wave or Off, for each light separately or together. On the Z890 GAMING X WIFI7 the lights are named: GAME ON logo, I/O cover, SSD heatsink, ARGB headers 1–3 and the RGB header. Sora leaves the board alone until you apply something there.
+- **Apply when Sora starts** sets your lighting again at sign-in, because RAM lighting resets after a shutdown.
+- **Restore** puts the RAM back exactly as it was before Sora first changed it.
+
+How it protects your hardware:
+
+- Exit GCC first (tray icon → Exit). Sora will not write while GCC or another RGB program (Armoury Crate, OpenRGB, SignalRGB, iCUE, XPG PRIME) is running.
+- Applying lighting never makes the board or the RAM remember it: no flash saves, and not the board's "keep LED settings" command either. After a shutdown the hardware shows its own stored lighting until Sora sets yours again at sign-in. Two one-off maintenance commands send GCC's own keep command, only when you run them: `Sora.exe --board-default-rainbow` (GCC's rainbow, kept after restarts, as GCC does on exit) and `Sora.exe --board-builtin-default` (stop keeping, as GCC does when it starts, so the board uses its built-in lighting).
+- Sora never writes to the RAM's SPD chip. It writes only to verified ENE lighting controllers (`0x70–0x77`), and only to their effect, colour and apply registers. Nothing is saved to the RAM's or the board controller's flash.
+- Every RAM change is read back from both sticks; a mismatch is reported, not ignored.
+- It uses the signed PawnIO SMBus module that ships with LibreHardwareMonitor and the system-wide SMBus lock other tools use. GCC's kernel drivers are not needed.
+- Overclocking, undervolting, voltages, timings and fan control are not part of Sora.
+
+Verified on this PC: two ADATA AX5U6000C3616G-SLABR sticks (Static and Breathing written, read back and restored byte-for-byte), and every motherboard light (GAME ON logo, I/O cover, SSD heatsink, case fans and radiator fans on ARGB headers 1 and 2) switched between colours repeatedly.
+
+0.6.9: In sync mode, Color cycle, Breathing and Flashing are driven the way GCC drives them: Sora computes one colour per frame and writes it as Static to both sticks and every board light, so everything moves in lockstep (the sticks are also started together for Rainbow). The engine re-checks the RAM controllers every 10 s and stops if GCC or another RGB app starts. Sync no longer switches itself off after Apply. **Rainbow when Sora closes** (on by default): on exit, like GCC, the RAM returns to its own rainbow and the board to its rainbow wave.
+
+0.6.5: **Sync memory and motherboard.** One switch at the top of the Lighting page replaces the two cards with a single "All lighting" editor: one effect, colour wheel, brightness and speed for the RAM and every board light. The effects are the ones both can run (Rainbow, Static, Breathing, Flashing, Color cycle, Off); each device gets its closest built-in effect (Breathing is the board's Pulse, Flashing its Flash, Rainbow the RAM's rainbow and GCC's board wave). Sign-in re-applies the synced look.
+
+0.6.4: **Rainbow** on the motherboard is GCC's flowing rainbow wave (the spectrum runs around every ARGB fan), sent byte for byte as GCC sends it (Sora 0.6.2–0.6.3 sent a colour cycle by mistake). RAM colours are no longer washed out: on these ENE chips GCC also sets a brightness register from the colour ((R+G+B)/84, so pure red runs at 3 of 9), and Sora now does the same, with backup, restore and readback.
+
+0.6.2 adds a colour wheel with a saturation/brightness square to both cards, and **Rainbow** (GCC's default colour cycle) as the first effect for the memory and the board. The controller's own Wave mode is gone: it turned the ARGB fans off on this board (GCC draws its flowing fan rainbow in software). If an apply fails, that part is no longer saved and re-sent at sign-in.
+
+0.6.1 fixes motherboard lighting: 0.6 sent one all-lights command that the controller applies only to the GAME ON logo. Sora now addresses every light the way GCC does, with GCC's timing.
 
 ## What's new in 0.4
 

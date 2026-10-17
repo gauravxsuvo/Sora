@@ -24,6 +24,32 @@ public partial class App : Application
             Shutdown(await KeyboardInputCheck.RunAsync(output) ? 0 : 1);
             return;
         }
+        if (e.Args.Contains("--receiver-diagnose"))
+        {
+            // Read-only: the 2.4 GHz receiver's lighting and battery reads, three times each, with every raw report.
+            var index = Array.IndexOf(e.Args, "--output");
+            var output = index >= 0 && index + 1 < e.Args.Length ? e.Args[index + 1] : Path.Combine(AppContext.BaseDirectory, "receiver-diagnostics.json");
+            try
+            {
+                var log = new List<object>();
+                var descriptors = KreoKeyboard.Descriptors();
+                if (KreoReceiver.Find() is { } found)
+                {
+                    using var receiver = new KreoReceiver(found);
+                    for (var attempt = 0; attempt < 3; attempt++)
+                        foreach (var (command, length) in new[] { (KreoReceiver.ReadPower, 2), (KreoReceiver.ReadLighting, 128) })
+                        {
+                            var started = DateTimeOffset.Now;
+                            var reply = await receiver.ReadAsync(command, 0, length, TimeSpan.FromSeconds(4));
+                            log.Add(new { attempt, command = $"0x{command:X2}", ms = (DateTimeOffset.Now - started).TotalMilliseconds, reply.Complete, reply.Error, reply.Packets, reply.PacketsReceived, reply.BadChecksums, data = Convert.ToHexString(reply.Data), raw = reply.RawReports });
+                        }
+                }
+                File.WriteAllText(output, JsonSerializer.Serialize(new { descriptors, receiver = KreoReceiver.Find(), conflict = KreoKeyboard.FindConflict(), log }, new JsonSerializerOptions { WriteIndented = true }));
+                Shutdown(0);
+            }
+            catch (Exception error) { File.WriteAllText(output, JsonSerializer.Serialize(new { error = error.ToString() })); Shutdown(1); }
+            return;
+        }
         if (e.Args.Contains("--keyboard-diagnose"))
         {
             var index = Array.IndexOf(e.Args, "--output");
@@ -35,6 +61,62 @@ public partial class App : Application
                 File.WriteAllText(output, JsonSerializer.Serialize(new { version = "0.4", descriptors = KreoKeyboard.Descriptors(), probes, configurationWrites = 0 }, new JsonSerializerOptions { WriteIndented = true }));
                 Shutdown(probes.Count == 1 && probes[0].Error == null ? 0 : 1);
             }
+            catch (Exception error) { File.WriteAllText(output, JsonSerializer.Serialize(new { error = error.ToString() })); Shutdown(1); }
+            return;
+        }
+        if (e.Args.Contains("--lighting-probe"))
+        {
+            var index = Array.IndexOf(e.Args, "--output");
+            var output = index >= 0 && index + 1 < e.Args.Length ? e.Args[index + 1] : Path.Combine(AppContext.BaseDirectory, "lighting-probe.json");
+            try { Shutdown(await Task.Run(() => LightingCheck.Probe(output)) ? 0 : 1); }
+            catch (Exception error) { File.WriteAllText(output, JsonSerializer.Serialize(new { error = error.ToString() })); Shutdown(1); }
+            return;
+        }
+        if (e.Args.Contains("--board-test"))
+        {
+            var index = Array.IndexOf(e.Args, "--output");
+            var output = index >= 0 && index + 1 < e.Args.Length ? e.Args[index + 1] : Path.Combine(AppContext.BaseDirectory, "board-test.json");
+            try { Shutdown(await Task.Run(() => LightingCheck.BoardTest(output)) ? 0 : 1); }
+            catch (Exception error) { File.WriteAllText(output, JsonSerializer.Serialize(new { error = error.ToString() })); Shutdown(1); }
+            return;
+        }
+        if (e.Args.Contains("--board-rainbow-test"))
+        {
+            var index = Array.IndexOf(e.Args, "--output");
+            var output = index >= 0 && index + 1 < e.Args.Length ? e.Args[index + 1] : Path.Combine(AppContext.BaseDirectory, "board-rainbow-test.json");
+            try { Shutdown(await Task.Run(() => LightingCheck.BoardRainbowTest(output)) ? 0 : 1); }
+            catch (Exception error) { File.WriteAllText(output, JsonSerializer.Serialize(new { error = error.ToString() })); Shutdown(1); }
+            return;
+        }
+        if (e.Args.Contains("--board-builtin-default"))
+        {
+            var index = Array.IndexOf(e.Args, "--output");
+            var output = index >= 0 && index + 1 < e.Args.Length ? e.Args[index + 1] : Path.Combine(AppContext.BaseDirectory, "board-builtin-default.json");
+            try { Shutdown(await Task.Run(() => LightingCheck.BoardBuiltinDefault(output)) ? 0 : 1); }
+            catch (Exception error) { File.WriteAllText(output, JsonSerializer.Serialize(new { error = error.ToString() })); Shutdown(1); }
+            return;
+        }
+        if (e.Args.Contains("--board-default-rainbow"))
+        {
+            var index = Array.IndexOf(e.Args, "--output");
+            var output = index >= 0 && index + 1 < e.Args.Length ? e.Args[index + 1] : Path.Combine(AppContext.BaseDirectory, "board-default-rainbow.json");
+            try { Shutdown(await Task.Run(() => LightingCheck.BoardDefaultRainbow(output)) ? 0 : 1); }
+            catch (Exception error) { File.WriteAllText(output, JsonSerializer.Serialize(new { error = error.ToString() })); Shutdown(1); }
+            return;
+        }
+        if (e.Args.Contains("--lighting-service-check"))
+        {
+            var index = Array.IndexOf(e.Args, "--output");
+            var output = index >= 0 && index + 1 < e.Args.Length ? e.Args[index + 1] : Path.Combine(AppContext.BaseDirectory, "lighting-service-check.json");
+            try { Shutdown(await LightingCheck.ServiceCheck(output, 8) ? 0 : 1); }
+            catch (Exception error) { File.WriteAllText(output, JsonSerializer.Serialize(new { error = error.ToString() })); Shutdown(1); }
+            return;
+        }
+        if (e.Args.Contains("--lighting-test"))
+        {
+            var index = Array.IndexOf(e.Args, "--output");
+            var output = index >= 0 && index + 1 < e.Args.Length ? e.Args[index + 1] : Path.Combine(AppContext.BaseDirectory, "lighting-test.json");
+            try { Shutdown(await Task.Run(() => LightingCheck.Test(output, 10)) ? 0 : 1); }
             catch (Exception error) { File.WriteAllText(output, JsonSerializer.Serialize(new { error = error.ToString() })); Shutdown(1); }
             return;
         }
@@ -60,7 +142,7 @@ public partial class App : Application
         var measureIndex = Array.IndexOf(e.Args, "--measure");
         measure = measureIndex >= 0 && measureIndex + 1 < e.Args.Length ? e.Args[measureIndex + 1] : null;
         var startup = e.Args.Contains(StartupTask.Argument);
-        page = e.Args.Contains("--keyboard") ? "keyboard" : "display";
+        page = e.Args.Contains("--keyboard") ? "keyboard" : e.Args.Contains("--lighting") ? "lighting" : "display";
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
         if (screenshot == null && measure == null)
         {
@@ -83,7 +165,7 @@ public partial class App : Application
         host = new SoraHost();
         // A tray app that drives hardware should log and keep running rather than vanish.
         DispatcherUnhandledException += (_, error) => { host.Log("Unhandled: " + error.Exception); error.Handled = true; };
-        host.Start();
+        host.Start(applyLighting: screenshot == null && measure == null);
         if (screenshot == null)
         {
             tray = new NativeTray("Sora", TrayMenu);

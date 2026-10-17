@@ -1,4 +1,4 @@
-param([string]$OutputDirectory = 'dist\Sora-0.5.4', [switch]$NoRestore)
+param([string]$OutputDirectory = 'dist\Sora-0.6.11', [switch]$NoRestore)
 $ErrorActionPreference = 'Stop'
 $TaskRoot = $PSScriptRoot
 $env:DOTNET_CLI_HOME = Join-Path $TaskRoot '.dotnet'
@@ -14,17 +14,26 @@ if ($NoRestore) { $PublishArguments += '--no-restore' }
 & dotnet @PublishArguments
 if ($LASTEXITCODE -ne 0) { throw 'Sora build failed' }
 & (Join-Path $TaskRoot 'scripts\Write-ThirdPartyNotices.ps1') -ReleaseDirectory (Join-Path $TaskRoot $OutputDirectory)
-$PriorSettings = Join-Path $TaskRoot 'dist\Sora-0.5.3\data\settings.json'
+$PriorSettings = Join-Path $TaskRoot 'dist\Sora-0.6.10\data\settings.json'
 $NewSettings = Join-Path $TaskRoot (Join-Path $OutputDirectory 'data\settings.json')
 if ((Test-Path -LiteralPath $PriorSettings) -and -not (Test-Path -LiteralPath $NewSettings)) {
     New-Item -ItemType Directory -Force -Path (Split-Path $NewSettings -Parent) | Out-Null
     Copy-Item -LiteralPath $PriorSettings -Destination $NewSettings
 }
-$PriorKeyboardData = Join-Path $TaskRoot 'dist\Sora-0.5.3\data\keyboard'
+$PriorKeyboardData = Join-Path $TaskRoot 'dist\Sora-0.6.10\data\keyboard'
 $NewKeyboardData = Join-Path $TaskRoot (Join-Path $OutputDirectory 'data\keyboard')
 if ((Test-Path -LiteralPath $PriorKeyboardData) -and -not (Test-Path -LiteralPath $NewKeyboardData)) {
     New-Item -ItemType Directory -Force -Path (Split-Path $NewKeyboardData -Parent) | Out-Null
     Copy-Item -LiteralPath $PriorKeyboardData -Destination $NewKeyboardData -Recurse
+}
+# Lighting: the saved choices and, above all, the RAM's original-lighting backup.
+foreach ($Name in 'lighting.json', 'lighting-original.json') {
+    $Prior = Join-Path $TaskRoot (Join-Path 'dist\Sora-0.6.10\data' $Name)
+    $New = Join-Path $TaskRoot (Join-Path $OutputDirectory (Join-Path 'data' $Name))
+    if ((Test-Path -LiteralPath $Prior) -and -not (Test-Path -LiteralPath $New)) {
+        New-Item -ItemType Directory -Force -Path (Split-Path $New -Parent) | Out-Null
+        Copy-Item -LiteralPath $Prior -Destination $New
+    }
 }
 # Re-point existing Sora shortcuts at this build; never creates new ones.
 & (Join-Path $TaskRoot 'scripts\Install-Shortcuts.ps1') -Target (Join-Path $Release 'Sora.exe') -UpdateOnly

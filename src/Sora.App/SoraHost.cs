@@ -38,6 +38,7 @@ internal sealed class SoraHost
     public string DataDirectory => dataDirectory;
     // True while a window is showing readings; conflict checks are only needed then or while the display runs.
     public bool Watched { get; set; }
+    public LightingService Lighting { get; }
     public event Action? Updated;
 
     public SoraHost()
@@ -58,14 +59,18 @@ internal sealed class SoraHost
             if (previous.State != status.State || previous.Problem != status.Problem) Log("Sensors: " + status.State + (status.State == SensorState.Unavailable ? " · " + status.Message + (status.Detail == null ? "" : " · " + status.Detail) : ""));
         };
         timer.Tick += async (_, _) => await TickAsync();
+        Lighting = new LightingService(this);
+        Lighting.Load();
     }
 
-    public void Start()
+    // applyLighting is off for screenshots and measurements, which must not touch hardware.
+    public void Start(bool applyLighting = true)
     {
         Requested = Settings.AutoStartDisplay;
         sensorTask = sensors.RunAsync(lifetime.Token);
         timer.Start();
         _ = TickAsync();
+        if (applyLighting) _ = Lighting.ApplyAtStartupAsync(lifetime.Token);
     }
 
     public Task SetRequestedAsync(bool on) { Requested = on; return TickAsync(); }
@@ -122,6 +127,7 @@ internal sealed class SoraHost
         timer.Stop();
         Requested = false;
         lifetime.Cancel();
+        await Lighting.ExitLightingAsync();
         try { await display.TickAsync(null, Settings, false, DisplayController.FindConflict()); }
         catch (Exception error) when (error is not OutOfMemoryException) { Log(error.Message); }
         await display.DisposeAsync();

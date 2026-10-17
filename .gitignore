@@ -15,3 +15,4 @@ deepcool-re/
 *.tmp
 .vs/
 *.user
+gcc-re/
