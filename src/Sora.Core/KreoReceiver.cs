@@ -86,6 +86,22 @@ public sealed class KreoReceiver : IDisposable
         return new(command, true, null, data[..Math.Min(received, Math.Max(length, received))], total, seen.Count, badChecksums, raw);
     }
 
+    /// <summary>
+    /// A read that is sent again when it goes unanswered. The receiver drops requests while the keyboard's radio is idle or it is
+    /// busy answering another program (replies reach every open handle), and then answers the next one within ~100 ms.
+    /// </summary>
+    public async Task<ReceiverReply> ReadWithRetryAsync(byte command, byte selector, int length, int attempts = 4, CancellationToken token = default)
+    {
+        ReceiverReply reply = new(command, false, "not sent", [], -1, 0, 0, []);
+        for (var attempt = 0; attempt < attempts; attempt++)
+        {
+            reply = await ReadAsync(command, selector, length, TimeSpan.FromMilliseconds(1200), token);
+            if (reply.Complete && reply.Data.Length >= length) return reply;
+            await Task.Delay(150, token);
+        }
+        return reply;
+    }
+
     // Writes Sora understands and can read back to verify: key map (1), lighting (4), effect palette (9).
     private static readonly byte[] VerifiedWrites = [0x01, 0x04, 0x09];
 
@@ -138,16 +154,15 @@ public sealed class KreoReceiver : IDisposable
     /// </summary>
     public async Task<ReceiverSnapshot> ReadStateAsync(KreoModel model)
     {
-        const string asleep = "The keyboard didn't answer through its 2.4 GHz receiver. Press a key to wake it, then refresh.";
-        var timeout = TimeSpan.FromSeconds(4);
-        var lighting = await ReadAsync(ReadLighting, 0, 128, timeout);
+        const string asleep = "The keyboard didn't answer through its 2.4 GHz receiver. Press any key to wake it; Sora tries again on its own.";
+        var lighting = await ReadWithRetryAsync(ReadLighting, 0, 128);
         if (!lighting.Complete || lighting.Data.Length < 128) throw new KreoReceiverTimeoutException(asleep);
         await Task.Delay(100);
-        var matrix = await ReadAsync(ReadMatrix, 0, 504, timeout);
+        var matrix = await ReadWithRetryAsync(ReadMatrix, 0, 504);
         await Task.Delay(100);
-        var palette = await ReadAsync(ReadColors, 0, 490, timeout);
+        var palette = await ReadWithRetryAsync(ReadColors, 0, 420);
         await Task.Delay(100);
-        var power = await ReadAsync(ReadPower, 0, 2, timeout);
+        var power = await ReadWithRetryAsync(ReadPower, 0, 2);
         if (!matrix.Complete || matrix.Data.Length < 504 || !palette.Complete || palette.Data.Length < 420) throw new KreoReceiverTimeoutException(asleep);
         // The receiver omits the 8-byte block tails; they are completed locally and never written back over 2.4 GHz.
         var keys = new byte[512]; matrix.Data.AsSpan(0, 504).CopyTo(keys); KreoProtocol.CompleteBlock(keys);
@@ -172,10 +187,9 @@ public sealed class KreoReceiver : IDisposable
         desired.Validate();
         if (!desired.Colors.SequenceEqual(expected.Colors)) throw new InvalidOperationException("Per-key colors can't be saved through the 2.4 GHz receiver.");
         const string asleep = "The keyboard didn't answer through its 2.4 GHz receiver. Press a key to wake it, then try again.";
-        var timeout = TimeSpan.FromSeconds(4);
         async Task<byte[]> Read(byte command, int length)
         {
-            var reply = await ReadAsync(command, 0, length, timeout);
+            var reply = await ReadWithRetryAsync(command, 0, length);
             if (!reply.Complete || reply.Data.Length < length) throw new KreoReceiverTimeoutException(asleep);
             return reply.Data[..length];
         }

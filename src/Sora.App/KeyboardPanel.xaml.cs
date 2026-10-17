@@ -26,6 +26,9 @@ public partial class KeyboardPanel : UserControl
     private string statusTone = "Idle";
     // Set when only the 2.4 GHz receiver is present: the keyboard works, but its settings can't be reached.
     private bool wirelessOnly;
+    // The receiver is there but the keyboard did not answer: retried quietly while the page is open, until it does.
+    private bool notResponding, retrying;
+    private readonly System.Windows.Threading.DispatcherTimer wakeRetry = new() { Interval = TimeSpan.FromSeconds(8) };
     // Connected through the 2.4 GHz receiver: lighting is editable; per-key colours can't be read, keys and palette aren't written yet.
     private bool wireless;
     private int? battery;
@@ -38,8 +41,8 @@ public partial class KeyboardPanel : UserControl
     public bool IsBusy => busy;
     public bool HasPendingEdits => PendingChanges() > 0;
     // Short status for the sidebar; the page header chip carries the same tone.
-    public string SidebarStatus => busy ? "Kreo · Working…" : wirelessOnly ? "Kreo · 2.4 GHz receiver" : statusTone == "Bad" ? "Kreo · Needs attention" : baseline != null ? model.Name + (wireless ? " · 2.4 GHz" : " · USB") : "Kreo · Not connected";
-    public string StatusTone => busy ? "Warn" : statusTone;
+    public string SidebarStatus => busy && !retrying ? "Kreo · Working…" : wirelessOnly ? "Kreo · 2.4 GHz receiver" : statusTone == "Bad" ? "Kreo · Needs attention" : baseline != null ? model.Name + (wireless ? " · 2.4 GHz" : " · USB") : "Kreo · Not connected";
+    public string StatusTone => busy && !retrying ? "Warn" : statusTone;
 
     private void SetStatus(string text, string tone)
     {
@@ -53,6 +56,9 @@ public partial class KeyboardPanel : UserControl
         ModelPicker.ItemsSource = KreoModel.All; ModelPicker.SelectedItem = model;
         BuildBrushSwatches();
         ready = true; DrawBoard(); UpdateAvailability();
+        wakeRetry.Tick += async (_, _) => { if (notResponding && !busy && IsVisible && PendingChanges() == 0) await ReadAsync(); };
+        IsVisibleChanged += (_, _) => { if (IsVisible) wakeRetry.Start(); else wakeRetry.Stop(); };
+        Unloaded += (_, _) => wakeRetry.Stop();
     }
 
     // Board geometry: one key unit in design pixels and the gap between caps. The Viewbox scales the whole board uniformly.
@@ -278,13 +284,16 @@ public partial class KeyboardPanel : UserControl
 
     private async Task RunOperation(Func<Task> action)
     {
-        busy = true; UpdateAvailability(); SetStatus("Working…", "Warn");
+        // A quiet retry keeps the "not responding" chip instead of flashing "Working…".
+        retrying = notResponding;
+        busy = true; UpdateAvailability(); if (!retrying) SetStatus("Working…", "Warn");
+        notResponding = false;
         try { await action(); }
         catch (KreoReceiverTimeoutException error)
         {
-            // Not a fault: the keyboard is asleep or out of range. Nothing can be applied until it answers.
-            wirelessOnly = true; wireless = false; device = null;
-            SetStatus("2.4 GHz · not responding", "Warn"); KeyboardDetail.Text = error.Message;
+            // Not a fault: the keyboard is asleep or out of range. Sora asks again every few seconds while this page is open.
+            wirelessOnly = true; wireless = false; device = null; notResponding = true;
+            SetStatus("2.4 GHz · waiting for the keyboard", "Warn"); KeyboardDetail.Text = error.Message;
         }
         catch (KreoWirelessOnlyException error)
         {
@@ -293,7 +302,7 @@ public partial class KeyboardPanel : UserControl
             SetStatus("2.4 GHz · settings need USB", "Warn"); KeyboardDetail.Text = error.Message;
         }
         catch (Exception error) when (error is not OutOfMemoryException) { wirelessOnly = false; SetStatus("Needs attention", "Bad"); KeyboardDetail.Text = error.Message; }
-        finally { busy = false; UpdateKeys(); UpdateAvailability(); }
+        finally { busy = false; retrying = false; UpdateKeys(); UpdateAvailability(); }
     }
 
     private void LoadControls()
