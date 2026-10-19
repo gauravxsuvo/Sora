@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://sora.portways.app/sitemap.xml

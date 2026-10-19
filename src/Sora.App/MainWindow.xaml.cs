@@ -485,6 +485,7 @@ public partial class MainWindow : Window
         Dispatcher.BeginInvoke(() => _ = ((App)Application.Current).ExitAsync());
     }
 
+    internal void OpenUpdates() => NavUpdates.IsChecked = true;
     internal void CloseForTray() { closingForTray = true; Close(); }
 
     // Waits for any keyboard write to finish before the app exits.

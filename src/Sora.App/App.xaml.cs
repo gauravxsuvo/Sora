@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Sora.Core;
+using Sora.Update.Windows;
 
 namespace Sora.App;
 
@@ -251,6 +252,14 @@ public partial class App : Application
         var measureIndex = Array.IndexOf(e.Args, "--measure");
         measure = measureIndex >= 0 && measureIndex + 1 < e.Args.Length ? e.Args[measureIndex + 1] : null;
         var startup = e.Args.Contains(StartupTask.Argument);
+        IDisposable? launchGate;
+        try { launchGate = UpdatePaths.EnterGate(); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            if (!startup) MessageBox.Show(error.Message, "Sora update");
+            Shutdown(); return;
+        }
+        using var ownedLaunchGate = launchGate;
         page = e.Args.Contains("--keyboard") ? "keyboard" : e.Args.Contains("--lighting") ? "lighting" : e.Args.Contains("--fans") ? "fans" : e.Args.Contains("--gpu") ? "gpu" : e.Args.Contains("--ssd") ? "ssd" : e.Args.Contains("--wifi") ? "wifi" : e.Args.Contains("--updates") ? "updates" : e.Args.Contains("--logitech") ? "logitech" : e.Args.Contains("--settings") ? "settings" : "display";
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
         if (screenshot == null && measure == null)
@@ -284,6 +293,12 @@ public partial class App : Application
         // A tray app that drives hardware should log and keep running rather than vanish.
         DispatcherUnhandledException += (_, error) => { host.Log("Unhandled: " + error.Exception); error.Handled = true; };
         host.Start(applyHardware: screenshot == null && measure == null);
+        if (measure == null && (screenshot == null || SoraData.IsIsolated))
+        {
+            ApplicationUpdates = new ApplicationUpdateService();
+            ApplicationUpdates.UpdateAvailable += () => tray?.ShowNotification("Sora update available", "Sora " + ApplicationUpdates.Release?.Version + " is ready to download. Open Updates from Sora's tray menu.");
+            if (screenshot == null && !SoraData.IsIsolated) _ = ApplicationUpdates.RunScheduledChecksAsync();
+        }
         if (screenshot == null)
         {
             tray = new NativeTray("Sora", TrayMenu);
@@ -299,8 +314,14 @@ public partial class App : Application
             var sizeIndex = Array.IndexOf(e.Args, "--size");
             if (sizeIndex >= 0 && sizeIndex + 1 < e.Args.Length && e.Args[sizeIndex + 1].Split('x') is [var w, var h] && double.TryParse(w, out var width) && double.TryParse(h, out var height)) { window!.Width = width; window.Height = height; }
         }
-        else if (!startup) ShowWindow();
+        else if (!startup && !e.Args.Contains("--tray")) ShowWindow();
         else _ = TrimAsync(15000);
+        var updateIndex = Array.IndexOf(e.Args, "--update-complete");
+        if (updateIndex >= 0 && updateIndex + 1 < e.Args.Length && string.Equals(Environment.ProcessPath, UpdatePaths.InstalledExe, StringComparison.OrdinalIgnoreCase))
+        {
+            try { File.WriteAllText(Path.Combine(UpdatePaths.Stage(e.Args[updateIndex + 1]), "healthy.txt"), Environment.ProcessId.ToString()); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { host.Log("Update startup acknowledgement: " + error.Message); }
+        }
     }
 
     // SORA_INSTANCE lets a test copy run beside an installed Sora without sharing its single-instance names.
@@ -315,10 +336,38 @@ public partial class App : Application
     private bool exiting;
 
     internal bool WindowOpen => window != null;
+    internal ApplicationUpdateService? ApplicationUpdates { get; private set; }
+    private bool updatePrepared;
+    internal bool CanPrepareUpdate => !exiting && !updatePrepared && host != null && (window == null || !window.KeepAliveWhenHidden);
+    internal async Task<bool> PrepareUpdateAsync()
+    {
+        if (!CanPrepareUpdate || host == null) return false;
+        updatePrepared = true;
+        if (window != null) window.IsEnabled = false;
+        await host.StopAsync();
+        if (host.CleanupFailed)
+        {
+            return false;
+        }
+        return true;
+    }
+    internal void CancelPreparedUpdate(string reason)
+    {
+        if (!updatePrepared) return;
+        AppDialog.ShowMessage(window, "Sora update stopped", reason + "\n\nSora's controls have been stopped. Sora will close; reopen it from its shortcut. Details are in sora.log.");
+        exiting = true; ApplicationUpdates?.Dispose(); tray?.Dispose(); Shutdown();
+    }
+    internal void FinishUpdateExit()
+    {
+        if (!updatePrepared) throw new InvalidOperationException("Update cleanup has not been prepared.");
+        exiting = true;
+        ApplicationUpdates?.Dispose(); tray?.Dispose();
+        Shutdown();
+    }
 
     internal void ShowWindow(string? screenshot = null)
     {
-        if (exiting || host == null) return;
+        if (exiting || updatePrepared || host == null) return;
         if (window == null)
         {
             window = new MainWindow(host, screenshot, page);
@@ -341,7 +390,8 @@ public partial class App : Application
     private IReadOnlyList<NativeTray.MenuItem?> TrayMenu() =>
     [
         new("Open Sora", () => ShowWindow()),
-        host!.Requested ? new("Stop display", () => _ = host.SetRequestedAsync(false)) : new("Start display", () => _ = host.SetRequestedAsync(true)),
+        new(ApplicationUpdates?.Available == true ? "Sora update available…" : "Check for Sora updates…", () => { page = "updates"; ShowWindow(); window?.OpenUpdates(); }, !updatePrepared),
+        host!.Requested ? new("Stop display", () => _ = host.SetRequestedAsync(false), !updatePrepared) : new("Start display", () => _ = host.SetRequestedAsync(true), !updatePrepared),
         null,
         new("Exit Sora", () => _ = ExitAsync()),
     ];
@@ -364,8 +414,9 @@ public partial class App : Application
 
     internal async Task ExitAsync()
     {
-        if (exiting) return;
+        if (exiting || ApplicationUpdates?.Installing == true) return;
         exiting = true;
+        ApplicationUpdates?.Dispose();
         var failures = await CleanupSequence.RunAsync(
             ("Window", () => window?.ShutdownAsync() ?? Task.CompletedTask),
             ("Hardware", () => host?.StopAsync() ?? Task.CompletedTask),

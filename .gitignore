@@ -17,3 +17,8 @@ deepcool-re/
 *.user
 gcc-re/
 logitech-re/
+.release-keys*/
+web/sora-downloads/node_modules/
+.env
+.env.*
+!.env.example

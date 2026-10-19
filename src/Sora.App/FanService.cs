@@ -417,7 +417,7 @@ internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardwar
                 if (errors.Count > 0) throw new AggregateException("Could not restore every fan header.", errors);
             });
         }
-        catch (Exception e) when (e is not OutOfMemoryException) { host.Log("Fan exit restore: " + e); Message = "Fan exit restore failed: " + e.Message; }
+        catch (Exception e) when (e is not OutOfMemoryException) { host.RecordCleanupFailure("Fan exit restore: " + e); Message = "Fan exit restore failed: " + e.Message; }
         finally
         {
             if (VendorServicePaused)
@@ -427,7 +427,7 @@ internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardwar
                     await Task.Run(GigabyteFanServiceControl.Resume);
                     File.Delete(ServiceOwnershipPath); VendorServicePaused = false;
                 }
-                catch (Exception e) when (e is not OutOfMemoryException) { host.Log("Cannot resume GCC fan service: " + e); Message = "Cannot resume GCC fan service: " + e.Message; }
+                catch (Exception e) when (e is not OutOfMemoryException) { host.RecordCleanupFailure("Cannot resume GCC fan service: " + e); Message = "Cannot resume GCC fan service: " + e.Message; }
             }
             gate.Release();
         }

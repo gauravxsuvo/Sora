@@ -49,6 +49,14 @@ internal sealed class NativeTray : IDisposable
         Notify(NIM_MODIFY);
     }
 
+    public void ShowNotification(string title, string message)
+    {
+        if (disposed) return;
+        var data = new NOTIFYICONDATAW { cbSize = Marshal.SizeOf<NOTIFYICONDATAW>(), hWnd = hwnd, uID = 1, uFlags = 0x10,
+            szTip = "", szInfoTitle = title.Length > 63 ? title[..63] : title, szInfo = message.Length > 255 ? message[..255] : message, dwInfoFlags = 1 };
+        Shell_NotifyIconW(NIM_MODIFY, ref data);
+    }
+
     private void Notify(int message)
     {
         var data = new NOTIFYICONDATAW { cbSize = Marshal.SizeOf<NOTIFYICONDATAW>(), hWnd = hwnd, uID = 1, uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP, uCallbackMessage = WM_TRAY, hIcon = icon, szTip = tooltip, szInfo = "", szInfoTitle = "" };

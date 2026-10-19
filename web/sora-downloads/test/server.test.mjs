@@ -1,0 +1,47 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { Readable } from 'node:stream';
+import { once } from 'node:events';
+import { makeServer } from '../server.mjs';
+import { storageConfig } from '../storage.mjs';
+
+async function withServer(storage, run) {
+  const server = makeServer({ storage, logger: { error() {} } }); server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  try { await run(`http://127.0.0.1:${server.address().port}`); }
+  finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+}
+test('static website, method restrictions and honest unconfigured feed', () => withServer(null, async base => {
+  const home = await fetch(base); assert.equal(home.status, 200); assert.match(await home.text(), /Your hardware/);
+  assert.match(home.headers.get('content-security-policy'), /object-src 'none'/);
+  for (const path of ['/styles.css', '/app.mjs', '/release-verification.mjs', '/sora-mark.svg', '/sora-updates.png', '/update-policy.json']) assert.equal((await fetch(base + path)).status, 200, path);
+  assert.equal((await fetch(base + '/healthz')).status, 200);
+  assert.equal((await fetch(base + '/channels/stable.json')).status, 503);
+  assert.equal((await fetch(base + '/', { method: 'POST' })).status, 405);
+  assert.equal((await fetch(base + '/.release-keys/key.pem')).status, 404);
+  assert.equal((await fetch(base + '/releases/1.0.0/win-x64/Sora-Setup-2.0.0-x64.exe')).status, 404);
+}));
+test('release proxy streams ranges and HEAD; feeds are never cached', () => withServer({
+  async get(key, options) {
+    assert.match(key, /^(channels|releases)\//);
+    return { Body: Readable.from(['abc']), ContentLength: 3, ETag: '"test"', ...(options.range ? { ContentRange: 'bytes 0-2/100' } : {}) };
+  }
+}, async base => {
+  const path = '/releases/0.12.0/win-x64/Sora-Setup-0.12.0-x64.exe';
+  const file = await fetch(base + path, { headers: { range: 'bytes=0-2' } });
+  assert.equal(file.status, 206); assert.equal(await file.text(), 'abc'); assert.equal(file.headers.get('content-range'), 'bytes 0-2/100');
+  assert.match(file.headers.get('cache-control'), /immutable/); assert.match(file.headers.get('content-disposition'), /Sora-Setup-0.12.0/);
+  const head = await fetch(base + path, { method: 'HEAD' }); assert.equal(head.status, 200); assert.equal(await head.text(), '');
+  const feed = await fetch(base + '/channels/stable.json'); assert.equal(feed.headers.get('cache-control'), 'no-store');
+  assert.equal((await fetch(base + path, { headers: { range: 'bytes=0-2,5-7' } })).status, 416);
+}));
+test('storage failures do not leak credentials and rate limits can be retried', () => withServer({
+  async get() { throw Object.assign(new Error('secret should not appear'), { name: 'SlowDown', $metadata: { httpStatusCode: 429 } }); }
+}, async base => {
+  const response = await fetch(base + '/channels/stable.json'); assert.equal(response.status, 429); assert.equal(response.headers.get('retry-after'), '60'); assert.doesNotMatch(await response.text(), /secret/);
+}));
+test('storage uses internal server endpoint and safe preview prefixes', () => {
+  const config = storageConfig({ S3_ENDPOINT: 'https://storage.example', S3_INTERNAL_ENDPOINT: 'http://storage:9000', S3_BUCKET: 'sora', S3_ACCESS_KEY_ID: 'test', S3_SECRET_ACCESS_KEY: 'test', S3_PREFIX: 'preview/pr-1/' });
+  assert.equal(config.endpoint, 'http://storage:9000'); assert.equal(config.prefix, 'preview/pr-1/public/');
+  assert.equal(storageConfig({}), null);
+  assert.throws(() => storageConfig({ S3_ENDPOINT: 'https://storage.example', S3_BUCKET: 'sora', S3_ACCESS_KEY_ID: 'test', S3_SECRET_ACCESS_KEY: 'test', S3_PREFIX: '../' }));
+});

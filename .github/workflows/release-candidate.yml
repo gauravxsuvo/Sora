@@ -1,0 +1,95 @@
+name: Build Sora release candidate
+on:
+  workflow_dispatch:
+    inputs:
+      sequence:
+        description: 'Increasing feed sequence (leave blank to build without signing)'
+        required: false
+        type: string
+      promote:
+        description: 'Upload and promote this already-qualified release to stable'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: sora-release-promotion
+  cancel-in-progress: false
+jobs:
+  candidate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/sora-downloads/package-lock.json
+      - name: Check app and website
+        shell: pwsh
+        run: |
+          ./test.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'App checks failed' }
+          Push-Location web/sora-downloads
+          try {
+            npm ci --ignore-scripts --no-audit --no-fund
+            if ($LASTEXITCODE -ne 0) { throw 'Website dependencies failed' }
+            npm test
+            if ($LASTEXITCODE -ne 0) { throw 'Website checks failed' }
+          } finally { Pop-Location }
+      - name: Publish candidate and package installer
+        shell: pwsh
+        run: |
+          dotnet publish src/Sora.App/Sora.App.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -p:DebugType=embedded -p:UseSharedCompilation=false -o artifacts/release/publish
+          if ($LASTEXITCODE -ne 0) { throw 'Publish failed' }
+          ./scripts/Write-ThirdPartyNotices.ps1 -ReleaseDirectory artifacts/release/publish
+          $compiler = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path -LiteralPath $compiler)) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
+          }
+          ./scripts/Build-Installer.ps1 -ReleaseDirectory artifacts/release/publish -OutputDirectory artifacts/release/setup -Compiler $compiler
+      - name: Sign release metadata with the free Sora key
+        if: inputs.sequence != ''
+        shell: pwsh
+        env:
+          SORA_RELEASE_PRIVATE_KEY: ${{ secrets.SORA_RELEASE_PRIVATE_KEY }}
+          SORA_FEED_SEQUENCE: ${{ inputs.sequence }}
+        run: |
+          if (-not $env:SORA_RELEASE_PRIVATE_KEY) { throw 'Set the release-signing secret, or build without a feed sequence.' }
+          $version = ([xml](Get-Content src/Sora.App/Sora.App.csproj)).Project.PropertyGroup.Version | Where-Object { $_ }
+          $keyFile = Join-Path $env:RUNNER_TEMP 'sora-release-key.pem'
+          try {
+            [IO.File]::WriteAllText($keyFile, $env:SORA_RELEASE_PRIVATE_KEY)
+            dotnet run --project scripts/Sora.ReleaseTool -- prepare "artifacts/release/setup/Sora-Setup-$version-x64.exe" $version $env:SORA_FEED_SEQUENCE docs/Sora-0.12.0.md release/update-policy.json $keyFile artifacts/release/metadata
+            if ($LASTEXITCODE -ne 0) { throw 'Release metadata signing failed' }
+          } finally { if (Test-Path -LiteralPath $keyFile) { Remove-Item -LiteralPath $keyFile -Force } }
+      - name: Upload and promote
+        if: inputs.promote
+        shell: pwsh
+        env:
+          S3_ENDPOINT: ${{ secrets.SORA_RELEASE_S3_ENDPOINT }}
+          S3_BUCKET: ${{ secrets.SORA_RELEASE_S3_BUCKET }}
+          S3_ACCESS_KEY_ID: ${{ secrets.SORA_RELEASE_S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.SORA_RELEASE_S3_SECRET_ACCESS_KEY }}
+          S3_REGION: auto
+          S3_FORCE_PATH_STYLE: 'true'
+        run: |
+          if (-not (Test-Path artifacts/release/metadata/stable.json)) { throw 'A signed feed sequence is required for promotion.' }
+          $version = ([xml](Get-Content src/Sora.App/Sora.App.csproj)).Project.PropertyGroup.Version | Where-Object { $_ }
+          node web/sora-downloads/publish-release.mjs upload "artifacts/release/setup/Sora-Setup-$version-x64.exe" artifacts/release/metadata/stable.json
+          if ($LASTEXITCODE -ne 0) { throw 'Upload verification failed; feed was not promoted.' }
+          node web/sora-downloads/publish-release.mjs promote "artifacts/release/setup/Sora-Setup-$version-x64.exe" artifacts/release/metadata/stable.json
+          if ($LASTEXITCODE -ne 0) { throw 'Inspect current feed/cache before retrying promotion.' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sora-release-candidate
+          path: |
+            artifacts/release/setup/Sora-Setup-*-x64.exe
+            artifacts/release/setup/build-audit.json
+            artifacts/release/metadata/
+          if-no-files-found: warn

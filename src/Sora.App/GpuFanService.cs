@@ -284,7 +284,7 @@ internal sealed class GpuFanService
             {
                 if (IsNative(active[identity])) { host.Log("GPU native profile retained on Exit for " + identity + "; saved original remains available."); continue; }
                 try { await Task.Run(() => GpuFanTransactions.Apply(Access, originals[identity])); originals.Remove(identity); active.Remove(identity); SaveBackups(); }
-                catch (Exception e) { host.Log("GPU exit restoration failed; backup retained: " + e); }
+                catch (Exception e) { host.RecordCleanupFailure("GPU exit restoration failed; backup retained: " + e); }
             }
             access?.Dispose(); access = null; timer.Dispose();
         }

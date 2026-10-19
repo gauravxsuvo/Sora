@@ -7,6 +7,10 @@
 
 A native Windows hardware hub for the **DeepCool LD360** display, **Kreo keyboards**, **Logitech G502 HERO**, **RGB memory and Gigabyte motherboard lighting**, **Gigabyte motherboard fans**, **NVIDIA GPU fans**, **SSD health**, and **Wi-Fi antenna measurements**. Sora reads CPU temperature, utilization, and package power independently through **LibreHardwareMonitor 0.9.6 and PawnIO**, and talks to the keyboard directly over USB; Kreo KB Hub does not need to run.
 
+## Application updater — 0.12.0 candidate
+
+The source now includes Sora application update checks, signed release metadata, verified downloads and a guarded install/restart helper. The Portways download website is in `web/sora-downloads`, targeting `sora.portways.app`. Release signing uses a free local P-256 key; a paid Windows publisher certificate is not required. Hosting/storage setup and installed-machine upgrade qualification remain pending. This candidate has not replaced the daily-use installation or been promoted as stable. See [release notes](docs/Sora-0.12.0.md), [setup and release operations](docs/sora-updater-operations.md), and the [original plan](docs/sora-updater-plan.md).
+
 ## 0.10.0: G502 software controls and lighting
 
 Open **Logitech** with **Ctrl+9**. Edit DPI stages and a separate hold-to-shift speed, remap G2–G11 on default/G-Shift layers, create chord macros, and choose independent Primary/Logo lighting. The editor uses G HUB's real locally imported front/side images and marker coordinates. LIGHTSYNC adds color/RGB/palettes, screen sampling and speaker-level audio lighting. Device settings expose firmware, DPI Always On and startup effects.

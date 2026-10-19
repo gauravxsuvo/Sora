@@ -150,7 +150,7 @@ internal sealed class LogitechReactiveLighting
             {
                 await device.DisposeAsync();
                 try { await RestoreOwnershipAsync(); }
-                catch (Exception error) when (error is not OutOfMemoryException) { Status = "Lighting restoration pending · reconnect the mouse"; host.Log("Reactive lighting restoration: " + error.Message); }
+                catch (Exception error) when (error is not OutOfMemoryException) { Status = "Lighting restoration pending · reconnect the mouse"; host.RecordCleanupFailure("Reactive lighting restoration: " + error.Message); }
             }
         }
     }

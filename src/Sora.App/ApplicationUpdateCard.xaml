@@ -1,0 +1,21 @@
+<UserControl x:Class="Sora.App.ApplicationUpdateCard" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Border Style="{StaticResource Card}" Padding="{StaticResource SectionContentInset}" Margin="0,0,0,12">
+    <StackPanel>
+      <TextBlock Text="Sora application" Style="{StaticResource Eyebrow}"/>
+      <TextBlock x:Name="VersionText" FontSize="20" FontWeight="SemiBold" Margin="0,8,0,0" TextWrapping="Wrap"/>
+      <TextBlock x:Name="AppStatus" Style="{StaticResource CaptionText}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+      <TextBlock x:Name="LastCheckText" Style="{StaticResource CaptionText}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+      <TextBlock x:Name="ReleaseNotes" Style="{StaticResource SecondaryText}" Margin="0,12,0,0" TextWrapping="Wrap" MaxHeight="220"/>
+      <ProgressBar x:Name="DownloadProgress" Height="4" Maximum="1" Margin="0,12,0,0" Visibility="Collapsed"/>
+      <WrapPanel Margin="0,12,0,0">
+        <Button x:Name="AppCheck" Content="Check now" Click="CheckClick" Style="{StaticResource QuietButton}" Margin="0,0,8,8"/>
+        <Button x:Name="AppDownload" Content="Download update" Click="DownloadClick" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Visibility="Collapsed"/>
+        <Button x:Name="AppInstall" Content="Install and restart" Click="InstallClick" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Visibility="Collapsed"/>
+        <Button x:Name="AppSkip" Content="Skip this version" Click="SkipClick" Style="{StaticResource QuietButton}" Margin="0,0,8,8" Visibility="Collapsed"/>
+        <Button x:Name="AppCancel" Content="Cancel" Click="CancelClick" Style="{StaticResource QuietButton}" Margin="0,0,8,8" Visibility="Collapsed"/>
+      </WrapPanel>
+      <CheckBox x:Name="AutomaticChecks" Content="Check for Sora updates automatically" Click="AutomaticClick" Margin="0,4,0,0"/>
+      <TextBlock Style="{StaticResource CaptionText}" Margin="0,8,0,0" TextWrapping="Wrap" Text="Sora installs application updates only when you choose Install and restart. BIOS and driver downloads are managed separately below."/>
+    </StackPanel>
+  </Border>
+</UserControl>

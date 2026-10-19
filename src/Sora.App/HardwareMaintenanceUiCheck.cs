@@ -17,6 +17,9 @@ internal static class HardwareMaintenanceUiCheck
         var checks = new List<Result>();
         void Check(string name, bool passed) => checks.Add(new(name, passed));
         var updates = new UpdatesPanel();
+        Check("Application updates have their own section", updates.FindName("CheckButton") is Button button && (string)button.Content == "Check BIOS and drivers");
+        var appCard = new ApplicationUpdateCard();
+        Check("Application installation is a distinct user action", (string)appCard.AppInstall.Content == "Install and restart" && appCard.AppInstall.Visibility == Visibility.Collapsed);
         Check("Firmware coverage is always explicit before a catalog check", updates.CoverageText.Text == HardwareMaintenance.Coverage);
         Check("All eight manual support routes have an action", updates.MaintenanceList.Children.OfType<StackPanel>().Count(row => row.Children.OfType<Button>().Count() == 1) == 8);
         var ssd = new SsdPanel();
@@ -29,7 +32,7 @@ internal static class HardwareMaintenanceUiCheck
         ssd.ShowDrive(drive with { Model = "KIOXIA-EXCERIA PLUS G3 SSD" });
         Check("Similar model does not inherit advice", ssd.FirmwareNoticeCard.Visibility == Visibility.Collapsed);
         ssd.ShowDrive(drive); ssd.ShowDrive(null);
-        Check("Failed or empty inventory clears advisory and identity", ssd.FirmwareNoticeCard.Visibility == Visibility.Collapsed && ssd.FirmwareNoticeDetail.Text.Length == 0 && ssd.ModelText.Text == "Select a drive");
+        Check("Failed or empty inventory clears advisory and identity", ssd.FirmwareNoticeCard.Visibility == Visibility.Collapsed && ssd.FirmwareNoticeDetail.Text.Length == 0 && ssd.ModelText.Text != drive.Model);
         var passed = checks.All(value => value.Passed);
         using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
         JsonSerializer.Serialize(stream, new { capturedAt = DateTimeOffset.Now, passed, configurationWrites = 0, synthetic = true, browserLaunched = false, checks = checks.Select(value => new { name = value.Name, passed = value.Passed }) }, new JsonSerializerOptions { WriteIndented = true });

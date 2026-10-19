@@ -42,8 +42,13 @@ while ($pending.Count) {
     }
 }
 $required = @('Sora.exe','Sora.dll','Sora.Core.dll','Sora.deps.json','Sora.runtimeconfig.json','THIRD-PARTY-NOTICES.md',
-    'licenses\LibreHardwareMonitor-MPL-2.0.txt','runtimes\win-x64\lib\net8.0\LibreHardwareMonitorLib.dll')
+    'licenses\LibreHardwareMonitor-MPL-2.0.txt')
 foreach ($name in $required) { if ($name -notin $files.relative) { throw "Incomplete folder publish: $name" } }
+# A RID-specific folder publish flattens this runtime assembly; a portable folder publish retains runtimes/.
+# The dependency-manifest walk below independently checks the actual selected asset's destination.
+if ('LibreHardwareMonitorLib.dll' -notin $files.relative -and 'runtimes\win-x64\lib\net8.0\LibreHardwareMonitorLib.dll' -notin $files.relative) {
+    throw 'Incomplete folder publish: LibreHardwareMonitorLib.dll'
+}
 $exe = Join-Path $release 'Sora.exe'
 $reader = [IO.BinaryReader]::new([IO.File]::OpenRead($exe))
 try {
@@ -56,6 +61,11 @@ try {
 $versionInfo = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
 $version = '{0}.{1}.{2}' -f $versionInfo.FileMajorPart,$versionInfo.FileMinorPart,$versionInfo.FileBuildPart
 if ($versionInfo.ProductName -ne 'Sora' -or $versionInfo.FilePrivatePart -ne 0) { throw 'Unrecognized Sora product/version metadata.' }
+if ([version]$version -ge [version]'0.12.0') {
+    foreach ($name in @('UpdateRunner\Sora.UpdateRunner.exe','UpdateRunner\Sora.UpdateRunner.dll','UpdateRunner\Sora.UpdateRunner.deps.json','UpdateRunner\Sora.UpdateRunner.runtimeconfig.json')) {
+        if ($name -notin $files.relative) { throw "Incomplete updater-enabled publish: $name" }
+    }
+}
 $runtime = Get-Content -LiteralPath (Join-Path $release 'Sora.runtimeconfig.json') -Raw | ConvertFrom-Json
 $frameworks = @($runtime.runtimeOptions.frameworks)
 foreach ($name in @('Microsoft.NETCore.App', 'Microsoft.WindowsDesktop.App')) {

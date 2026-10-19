@@ -1,15 +1,16 @@
 <UserControl x:Class="Sora.App.UpdatesPanel" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Sora.App">
   <Grid>
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-    <local:PageHeader Title="Updates" Subtitle="Motherboard BIOS and drivers, plus official hardware maintenance routes.">
+    <local:PageHeader Title="Updates" Subtitle="Sora application updates and hardware maintenance.">
       <StackPanel Orientation="Horizontal">
         <Button x:Name="FolderButton" Content="Open downloads" Click="FolderClick" Style="{StaticResource QuietButton}" Margin="0,0,8,0"/>
-        <Button x:Name="CheckButton" Content="Check for updates" Click="CheckClick" Style="{StaticResource PrimaryButton}"/>
+        <Button x:Name="CheckButton" Content="Check BIOS and drivers" Click="CheckClick" Style="{StaticResource PrimaryButton}"/>
       </StackPanel>
     </local:PageHeader>
-    <TextBlock x:Name="StatusText" Grid.Row="1" Style="{StaticResource CaptionText}" Margin="0,14,0,14" TextWrapping="Wrap" Text="Sora checks only when you press Check for updates. It downloads installers for you to run; it never installs drivers or flashes the BIOS."/>
+    <TextBlock x:Name="StatusText" Grid.Row="1" Style="{StaticResource CaptionText}" Margin="0,14,0,14" TextWrapping="Wrap" Text="BIOS and driver checks run only when you press Check BIOS and drivers. Sora downloads those files for you to run; it never installs drivers or flashes the BIOS."/>
     <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
       <StackPanel Margin="0,0,6,0">
+        <local:ApplicationUpdateCard/>
         <Border Style="{StaticResource Card}" Padding="{StaticResource SectionContentInset}">
           <StackPanel>
             <TextBlock Text="This PC" Style="{StaticResource Eyebrow}"/>
@@ -21,7 +22,7 @@
           <StackPanel>
             <Grid><TextBlock Text="Available updates" Style="{StaticResource Eyebrow}"/><TextBlock x:Name="CountText" Style="{StaticResource CaptionText}" HorizontalAlignment="Right"/></Grid>
             <StackPanel x:Name="UpdateList" Margin="0,8,0,0"/>
-            <TextBlock x:Name="EmptyText" Style="{StaticResource CaptionText}" Margin="0,10,0,0" TextWrapping="Wrap" Text="Press Check for updates."/>
+            <TextBlock x:Name="EmptyText" Style="{StaticResource CaptionText}" Margin="0,10,0,0" TextWrapping="Wrap" Text="Press Check BIOS and drivers."/>
           </StackPanel>
         </Border>
         <Border Style="{StaticResource Card}" Padding="{StaticResource SectionContentInset}" Margin="0,12,0,0">

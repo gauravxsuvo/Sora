@@ -3,6 +3,13 @@ using LibreHardwareMonitor.Hardware;
 using System.Text.Json;
 using Sora.Core;
 
+if (args.Contains("--app-update-checks"))
+{
+    await ApplicationUpdateChecks.Run((condition, message) => { if (!condition) throw new Exception(message); });
+    Console.WriteLine("PASS Sora application updater checks (synthetic files, no installer execution or hardware writes)");
+    return 0;
+}
+
 if (args.Contains("--keyboard-inspect-extended"))
 {
     using var keyboard = new KreoKeyboard(KreoKeyboard.Enumerate().Single());
@@ -734,6 +741,8 @@ await Check("Logitech DPI Shift release, stage buttons, G-Shift layers and macro
 await Check("Logitech standard buttons stay native, remaps do not double-inject and held routing changes are refused", LogitechButtonRoutingChecks.Run);
 
 await Check("Startup routing preserves both deployments, absent/disabled tasks, read failures and explicit-action validation (31 cases)", () => { StartupRoutingChecks.Run(Require); return Task.CompletedTask; });
+
+await Check("Sora application updater: release trust, replay/expiry, compatibility, hostile URLs and verified download failures", () => ApplicationUpdateChecks.Run(Require));
 
 Console.WriteLine($"{passed} passed, {failures} failed");
 return failures == 0 ? 0 : 1;

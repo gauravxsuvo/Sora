@@ -254,7 +254,7 @@ internal sealed class LightingService(SoraHost host)
         StopEngine();
         var rainbow = Settings.RainbowOnExit && Settings is not { Memory: null, BoardZones: null, Sync: false };
         if (!rainbow && !settleBoard || EneDram.FindConflict() != null) return;
-        if (!await gate.WaitAsync(3000)) return;
+        if (!await gate.WaitAsync(3000)) { host.RecordCleanupFailure("Lighting exit could not acquire the hardware gate."); return; }
         try
         {
             var work = Task.Run(() =>
@@ -273,7 +273,7 @@ internal sealed class LightingService(SoraHost host)
                     else if (dimms.Count > 0) EneDram.Apply(bus, dimms, EneMode.Rainbow, 0, 0, 0, 0, true, EneColorOrder.Rbg);
                     host.Log($"Lighting on exit: memory Rainbow on {dimms.Count} DIMM(s), read back OK");
                 }
-                catch (Exception error) when (error is not OutOfMemoryException) { host.Log("Lighting on exit, memory: " + error.Message); }
+                catch (Exception error) when (error is not OutOfMemoryException) { host.RecordCleanupFailure("Lighting on exit, memory: " + error.Message); }
                 try
                 {
                     using var controller = new GigabyteRgb();
@@ -289,7 +289,7 @@ internal sealed class LightingService(SoraHost host)
                         host.Log("Lighting on exit: motherboard rainbow wave");
                     }
                 }
-                catch (Exception error) when (error is not OutOfMemoryException) { host.Log("Lighting on exit, motherboard: " + error.Message); }
+                catch (Exception error) when (error is not OutOfMemoryException) { host.RecordCleanupFailure("Lighting on exit, motherboard: " + error.Message); }
             });
             await CleanupSequence.JoinAsync(work, TimeSpan.FromSeconds(6),
                 () => host.Log("Lighting exit is still running; waiting for its hardware handles to close."));

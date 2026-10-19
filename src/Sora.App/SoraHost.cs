@@ -217,6 +217,9 @@ internal sealed class SoraHost
         lock (stopSync) return stopTask ??= StopCoreAsync();
     }
 
+    internal bool CleanupFailed { get; private set; }
+    internal void RecordCleanupFailure(string message) { CleanupFailed = true; Log(message); }
+
     private async Task StopCoreAsync()
     {
         stopping = true;
@@ -237,7 +240,7 @@ internal sealed class SoraHost
             ("Display disposal", async () => await display.DisposeAsync()),
             ("Sensors", () => sensorTask),
             ("Runtime disposal", () => { lifetime.Dispose(); return Task.CompletedTask; }));
-        foreach (var failure in failures) Log(failure.Part + " exit cleanup: " + failure.Error);
+        foreach (var failure in failures) RecordCleanupFailure(failure.Part + " exit cleanup: " + failure.Error);
     }
 
     public void Log(string message)

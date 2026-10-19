@@ -1,0 +1,10 @@
+{
+  "feedUrl": "https://sora.portways.app/channels/stable.json",
+  "allowedHosts": [
+    "sora.portways.app"
+  ],
+  "publicKeys": {
+    "sora-release-2026": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEGs5O\u002BB4YlP0Yrc/ijAyEeXk3u8WbyBNO7bf9MKPbheRu81HKEIUoXSmitjxuEzvBvG46kJO1\u002BbozqwohagIisQ=="
+  },
+  "channel": "stable"
+}

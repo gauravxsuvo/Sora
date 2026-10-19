@@ -431,7 +431,7 @@ internal sealed class LogitechService
             }
             else if (LogitechDevice.IsGHubRunning()) File.Delete(Path.Combine(directory, "control-ownership.json")); // New controller owns the hardware; never stop its spy or overwrite its settings.
         }
-        catch (Exception error) when (error is not OutOfMemoryException) { SetFailure("Restoration pending: " + error.Message); }
+        catch (Exception error) when (error is not OutOfMemoryException) { host.RecordCleanupFailure("Mouse restoration pending: " + error.Message); SetFailure("Restoration pending: " + error.Message); }
         finally { await device.DisposeAsync(); device = null; original = null; originalMap = null; originalSelection = originalStage = null; originalIndicator = null; CurrentStage = null; DpiShiftHeld = false; Snapshot = null; }
     }
     private async Task RestoreAsync(LogitechSnapshot before, byte[] map, byte[]? selection, byte[]? stage, LogitechDpiIndicatorState? indicator = null)
