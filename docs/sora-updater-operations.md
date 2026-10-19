@@ -2,7 +2,7 @@
 
 ## Current state
 
-The implementation targets `https://sora.portways.app`. Portways provisioning has not been verified from this workspace. The updater baseline was pushed to GitHub; the subsequent branding changes are local. No installed Sora, shortcut, startup task or hardware profile has been changed by this work. Current candidate: 0.12.1, with the reference-derived circular violet logo. The previously signed 0.12.0 candidate is retained unchanged.
+The implementation targets `https://sora.portways.app`. Portways hosting, public installer delivery and signed-feed activation were verified for 0.12.1. Current source version is 0.12.2, adding setup, icon and removal improvements. Earlier signed installers remain immutable. See `setup-improvements-qualification.md` for checks and limits; installed-machine uninstall qualification remains pending.
 
 The user's free-only requirement supersedes the plan's paid publisher-certificate assumption. Sora verifies **its own signed metadata plus the installer hash**, rather than requiring an Authenticode publisher certificate. Windows may therefore display an unknown-publisher/SmartScreen prompt for initial downloads. There is no paid signing service, updater service subscription or telemetry requirement in this implementation; hosting/storage still use the user's Portways instance.
 

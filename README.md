@@ -7,9 +7,9 @@
 
 A native Windows hardware hub for the **DeepCool LD360** display, **Kreo keyboards**, **Logitech G502 HERO**, **RGB memory and Gigabyte motherboard lighting**, **Gigabyte motherboard fans**, **NVIDIA GPU fans**, **SSD health**, and **Wi-Fi antenna measurements**. Sora reads CPU temperature, utilization, and package power independently through **LibreHardwareMonitor 0.9.6 and PawnIO**, and talks to the keyboard directly over USB; Kreo KB Hub does not need to run.
 
-## Application updater — 0.12.1 candidate
+## Application updater and setup improvements: 0.12.2 candidate
 
-The source now includes Sora application update checks, signed release metadata, verified downloads and a guarded install/restart helper. Version 0.12.1 introduces the reference-derived circular violet logo across the app, installer and website, with [transparent PNG and editable SVG exports](assets/brand/README.md). The Portways download website is in `web/sora-downloads`, targeting `sora.portways.app`. Release signing uses a free local P-256 key; a paid Windows publisher certificate is not required. Hosting/storage setup and installed-machine upgrade qualification remain pending. This candidate has not replaced the daily-use installation or been promoted as stable. See [release notes](docs/Sora-0.12.1.md), [setup and release operations](docs/sora-updater-operations.md), and the [original plan](docs/sora-updater-plan.md).
+The source includes application update checks, signed release metadata, verified downloads and a guarded install/restart helper. The purple logo has [transparent PNG and editable SVG exports](assets/brand/README.md). Version 0.12.2 adds versioned Windows shortcut icons, setup guidance and complete-data removal during uninstall, plus revised responsive website copy. The website at `sora.portways.app` currently distributes 0.12.1. Free P-256 release signatures authenticate Sora updates; they do not provide Windows publisher signing or browser reputation. See [release notes](docs/Sora-0.12.2.md), [setup and release operations](docs/sora-updater-operations.md), [download warnings](docs/download-warnings.md), and [qualification](docs/setup-improvements-qualification.md).
 
 ## 0.10.0: G502 software controls and lighting
 

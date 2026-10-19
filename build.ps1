@@ -1,4 +1,4 @@
-param([string]$OutputDirectory = 'dist\Sora-0.12.1', [switch]$NoRestore, [switch]$SkipShortcuts)
+param([string]$OutputDirectory = 'dist\Sora-0.12.2', [switch]$NoRestore, [switch]$SkipShortcuts)
 $ErrorActionPreference = 'Stop'
 $TaskRoot = $PSScriptRoot
 $env:DOTNET_CLI_HOME = Join-Path $TaskRoot '.dotnet'

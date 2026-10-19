@@ -33,7 +33,11 @@ try {
     if (mode === 'upload') {
       let exists = false;
       try { await client.send(new HeadObjectCommand({ Bucket: config.bucket, Key: key })); exists = true; }
-      catch (error) { if (error.$metadata?.httpStatusCode !== 404) throw error; }
+      catch (error) {
+        // Some scoped S3 gateways return 403 for a missing object's HEAD even when PUT is allowed.
+        // A conditional upload still cannot replace any existing versioned artifact.
+        if (![403, 404].includes(error.$metadata?.httpStatusCode)) throw error;
+      }
       if (!exists) {
         await new Upload({ client, queueSize: 2, partSize: 8 * 1024 * 1024, leavePartsOnError: false, params: {
           Bucket: config.bucket, Key: key, Body: createReadStream(installerPath), ContentLength: release.size,
@@ -63,7 +67,12 @@ try {
         if (release.version === previous.version && release.sha256 !== previous.sha256) throw new Error('An existing release version cannot be replaced with different bytes.');
         etag = old.ETag;
         if (!etag) throw new Error('Storage did not return the ETag required for safe promotion.');
-      } catch (error) { if (error.$metadata?.httpStatusCode !== 404) throw error; }
+      } catch (error) {
+        if (error.$metadata?.httpStatusCode === 403) {
+          const publicFeed = await fetch(policy.feedUrl, { cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(30000) });
+          if (publicFeed.status !== 404) throw new Error('Storage cannot read the existing feed. Inspect access before promotion.');
+        } else if (error.$metadata?.httpStatusCode !== 404) throw error;
+      }
       await client.send(new PutObjectCommand({ Bucket: config.bucket, Key: feedKey, Body: bytes,
         ContentType: 'application/json', CacheControl: 'no-store', ...(etag ? { IfMatch: etag } : { IfNoneMatch: '*' }) }));
       const promoted = await fetch(policy.feedUrl, { cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(30000) });
@@ -73,6 +82,6 @@ try {
   } finally { client.destroy(); }
 } catch (error) {
   // SDK error messages may include endpoint details. Do not serialize request objects or credentials.
-  console.error(error.name === 'Error' ? error.message : `Release operation failed (${error.name}). Inspect storage connectivity and permissions.`);
+  console.error(error.name === 'Error' ? error.message : `Release operation failed (${error.name}, HTTP ${error.$metadata?.httpStatusCode || 'unavailable'}). Check bucket access, endpoint and read/write permissions.`);
   process.exitCode = 1;
 }

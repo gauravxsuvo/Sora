@@ -10,6 +10,9 @@ internal static class Program
 {
     private static int Main(string[] args)
     {
+        if (args is ["--uninstall-cleanup"]) return UninstallCleanup.Run(purge: false);
+        if (args is ["--uninstall-cleanup", "--purge-data"]) return UninstallCleanup.Run(purge: true);
+        if (args is ["--refresh-shortcuts"]) return UninstallCleanup.RepairShortcuts();
         string? stage = null;
         IDisposable? gate = null;
         var committed = false;

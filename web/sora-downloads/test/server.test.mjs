@@ -11,7 +11,7 @@ async function withServer(storage, run) {
   finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 }
 test('static website, method restrictions and honest unconfigured feed', () => withServer(null, async base => {
-  const home = await fetch(base); assert.equal(home.status, 200); assert.match(await home.text(), /Your hardware/);
+  const home = await fetch(base); assert.equal(home.status, 200); const html = await home.text(); assert.match(html, /Your setup/); assert.doesNotMatch(html, /\u2014/);
   assert.match(home.headers.get('content-security-policy'), /object-src 'none'/);
   for (const path of ['/styles.css', '/app.mjs', '/release-verification.mjs', '/sora-mark.svg', '/sora-mark.png', '/favicon.ico', '/apple-touch-icon.png', '/sora-updates.png', '/update-policy.json']) assert.equal((await fetch(base + path)).status, 200, path);
   assert.equal((await fetch(base + '/healthz')).status, 200);

@@ -5,7 +5,7 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>Sora</AssemblyName>
-    <Version>0.12.1</Version>
+    <Version>0.12.2</Version>
     <Product>Sora</Product>
     <Description>Hardware controls, GPU fans, SSD health and Wi-Fi antenna tools</Description>
     <ApplicationIcon>../../assets/Sora.ico</ApplicationIcon>
@@ -20,6 +20,7 @@
     <Compile Include="../Sora.Update.Windows/*.cs" Link="UpdateWindows/%(Filename)%(Extension)" />
     <PackageReference Include="MahApps.Metro.IconPacks.Lucide" Version="6.2.1" />
     <Resource Include="../../assets/Sora.ico" Link="Assets/Sora.ico" />
+    <None Include="../../assets/Sora.ico" Link="Assets/sora-brand-$(Version).ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Resource Include="../../assets/fonts/Inter/*.ttf" Link="Assets/Fonts/Inter/%(Filename)%(Extension)" />
     <None Include="../../assets/fonts/Inter/LICENSE.txt" Link="licenses/Inter-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
@@ -38,7 +39,7 @@
   <ItemGroup><None Include="../../docs/Sora-0.10.1.md" Link="Sora-0.10.1.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/Sora-0.10.3.md" Link="Sora-0.10.3.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/Sora-0.10.5.md" Link="Sora-0.10.5.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
-  <ItemGroup><None Include="../../docs/Sora-0.12.1.md" Link="ReleaseNotes.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Sora-0.12.2.md" Link="ReleaseNotes.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
   <Target Name="PublishUpdateRunner" AfterTargets="Publish">
     <MSBuild Projects="../Sora.UpdateRunner/Sora.UpdateRunner.csproj" Targets="Publish"
       Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=false;PublishSingleFile=false;PublishDir=$([System.IO.Path]::GetFullPath('$(PublishDir)UpdateRunner/'));UseSharedCompilation=false" />

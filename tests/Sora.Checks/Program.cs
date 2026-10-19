@@ -10,6 +10,22 @@ if (args.Contains("--app-update-checks"))
     return 0;
 }
 
+if (args.Contains("--uninstall-removal-checks"))
+{
+    UninstallRemovalChecks.Run((condition, message) => { if (!condition) throw new Exception(message); });
+    Console.WriteLine("PASS bounded uninstall removal checks (synthetic data only)");
+    return 0;
+}
+
+if (args is ["--uninstall-link-check", var fixtureRoot])
+{
+    var rejected = false;
+    try { Sora.Core.Updates.OwnedDirectoryRemoval.Remove(fixtureRoot, "Sora"); } catch (IOException) { rejected = true; }
+    if (!rejected || !File.Exists(Path.Combine(fixtureRoot, "Outside", "keep.txt"))) throw new Exception("Linked data removal was not safely refused.");
+    Console.WriteLine("PASS uninstall refuses a junction and preserves its target data");
+    return 0;
+}
+
 if (args.Contains("--keyboard-inspect-extended"))
 {
     using var keyboard = new KreoKeyboard(KreoKeyboard.Enumerate().Single());
@@ -743,6 +759,7 @@ await Check("Logitech standard buttons stay native, remaps do not double-inject 
 await Check("Startup routing preserves both deployments, absent/disabled tasks, read failures and explicit-action validation (31 cases)", () => { StartupRoutingChecks.Run(Require); return Task.CompletedTask; });
 
 await Check("Sora application updater: release trust, replay/expiry, compatibility, hostile URLs and verified download failures", () => ApplicationUpdateChecks.Run(Require));
+await Check("Uninstall data removal stays inside the approved app directory and preserves neighbors", () => { UninstallRemovalChecks.Run(Require); return Task.CompletedTask; });
 
 Console.WriteLine($"{passed} passed, {failures} failed");
 return failures == 0 ? 0 : 1;

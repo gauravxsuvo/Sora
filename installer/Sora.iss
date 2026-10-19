@@ -15,6 +15,9 @@ AppName=Sora
 AppVersion={#AppVersion}
 AppVerName=Sora {#AppVersion}
 AppPublisher=Sora
+AppPublisherURL=https://sora.portways.app
+AppSupportURL=https://github.com/gauravxsuvo/Sora/issues
+AppUpdatesURL=https://sora.portways.app/#download
 #ifdef BrandIcon
 SetupIconFile={#BrandIcon}
 #endif
@@ -34,7 +37,7 @@ SolidCompression=yes
 WizardStyle=modern
 SetupLogging=yes
 UninstallLogging=yes
-UninstallDisplayIcon={app}\Sora.exe
+UninstallDisplayIcon={app}\Assets\sora-brand-{#AppVersion}.ico
 CloseApplications=no
 RestartApplications=no
 AllowCancelDuringInstall=no
@@ -43,15 +46,29 @@ Uninstallable=yes
 UninstallDisplayName=Sora
 ChangesAssociations=no
 ChangesEnvironment=no
+WizardSizePercent=115
+DisableWelcomePage=no
+
+[Messages]
+WelcomeLabel2=Setup will install Sora on this computer.%n%nBefore continuing, exit Sora from its tray menu so it can release hardware controls. Your profiles and startup preference will be kept during an upgrade.%n%nSora needs the .NET 8 Windows Desktop Runtime (x64). It does not install hardware drivers or change firmware.
+
+[Tasks]
+Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Shortcuts:"; Flags: unchecked
 
 [Files]
 #include PayloadInclude
 
 [Icons]
-Name: "{commonprograms}\Sora\Sora"; Filename: "{app}\Sora.exe"; WorkingDir: "{app}"; Comment: "Hardware controls and maintenance"
+Name: "{commonprograms}\Sora\Sora"; Filename: "{app}\Sora.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Assets\sora-brand-{#AppVersion}.ico"; AppUserModelID: "Sora.Desktop"; Comment: "Hardware controls and maintenance"
+Name: "{commondesktop}\Sora"; Filename: "{app}\Sora.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Assets\sora-brand-{#AppVersion}.ico"; AppUserModelID: "Sora.Desktop"; Tasks: desktopicon; Comment: "Hardware controls and maintenance"
 
-; No Run, UninstallRun, startup task, driver installation, firmware action, or user-data deletion.
+; Hardware cleanup requires the app to exit normally. Setup never force-closes it or launches hardware controls.
 [Code]
+var
+  PurgeData: Boolean;
+
+procedure RefreshShell(EventID: LongWord; Flags: LongWord; Item1: LongWord; Item2: LongWord);
+  external 'SHChangeNotify@shell32.dll stdcall';
 function NativeGetFileAttributes(Name: String): LongWord;
   external 'GetFileAttributesW@kernel32.dll stdcall';
 
@@ -79,10 +96,17 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   Error: String;
+  RepairCode: Integer;
 begin
   if CurStep = ssInstall then begin
     Error := RunningSoraError;
     if Error <> '' then RaiseException(Error);
+  end;
+  if CurStep = ssPostInstall then begin
+    if not Exec(ExpandConstant('{app}\UpdateRunner\Sora.UpdateRunner.exe'), '--refresh-shortcuts',
+      ExpandConstant('{app}'), SW_HIDE, ewWaitUntilTerminated, RepairCode) then Log('Shortcut refresh could not start')
+    else if RepairCode <> 0 then Log('Some existing shortcuts could not be refreshed');
+    RefreshShell($08000000, 0, 0, 0);
   end;
 end;
 
@@ -197,21 +221,42 @@ var
 begin
   Error := DirectoryError;
   if Error = '' then Error := RunningSoraError;
-  if Error = '' then Error := StartupTaskError;
   Result := Error = '';
   if not Result then begin
     Log(Error);
     SuppressibleMsgBox(Error, mbError, MB_OK, IDOK);
   end;
+  if Result then begin
+    if UninstallSilent then
+      PurgeData := ExpandConstant('{param:PURGEDATA|0}') = '1'
+    else begin
+      case MsgBox('Remove Sora completely?' + #13#10 + #13#10 +
+        'Yes: remove saved profiles, settings, logs, hardware recovery records and downloaded update cache for all Windows users.' + #13#10 +
+        'No: uninstall the application but keep saved data for a later reinstall.' + #13#10 + #13#10 +
+        'Sora shortcuts and its startup task will be removed. Shared .NET and PawnIO installations will be kept.',
+        mbConfirmation, MB_YESNOCANCEL or MB_DEFBUTTON1) of
+        IDYES: PurgeData := True;
+        IDNO: PurgeData := False;
+        IDCANCEL: Result := False;
+      end;
+    end;
+  end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
-  Error: String;
+  Error, Parameters: String;
+  ResultCode: Integer;
 begin
   if CurUninstallStep = usUninstall then begin
     Error := RunningSoraError;
-    if Error = '' then Error := StartupTaskError;
     if Error <> '' then RaiseException(Error);
+    Parameters := '--uninstall-cleanup';
+    if PurgeData then Parameters := Parameters + ' --purge-data';
+    if not Exec(ExpandConstant('{app}\UpdateRunner\Sora.UpdateRunner.exe'), Parameters,
+      ExpandConstant('{app}'), SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+      RaiseException('Sora cleanup could not start. The application has not been uninstalled.');
+    if ResultCode <> 0 then RaiseException('Sora cleanup did not finish. Resolve the reported issue, then run uninstall again.');
   end;
+  if CurUninstallStep = usPostUninstall then RefreshShell($08000000, 0, 0, 0);
 end;
