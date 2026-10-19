@@ -19,6 +19,8 @@ public sealed class HidDevice : IDisplayTransport
 
     public static IReadOnlyList<DeviceInfo> Enumerate() => EnumerateMatching(path => path.Contains("vid_3633&pid_000a", StringComparison.OrdinalIgnoreCase));
 
+    public static IReadOnlyList<DeviceInfo> FindLogitech() => EnumerateMatching(path => path.Contains("vid_046d", StringComparison.OrdinalIgnoreCase));
+
     internal static IReadOnlyList<DeviceInfo> EnumerateMatching(Func<string, bool> matches)
     {
         Native.HidD_GetHidGuid(out var guid);

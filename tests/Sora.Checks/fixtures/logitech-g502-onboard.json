@@ -1,0 +1,207 @@
+[
+  {
+    "Slot": 1,
+    "Enabled": true,
+    "ChecksumValid": true,
+    "Name": "\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF",
+    "Dpi": [
+      1200,
+      2400,
+      3200,
+      6400,
+      0
+    ],
+    "ReportRate": 1000,
+    "Bindings": [
+      "Mouse buttons 0x0100",
+      "Mouse buttons 0x0200",
+      "Mouse buttons 0x0400",
+      "Mouse buttons 0x0800",
+      "Mouse buttons 0x1000",
+      "DPI shift",
+      "DPI down",
+      "DPI up",
+      "Cycle profile",
+      "Scroll right",
+      "Scroll left"
+    ],
+    "ShiftBindings": [
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled"
+    ],
+    "Raw": "AQEAsARgCYAMABkAAP////8A//////////////////+AAQABgAEAAoABAASAAQAIgAEAEJAH//+QBP//kAP//5AK//+QAv//kAH//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////wMAAAAAAB9AAAAAAwAAAAAAH0AAAAD//////////////////////////////yiJ"
+  },
+  {
+    "Slot": 2,
+    "Enabled": true,
+    "ChecksumValid": true,
+    "Name": "\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF",
+    "Dpi": [
+      400,
+      800,
+      1600,
+      2400,
+      0
+    ],
+    "ReportRate": 1000,
+    "Bindings": [
+      "Mouse buttons 0x0100",
+      "Mouse buttons 0x0200",
+      "Mouse buttons 0x0400",
+      "Mouse buttons 0x0800",
+      "Mouse buttons 0x1000",
+      "DPI shift",
+      "DPI down",
+      "DPI up",
+      "Cycle profile",
+      "Scroll right",
+      "Scroll left"
+    ],
+    "ShiftBindings": [
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled"
+    ],
+    "Raw": "AQIAkAEgA0AGYAkAAP////8A//////////////////+AAQABgAEAAoABAASAAQAIgAEAEJAH//+QBP//kAP//5AK//+QAv//kAH//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////woA3P8fQAAAAAAACgDc/x9AAAAAAAD//////////////////////////////+JT"
+  },
+  {
+    "Slot": 3,
+    "Enabled": true,
+    "ChecksumValid": true,
+    "Name": "\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF",
+    "Dpi": [
+      2400,
+      0,
+      0,
+      0,
+      0
+    ],
+    "ReportRate": 500,
+    "Bindings": [
+      "Mouse buttons 0x0100",
+      "Mouse buttons 0x0200",
+      "Mouse buttons 0x0400",
+      "Mouse buttons 0x0800",
+      "Mouse buttons 0x1000",
+      "G-Shift",
+      "Keyboard HID 06 \u00B7 modifiers 01",
+      "Keyboard HID 19 \u00B7 modifiers 01",
+      "Cycle profile",
+      "Scroll right",
+      "Scroll left"
+    ],
+    "ShiftBindings": [
+      "Mouse buttons 0x0100",
+      "Mouse buttons 0x0200",
+      "Keyboard HID 17 \u00B7 modifiers 01",
+      "Keyboard HID 3D \u00B7 modifiers 01",
+      "Keyboard HID 17 \u00B7 modifiers 03",
+      "Disabled",
+      "Keyboard HID 1B \u00B7 modifiers 01",
+      "Keyboard HID 1D \u00B7 modifiers 01",
+      "Keyboard HID 27 \u00B7 modifiers 01",
+      "Keyboard HID 2B \u00B7 modifiers 01",
+      "Keyboard HID 2B \u00B7 modifiers 03"
+    ],
+    "Raw": "AgAAYAkAAAAAAAAAAP////8A//////////////////+AAQABgAEAAoABAASAAQAIgAEAEJAL//+AAgEGgAIBGZAK//+QAv//kAH/////////////////////////////gAEAAYABAAKAAgEXgAIBPYACAxf/////gAIBG4ACAR2AAgEngAIBK4ACAyv//////////////////////////////////////////////////////////////////////////////////////////wH///8AAAAAAAAAAf///wAAAAAAAAD//////////////////////////////4hJ"
+  },
+  {
+    "Slot": 4,
+    "Enabled": true,
+    "ChecksumValid": true,
+    "Name": "\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF",
+    "Dpi": [
+      3200,
+      0,
+      0,
+      0,
+      0
+    ],
+    "ReportRate": 1000,
+    "Bindings": [
+      "Mouse buttons 0x0100",
+      "Mouse buttons 0x0200",
+      "Mouse buttons 0x0400",
+      "Mouse buttons 0x0800",
+      "Mouse buttons 0x1000",
+      "DPI shift",
+      "DPI down",
+      "DPI up",
+      "Cycle profile",
+      "Scroll right",
+      "Scroll left"
+    ],
+    "ShiftBindings": [
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled"
+    ],
+    "Raw": "AQAAgAwAAAAAAAAAAP////8A//////////////////+AAQABgAEAAoABAASAAQAIgAEAEJAH//+QBP//kAP//5AK//+QAv//kAH//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////wH/3AAAAAAAAAAAAf/cAAAAAAAAAAD//////////////////////////////xl4"
+  },
+  {
+    "Slot": 5,
+    "Enabled": true,
+    "ChecksumValid": true,
+    "Name": "\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF",
+    "Dpi": [
+      6400,
+      0,
+      0,
+      0,
+      0
+    ],
+    "ReportRate": 1000,
+    "Bindings": [
+      "Mouse buttons 0x0100",
+      "Mouse buttons 0x0200",
+      "Mouse buttons 0x0400",
+      "Mouse buttons 0x0800",
+      "Mouse buttons 0x1000",
+      "DPI shift",
+      "DPI down",
+      "DPI up",
+      "Cycle profile",
+      "Scroll right",
+      "Scroll left"
+    ],
+    "ShiftBindings": [
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled",
+      "Disabled"
+    ],
+    "Raw": "AQAAABkAAAAAAAAAAP////8A//////////////////+AAQABgAEAAoABAASAAQAIgAEAEJAH//+QBP//kAP//5AK//+QAv//kAH//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////wGAAP8AAAAAAAAAAYAA/wAAAAAAAAD//////////////////////////////1ER"
+  }
+]

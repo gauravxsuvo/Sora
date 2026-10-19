@@ -1,0 +1,108 @@
+<UserControl x:Class="Sora.App.FanPanel" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Sora.App" PreviewKeyDown="GuardEditingKey" PreviewTextInput="GuardEditingText">
+  <Grid>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <local:PageHeader Title="Fan control" Subtitle="Motherboard curves that keep working in hardware.">
+      <Button x:Name="RefreshButton" Content="Read / refresh" Click="RefreshClick"/>
+    </local:PageHeader>
+    <Border x:Name="ConflictBanner" Grid.Row="1" Background="{StaticResource WarningSurfaceBrush}" BorderBrush="{StaticResource WarningBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,14,0,0" Visibility="Collapsed">
+      <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <StackPanel Margin="0,0,14,0"><TextBlock Text="Fan changes are blocked" Foreground="{StaticResource WarnTextBrush}" FontSize="14" FontWeight="SemiBold"/><TextBlock x:Name="PauseServiceHint" Style="{StaticResource CaptionText}" Margin="0,4,0,0"/></StackPanel>
+        <Button x:Name="PauseServiceButton" Grid.Column="1" Content="Pause GCC fan service" Click="PauseServiceClick" VerticalAlignment="Center"/>
+      </Grid>
+    </Border>
+    <Grid Grid.Row="2" Margin="0,20,0,0">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="205"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <Border Style="{StaticResource Card}" Padding="16">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Bottom" Margin="0,16,0,0">
+            <TextBlock Text="Motherboard temperatures" Style="{StaticResource Eyebrow}" Margin="0,0,0,8"/>
+            <TextBlock x:Name="Temperatures" Style="{StaticResource CaptionText}" Text="Read the controller to see temperatures."/>
+            <TextBlock x:Name="BoardLabel" Style="{StaticResource CaptionText}" Margin="0,16,0,0" Text="Z890 GAMING X WIFI7"/>
+          </StackPanel>
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Top" Text="Fan headers" Style="{StaticResource Eyebrow}" Margin="0,0,0,12"/>
+            <ListBox x:Name="HeaderList" SelectionMode="Single" SelectionChanged="HeaderChanged" BorderThickness="0" Background="Transparent" Foreground="{StaticResource TextBrush}" Padding="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+              <ListBox.Template><ControlTemplate TargetType="ListBox"><Border x:Name="HeaderListSurface" Background="{TemplateBinding Background}" BorderThickness="0" Padding="{TemplateBinding Padding}"><ScrollViewer Focusable="False" CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><ItemsPresenter/></ScrollViewer></Border></ControlTemplate></ListBox.Template>
+              <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}"><Setter Property="Padding" Value="10,10"/><Setter Property="Margin" Value="0,0,0,5"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style></ListBox.ItemContainerStyle>
+              <ListBox.ItemTemplate><DataTemplate><StackPanel><TextBlock Text="{Binding Name}" ToolTip="{Binding Name}" TextTrimming="CharacterEllipsis" FontSize="14"/><TextBlock Text="{Binding Speed}" FontSize="12" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,3,0,0"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
+            </ListBox>
+          </DockPanel>
+        </DockPanel>
+      </Border>
+      <ScrollViewer x:Name="EditorScroll" Grid.Column="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="0,0,6,0">
+          <Border Style="{StaticResource Card}" Padding="{StaticResource SectionContentInset}">
+            <StackPanel x:Name="ProfileEditor">
+              <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock x:Name="HeaderTitle" Text="CPU" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" FontSize="21" FontWeight="SemiBold"/><TextBlock x:Name="HeaderSpeed" Grid.Column="1" Text="— RPM" FontSize="21" Style="{StaticResource NumericText}"/></Grid>
+              <TextBlock x:Name="HeaderDetail" Style="{StaticResource CaptionText}" Margin="0,5,0,12" Text="Read the controller before applying settings."/>
+              <TextBlock Text="Header display name" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
+              <Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBox x:Name="HeaderNameBox" MaxLength="48" TextChanged="HeaderNameChanged" VerticalContentAlignment="Center" ToolTip="A saved label for this header. Does not change the physical connection." AutomationProperties.Name="Header Name"/>
+                <Button x:Name="RenameHeaderButton" Grid.Column="1" Content="Save name" Click="RenameHeaderClick" Margin="8,0,0,0"/>
+                <Button x:Name="ResetHeaderNameButton" Grid.Column="2" Content="Reset" Click="ResetHeaderNameClick" Style="{StaticResource QuietButton}" Margin="6,0,0,0"/>
+              </Grid>
+              <TextBlock x:Name="PumpNotice" Style="{StaticResource CaptionText}" Margin="0,0,0,12" Visibility="Collapsed"/>
+              <StackPanel x:Name="FanSettingsPanel">
+              <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                <StackPanel><TextBlock Text="Control mode" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/><ComboBox x:Name="ModeBox" SelectionChanged="ModeChanged" AutomationProperties.Name="Mode"><ComboBoxItem Content="Temperature curve"/><ComboBoxItem Content="Stair step"/><ComboBoxItem Content="Fixed duty"/></ComboBox></StackPanel>
+                <StackPanel Grid.Column="2"><TextBlock Text="Temperature source" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/><ComboBox x:Name="SourceBox" SelectionChanged="EditorChanged" AutomationProperties.Name="Temperature source"/></StackPanel>
+              </Grid>
+              <TextBlock x:Name="ModeHint" Style="{StaticResource CaptionText}" Margin="0,8,0,0"/>
+              <WrapPanel Margin="0,12,0,0"><Button Content="Quiet" Click="PresetClick" Style="{StaticResource QuietButton}"/><Button Content="Balanced" Click="PresetClick" Style="{StaticResource QuietButton}"/><Button Content="Performance" Click="PresetClick" Style="{StaticResource QuietButton}"/><Button Content="Full speed" Click="PresetClick" Style="{StaticResource QuietButton}"/></WrapPanel>
+              <local:FanCurveChart x:Name="Chart" Height="180" Margin="0,8,0,4" ClipToBounds="True"/>
+              <StackPanel x:Name="FixedEditor" Visibility="Collapsed" Margin="0,8,0,6">
+                <TextBlock x:Name="FixedLabel" Text="Fixed duty · 100%" Style="{StaticResource CaptionText}"/>
+                <Slider x:Name="FixedSlider" Minimum="0" Maximum="100" Value="100" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="EditorChanged" Margin="0,10,0,4" AutomationProperties.Name="Fixed fan duty (%)"/>
+              </StackPanel>
+              <StackPanel x:Name="CurveEditor">
+                <DataGrid x:Name="PointGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" RowHeaderWidth="0" Background="{StaticResource InsetBrush}" Foreground="{StaticResource TextBrush}" BorderThickness="0" GridLinesVisibility="None" RowBackground="{StaticResource InsetBrush}" AlternatingRowBackground="{StaticResource SurfaceRaisedBrush}" MinHeight="85" MaxHeight="230" CellEditEnding="PointEditEnding" PreviewKeyUp="PointKeyUp" FontSize="13" AutomationProperties.Name="Point">
+                  <DataGrid.Columns><DataGridTextColumn Header="Temperature (°C)" Width="*" Binding="{Binding Temperature, UpdateSourceTrigger=PropertyChanged}"/><DataGridTextColumn Header="Fan duty (%)" Width="*" Binding="{Binding Duty, UpdateSourceTrigger=PropertyChanged}"/></DataGrid.Columns>
+                </DataGrid>
+                <WrapPanel Margin="0,6,0,0"><Button Content="Add point" Click="AddPointClick" Style="{StaticResource QuietButton}"/><Button Content="Remove selected" Click="RemovePointClick" Style="{StaticResource QuietButton}"/><TextBlock Text="Drag the dots or edit the table." VerticalAlignment="Center" Style="{StaticResource CaptionText}" Margin="8,0,0,0"/></WrapPanel>
+              </StackPanel>
+              <Grid Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                <StackPanel><TextBlock Text="Hysteresis (°C)" Style="{StaticResource CaptionText}"/><TextBox x:Name="HysteresisBox" Text="3" TextChanged="EditorChanged" Margin="0,4,0,0" AutomationProperties.Name="Temperature hysteresis (°C)"/></StackPanel>
+                <StackPanel Grid.Column="2"><TextBlock Text="Stop below (°C)" Style="{StaticResource CaptionText}"/><TextBox x:Name="StopBox" Text="0" TextChanged="EditorChanged" Margin="0,4,0,0" AutomationProperties.Name="Stop below temperature (°C)"/></StackPanel>
+                <StackPanel Grid.Column="4"><TextBlock Text="Fixed: full at (°C)" Style="{StaticResource CaptionText}"/><TextBox x:Name="FullBox" Text="85" TextChanged="EditorChanged" Margin="0,4,0,0" AutomationProperties.Name="Full speed temperature (°C)"/></StackPanel>
+              </Grid>
+              <TextBlock Style="{StaticResource CaptionText}" Margin="0,8,0,0" Text="A stop value of 0 disables fan stop. Every profile reaches full speed at its final temperature. Keep pumps above their rated minimum duty."/>
+              <CheckBox x:Name="FirmwareStopCheck" Content="Firmware Zero-RPM (GCC fan stop)" Checked="EditorChanged" Unchecked="EditorChanged" Margin="0,16,0,0" IsEnabled="False"/>
+              <Grid x:Name="FirmwareStopEditor" Margin="0,8,0,0" IsEnabled="False"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                <StackPanel><TextBlock Text="Firmware stop below (°C)" Style="{StaticResource CaptionText}"/><TextBox x:Name="FirmwareOffBox" Text="25" TextChanged="EditorChanged" Margin="0,4,0,0" AutomationProperties.Name="Firmware stop temperature (°C)"/></StackPanel>
+                <StackPanel Grid.Column="2"><TextBlock Text="Firmware restart at (°C)" Style="{StaticResource CaptionText}"/><TextBox x:Name="FirmwareOnBox" Text="30" TextChanged="EditorChanged" Margin="0,4,0,0" AutomationProperties.Name="Firmware restart temperature (°C)"/></StackPanel>
+              </Grid>
+              <TextBlock x:Name="FirmwareHint" Style="{StaticResource CaptionText}" Margin="0,7,0,0" Text="Read the board to check firmware Zero-RPM support. Uses the selected temperature source."/>
+              <Button x:Name="InstallFirmwareButton" Content="Install standalone firmware fan support" Click="InstallFirmwareClick" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+              <TextBlock x:Name="InstallFirmwareHint" Style="{StaticResource CaptionText}" Margin="0,6,0,0" Text="Adds Sora's fan-only WMI interface using Microsoft's provider, so GCC's WMI definition can be removed. No driver or service is installed."/>
+              </StackPanel>
+              <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                <StackPanel><TextBlock Text="Connected device type" Style="{StaticResource CaptionText}"/><ComboBox x:Name="DeviceKindBox" SelectedIndex="0" SelectionChanged="DeviceKindChanged" Margin="0,4,0,0" AutomationProperties.Name="Device Kind"><ComboBoxItem Content="Unknown"/><ComboBoxItem Content="Fan"/><ComboBoxItem Content="Pump"/><ComboBoxItem Content="Fixed-speed pump"/></ComboBox></StackPanel>
+                <TextBlock Grid.Column="1" Style="{StaticResource CaptionText}" Margin="14,0,0,0" VerticalAlignment="Center" Text="Saves the connection label only; fan speeds and curves stay unchanged. Pumps cannot run stop/start calibration."/>
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Style="{StaticResource Card}" Padding="{StaticResource SectionContentInset}" Margin="0,12,0,0">
+            <StackPanel>
+              <CheckBox x:Name="StartupCheck" Content="Apply saved fan profiles when Sora starts" Checked="OptionsChanged" Unchecked="OptionsChanged" Margin="0,0,0,9"/>
+              <CheckBox x:Name="RestoreCheck" Content="Restore previous fan settings when Sora exits" IsChecked="True" Checked="OptionsChanged" Unchecked="OptionsChanged"/>
+              <WrapPanel Margin="0,10,0,0"><Button x:Name="ImportButton" Content="Import profile" Click="ImportClick" Style="{StaticResource QuietButton}"/><Button x:Name="ExportButton" Content="Export profile" Click="ExportClick" Style="{StaticResource QuietButton}"/></WrapPanel>
+              <StackPanel x:Name="MeasurementControls">
+              <WrapPanel Margin="0,8,0,0"><Button x:Name="MeasureButton" Content="Measure RPM response" Click="MeasureClick"/><Button x:Name="CancelMeasureButton" Content="Cancel measurement" Click="CancelMeasureClick" Visibility="Collapsed" Margin="10,0,0,0"/></WrapPanel>
+              <TextBlock Style="{StaticResource CaptionText}" Margin="0,8,0,0" Text="Measures this header from 100% down to 40%, then restores its settings. Takes about 30 seconds; stops if CPU temperature reaches 85°C. Does not determine the minimum starting duty."/>
+              <Button x:Name="CalibrateButton" Content="Calibrate minimum fan duty" Click="CalibrateClick" IsEnabled="False" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+              <TextBlock Style="{StaticResource CaptionText}" Margin="0,8,0,0" Text="Measures minimum running duty and starting duty separately, then restores the previous settings. Takes several minutes and briefly stops the fan. Available only for headers marked Fan."/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+    <Border Grid.Row="3" BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,16,0,0">
+      <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <StackPanel Margin="0,0,14,0"><TextBlock x:Name="PendingLabel" Text="No fan changes applied" FontSize="13"/><TextBlock x:Name="StatusLabel" Text="Read the motherboard to see fan speeds and curves." Style="{StaticResource CaptionText}" Margin="0,4,0,0"/></StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Button x:Name="RestoreButton" Content="Restore original" Click="RestoreClick" Margin="0,0,10,0"/><Button x:Name="ApplyButton" Content="Apply to fan" Click="ApplyClick" Style="{StaticResource PrimaryButton}" MinWidth="128" IsEnabled="False"/></StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

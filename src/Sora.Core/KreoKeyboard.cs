@@ -80,30 +80,9 @@ public sealed class KreoKeyboard : IDisposable
 
     public KreoState Apply(KreoState expected, KreoState desired, Action<KreoState> backup)
     {
-        desired.Validate();
-        if (desired.Identity != Identity) throw new IOException("This profile belongs to another keyboard model.");
         if (FindConflict() is { } conflict) throw new IOException(conflict);
-        var before = ReadState();
-        if (expected.Identity != Identity || !before.Lighting.SequenceEqual(expected.Lighting) || !before.Keys.SequenceEqual(expected.Keys) || !before.Colors.SequenceEqual(expected.Colors) || !before.EffectPalette!.SequenceEqual(expected.EffectPalette!))
-            throw new IOException("Keyboard settings changed since they were read. Read the keyboard again before applying edits.");
-        foreach (var key in Definition.Keys.Where(k => k.VirtualKey == 0xfa))
-            if (!before.Keys.AsSpan(key.Index * 4, 4).SequenceEqual(desired.Keys.AsSpan(key.Index * 4, 4)))
-                throw new IOException("This profile changes the Fn key. Sora preserves its existing layer function.");
-        desired = desired.Copy();
-        if (!before.Keys.AsSpan(0, 508).SequenceEqual(desired.Keys.AsSpan(0, 508))) KreoProtocol.CompleteBlock(desired.Keys);
-        else before.Keys.CopyTo(desired.Keys, 0);
-        if (!before.EffectPalette!.AsSpan(0, 508).SequenceEqual(desired.EffectPalette!.AsSpan(0, 508))) KreoProtocol.CompleteBlock(desired.EffectPalette!);
-        else before.EffectPalette!.CopyTo(desired.EffectPalette!, 0);
-        backup(before.Copy()); // A backup must reach disk before the first configuration write.
-        if (!before.EffectPalette!.SequenceEqual(desired.EffectPalette!)) Write(0x0a, 0, desired.EffectPalette!);
-        if (!before.Colors.SequenceEqual(desired.Colors)) Write(6, 0, desired.Colors);
-        if (!before.Keys.SequenceEqual(desired.Keys)) Write(3, 0, desired.Keys);
-        if (!before.Lighting.SequenceEqual(desired.Lighting)) Write(4, 0, desired.Lighting);
-        Thread.Sleep(120);
-        var actual = ReadState();
-        if (!actual.Keys.SequenceEqual(desired.Keys) || !actual.Colors.SequenceEqual(desired.Colors) || !actual.Lighting.SequenceEqual(desired.Lighting) || !actual.EffectPalette!.SequenceEqual(desired.EffectPalette!))
-            throw new IOException("The keyboard did not confirm every setting. Use Read keyboard to see its current state; the pre-change backup is saved.");
-        return actual;
+        return KreoKeyboardTransaction.Apply(Identity, Definition, expected, desired, ReadState,
+            (command, payload) => Write(command, 0, payload), backup, () => Thread.Sleep(120));
     }
 
     private void Write(byte command, byte selector, byte[] payload)

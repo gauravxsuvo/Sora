@@ -1,0 +1,54 @@
+<UserControl x:Class="Sora.App.GpuFanPanel" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Sora.App">
+<Grid>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <local:PageHeader Title="GPU fans" Subtitle="NVIDIA driver control with original-setting recovery."><Button x:Name="RefreshButton" Content="Read / refresh" Click="ReadClick"/></local:PageHeader>
+    <ScrollViewer Grid.Row="1" Margin="0,20,0,0" VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="0,0,8,0">
+        <Border Style="{StaticResource Card}" Padding="{StaticResource SectionContentInset}">
+          <StackPanel>
+            <ComboBox x:Name="GpuBox" local:ControlState.Placeholder="No supported GPU available" DisplayMemberPath="Name" SelectionChanged="GpuChanged" AutomationProperties.Name="Graphics processor"/>
+            <TextBlock x:Name="TemperatureText" Text="— °C" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,6"/>
+            <TextBlock x:Name="FansText" Style="{StaticResource CaptionText}" Text="Read the driver to see fan channels."/>
+            <TextBlock x:Name="FanStopNotice" Style="{StaticResource CaptionText}" Visibility="Collapsed" Margin="0,10,0,0"/>
+            <TextBlock x:Name="SupportText" Style="{StaticResource CaptionText}" Margin="0,12,0,0"/>
+          </StackPanel>
+        </Border>
+        <Border Style="{StaticResource Card}" Padding="{StaticResource SectionContentInset}" Margin="0,16,0,0">
+          <StackPanel>
+            <TextBlock Text="Fan profile" FontSize="19" FontWeight="SemiBold"/>
+            <TextBlock x:Name="ProfileStateText" Style="{StaticResource CaptionText}" Text="Editor draft · Apply to change hardware." Margin="0,4,0,0"/>
+            <WrapPanel Margin="0,12,0,0"><Grid Width="205"><ComboBox x:Name="SavedProfileBox" DisplayMemberPath="Name" SelectionChanged="SavedProfileChanged" AutomationProperties.Name="Saved Profile"/><TextBlock x:Name="SavedProfilePlaceholder" Text="No saved profiles" Style="{StaticResource CaptionText}" Margin="12,0,30,0" VerticalAlignment="Center" IsHitTestVisible="False"/></Grid><Button Content="Save named profile" Click="SaveProfileClick" Margin="8,0,0,0"/><Button Content="Delete saved profile" Click="DeleteProfileClick" Margin="8,0,0,0"/></WrapPanel>
+            <Grid Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions>
+              <StackPanel><TextBlock Text="Name" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/><TextBox x:Name="NameBox" Text="Balanced" MaxLength="64" TextChanged="EditorChanged" AutomationProperties.Name="Fan profile name"/></StackPanel>
+              <StackPanel Grid.Column="2"><TextBlock Text="Control mode" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/><ComboBox x:Name="ModeBox" SelectedIndex="0" SelectionChanged="ModeChanged" AutomationProperties.Name="Mode"><ComboBoxItem Content="Automatic driver control"/><ComboBoxItem Content="Fixed duty"/><ComboBoxItem Content="Software temperature curve"/><ComboBoxItem Content="Native hardware RPM curve"/><ComboBoxItem Content="Native fixed RPM"/></ComboBox></StackPanel>
+            </Grid>
+            <StackPanel x:Name="FixedPanel" Visibility="Collapsed" Margin="0,16,0,0"><TextBlock x:Name="DutyText" Text="Fixed duty · 50%"/><Slider x:Name="DutySlider" Minimum="0" Maximum="100" Value="50" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="DutyChanged" Margin="0,8,0,0" AutomationProperties.Name="Fixed fan duty (%)"/></StackPanel>
+            <StackPanel x:Name="CurvePanel" Visibility="Collapsed" Margin="0,16,0,0">
+              <local:GpuFanChart x:Name="Chart" Height="210" Margin="0,0,0,12"/>
+              <DataGrid x:Name="PointsGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" CellEditEnding="PointEdited" HeadersVisibility="Column" Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextBrush}" RowBackground="{StaticResource SurfaceBrush}" AlternatingRowBackground="{StaticResource SurfaceBrush}" BorderThickness="0" GridLinesVisibility="None" SelectionUnit="Cell" MinHeight="120" AutomationProperties.Name="Points">
+                <DataGrid.Columns><DataGridTextColumn Header="Temperature (°C)" Binding="{Binding TemperatureC}" Width="*"/><DataGridTextColumn Header="Duty (%)" Binding="{Binding DutyPercent}" Width="*"/></DataGrid.Columns>
+              </DataGrid>
+              <WrapPanel Margin="0,8,0,0"><Button Content="Add point" Click="AddPointClick"/><Button Content="Remove last" Click="RemovePointClick" Margin="8,0,0,0"/></WrapPanel>
+            </StackPanel>
+            <StackPanel x:Name="HardwarePanel" Visibility="Collapsed" Margin="0,16,0,0">
+              <TextBlock Text="Native fan channels" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/><ComboBox x:Name="FanTargetBox" SelectedIndex="0" SelectionChanged="FanTargetChanged" Margin="0,0,0,12" AutomationProperties.Name="Fan Target"><ComboBoxItem Content="All three fans"/><ComboBoxItem Content="Fan 1"/><ComboBoxItem Content="Fan 2"/><ComboBoxItem Content="Fan 3"/></ComboBox>
+              <TextBlock x:Name="HardwareReadText" Style="{StaticResource CaptionText}" Margin="0,0,0,12"/>
+              <local:GpuFanChart x:Name="RpmChart" Height="190" Margin="0,0,0,12"/>
+              <DataGrid x:Name="RpmPointsGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" CellEditEnding="PointEdited" HeadersVisibility="Column" Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextBrush}" RowBackground="{StaticResource SurfaceBrush}" AlternatingRowBackground="{StaticResource SurfaceBrush}" BorderThickness="0" GridLinesVisibility="None" SelectionUnit="Cell" MinHeight="90" AutomationProperties.Name="Rpm Points">
+                <DataGrid.Columns><DataGridTextColumn Header="Temperature (°C)" Binding="{Binding TemperatureC}" Width="*"/><DataGridTextColumn Header="Target RPM" Binding="{Binding Rpm}" Width="*"/></DataGrid.Columns>
+              </DataGrid>
+              <StackPanel x:Name="RpmFixedPanel" Visibility="Collapsed" Margin="0,8,0,0"><TextBlock x:Name="FixedRpmText" Text="Fixed target · 1500 RPM"/><Slider x:Name="FixedRpmSlider" Minimum="998" Maximum="3000" Value="1500" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="FixedRpmChanged" AutomationProperties.Name="Fixed fan target (RPM)"/></StackPanel>
+              <CheckBox x:Name="StopBox" Content="Auto fan stop using firmware thresholds" IsChecked="True" Checked="EditorChanged" Unchecked="EditorChanged" Margin="0,12,0,0"/>
+              <Button Content="Load current hardware curve" Click="LoadHardwareClick" HorizontalAlignment="Left" Margin="0,12,0,0"/>
+            </StackPanel>
+            <TextBlock x:Name="ModeHint" Style="{StaticResource CaptionText}" Margin="0,12,0,0" Text="Apply saves this profile for automatic startup and resume. Native curves remain programmed after Exit."/>
+            <TextBlock x:Name="ValidationText" Style="{StaticResource ValidationMessage}" Margin="0,8,0,0"/>
+            <WrapPanel Margin="0,16,0,0"><Button x:Name="ApplyButton" Content="Apply to all GPU fans" Click="ApplyClick"/><Button x:Name="RestoreButton" Content="Restore original" Click="RestoreClick" Margin="8,0,0,0"/><Button Content="Stage factory curve" Click="DefaultClick" Margin="8,0,0,0"/></WrapPanel>
+            <WrapPanel Margin="0,8,0,0"><Button Content="Import Sora / GCC profile" Click="ImportClick"/><Button Content="Export Sora profile" Click="ExportClick" Margin="8,0,0,0"/></WrapPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+    <TextBlock x:Name="StatusText" Grid.Row="2" Style="{StaticResource CaptionText}" Margin="0,16,0,0" Text="GPU fan configuration has not been changed."/>
+  </Grid>
+</UserControl>

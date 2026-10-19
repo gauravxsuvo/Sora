@@ -1,0 +1,18 @@
+#pragma namespace("\\\\.\\root\\WMI")
+
+// Sora's own minimal view of this board's BIOS ACPI method GUID.
+// Method identifiers and byte-sized parameters were read from the board's WMI schema.
+// The provider is Microsoft's WmiProv; no GCC provider, DLL or service is registered.
+[WMI, dynamic, provider("WmiProv"), guid("{DEADBEEF-2001-0000-00A0-C90629100000}")]
+class Sora_GigabyteFanControl
+{
+    [key, read] string InstanceName;
+    [read] boolean Active;
+    [WmiMethodId(7), Implemented] void GsaGetCapabilityD0([out] uint32 Value);
+    [WmiMethodId(291), Implemented] void ZFCGetFanStopStatus([in] uint8 id, [out] uint8 ison);
+    [WmiMethodId(292), Implemented] void ZFCSetFanStopStatus([in] uint8 id, [in] uint8 ison);
+    [WmiMethodId(295), Implemented] void ZFCGetFanTargetTemp([in] uint8 id, [out] uint8 tempid);
+    [WmiMethodId(296), Implemented] void ZFCSetFanTargetTemp([in] uint8 id, [in] uint8 tempid);
+    [WmiMethodId(297), Implemented] void ZFCGetFanTempLimit([in] uint8 id, [out] uint8 off, [out] uint8 on);
+    [WmiMethodId(298), Implemented] void ZFCSetFanTempLimit([in] uint8 id, [in] uint8 off, [in] uint8 on, [out] string value);
+};

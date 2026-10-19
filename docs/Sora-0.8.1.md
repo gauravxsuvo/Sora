@@ -1,0 +1,20 @@
+# Sora 0.8.1 — lighting, Wi-Fi and recovery
+
+## User-visible changes
+
+- Wi-Fi Compass: real WPF 3D ribbed fin model based on the supplied GCC reference; drag/keyboard rotation, zoom and reset. Signal gauge, minimum/average/maximum, labelled 60-second history, four guided 15-second antenna positions and measured comparison bars. Orientation is a manual reference, never inferred from RF readings.
+- Motherboard lighting: clicking a zone selects it alone; Ctrl+click combines zones. Edits retain their original targets as selection changes. Partial writes address only those divisions and apply bits; they no longer clear unrelated zones. Rainbow on a selected zone uses the verified native spectrum cycle. GCC's spatial whole-board wave requires the complete board selection. Per-header spatial streaming is not implemented.
+- RAM: independent **Sync RAM modules** choice. With it off, each identity-bound physical slot gets its own effect, color, brightness and speed. Global memory + motherboard sync still covers both modules and the whole board. Draft colors survive switching modules; invalid hidden drafts block Apply. Confirmed partial saves preserve other modules and legacy whole-memory preferences.
+- GPU: the last applied profile is shown in the selector and reapplied after launch/wake. Native RPM settings stay on the GPU after normal Exit. Software modes restore original control before Exit/suspend and reapply when Sora returns. Exact-adapter raw backups recover before reapplication; stale/invalid backups fail closed. Explicit **Restore original** clears reapplication intent while preserving named drafts.
+- Auto Fan Stop: the default verified native editor preserves the card's firmware stop behavior. A stopped-fan status is normal at idle. No universal 50°C threshold or unsupported zero-duty request is imposed. Gigabyte documents semi-passive cooling at low load for this model: [product page](https://www.gigabyte.com/Graphics-Card/GV-N507TWF3-16GD).
+- Windows recovery: elevated task starts minimized to the tray 15 seconds after sign-in. Hardware restoration waits another 10 seconds. Resume recovery waits 5 seconds, reopens GPU/display handles, clears stale sensor readings and restores saved settings with bounded retries. A delayed wake event task starts Sora if absent; duplicate background launches leave the existing tray window hidden. This runs in the signed-in user's session, not before Windows sign-in. Each hardware section keeps its startup preference.
+
+## Validation and limits
+
+- `tests/Sora.Checks`: 32 groups pass, including selected-zone packet masks, mixed effects, native GPU transactions, storage parsing and WLAN freshness.
+- `--lighting-editor-check`: 26 WPF editor/persistence scenarios pass using synthetic state; zero hardware reads/writes. Tests include solo selection, RAM/global sync, hidden invalid drafts, untouched-zone preservation and legacy settings migration.
+- `--gpu-fan-lifecycle-check`: 13 scenarios pass using an injected memory-only driver; zero hardware writes. Native exit/reopen, software restoration, driver reset, repeated wake, invalid/foreign backups, cancellation and rollback are covered.
+- Packaged page renders and read-only host inventory are recorded by `scripts/Verify-HardwareTools.ps1` in `artifacts/hardware-tools-ui-verification.json`.
+- This update did not physically suspend, hibernate, restart or thermally sweep this PC. GPU hardware-response validation from 0.8.0 remains documented separately. WLAN connected measurements remain unverified while the host radio is off. Transitioning from a running global motherboard wave to isolated zone effects follows the recovered GCC path but still needs visual hardware confirmation.
+
+Settings migration enables the requested lighting/fan/display startup preferences in the new release's data folder and turns off the old Rainbow-on-exit preference. Prior release data is preserved. Existing fan backups, named GPU profiles and keyboard data are copied by the build script. No vendor DLLs are redistributed and no Windows security settings are changed.

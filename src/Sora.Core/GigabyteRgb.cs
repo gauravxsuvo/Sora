@@ -6,8 +6,9 @@ using Microsoft.Win32.SafeHandles;
 namespace Sora.Core;
 
 /// <summary>
-/// Built-in effects of the Gigabyte RGB Fusion USB controller (GCC's RgbCommon.LMode_8297). Rainbow is GCC's rainbow wave
-/// (LMode Wave17, captured from GCC): a whole-board pattern, see <see cref="GigabyteRgb.ApplyZones"/>. Wave (mode 6) left the
+/// Built-in effects of the Gigabyte RGB Fusion USB controller (GCC's RgbCommon.LMode_8297). Rainbow uses GCC's rainbow wave
+/// (LMode Wave17, captured from GCC) only for a complete board selection. An individual zone uses its native spectrum cycle.
+/// Wave (mode 6) left the
 /// ARGB headers dark on the Z890 GAMING X WIFI7, so it is sent as Color cycle. Values are saved in lighting.json, so new effects go at the end.
 /// </summary>
 public enum BoardEffect { Off, Static, Pulse, Flash, DoubleFlash, ColorCycle, Wave, Rainbow }
@@ -157,7 +158,8 @@ public sealed class GigabyteRgb : IDisposable
 
     /// <summary>
     /// The per-zone effect the controller is sent. Wave, saved by Sora 0.6/0.6.1, is sent as Color cycle, because mode 6 turned
-    /// the ARGB headers off on this board. Rainbow is a whole-board pattern and never goes out per zone; if it ever did, it would be a colour cycle.
+    /// the ARGB headers off on this board. An individual Rainbow zone cycles through the spectrum in mode 4; the spatial
+    /// rainbow wave requires a complete-board request because its mode 9 packet ignores zone masks.
     /// </summary>
     public static BoardZoneEffect ForZone(BoardZoneEffect effect) =>
         effect.Effect is BoardEffect.Rainbow or BoardEffect.Wave ? effect with { Effect = BoardEffect.ColorCycle } : effect;
@@ -186,19 +188,24 @@ public sealed class GigabyteRgb : IDisposable
     }
 
     /// <summary>
-    /// GCC's apply sequence as captured with Frida (frida-gcc-*.jsonl, frida-ioctl-*.jsonl), with its timing: GCC's connect
-    /// setup (0x34 00 00: ARGB headers at the 32-LED setting; 0x32 00: per-LED streaming off), clear all eleven zones and
-    /// apply, wait (ClearIT8297Parameter), then either one packet per zone and apply, or, if any zone is Rainbow, GCC's
-    /// rainbow wave for the whole board: all zones static black, apply, the Wave17 packet on division 2, apply that division.
-    /// Without the waits the controller can drop packets. Each step is (packet, milliseconds to wait after it).
+    /// A partial/mixed edit sends only the supplied zone packets and applies those zone bits. It never changes strip length,
+    /// streaming mode, clears other zones, or emits a board-wide effect. A caller can supply its complete zone catalog to
+    /// request the captured global wave when every known zone is Rainbow. Each step is (packet, milliseconds to wait after it).
     /// </summary>
-    public static IReadOnlyList<(byte[] Packet, int Wait)> Plan(IReadOnlyList<BoardZoneEffect> zones)
+    public static IReadOnlyList<(byte[] Packet, int Wait)> Plan(IReadOnlyList<BoardZoneEffect> zones, IReadOnlyList<BoardZone>? completeBoardZones = null, bool initialize = false)
     {
+        ArgumentNullException.ThrowIfNull(zones);
+        ValidateZones(zones.Select(z => z.Zone));
+        // Validate every payload before a caller sends the first packet.
+        var packets = zones.Select(zone => BuildZonePacket(ForZone(zone))).ToArray();
+        if (initialize && (completeBoardZones == null || !zones.Select(z => z.Zone).Order().SequenceEqual(completeBoardZones.Select(z => z.Number).Order())
+            || !IsCompleteCatalog(completeBoardZones))) throw new ArgumentException("Controller initialization requires a complete known board state.", nameof(zones));
+        if (zones.Count == 0) return [];
         byte[] apply = [ReportId, ApplyCommand, 0xFF, 0x07];
-        var plan = new List<(byte[], int)> { ([ReportId, DLedOutputCount, 0x00, 0x00], 0), ([ReportId, DLedStripControl, 0x00], 0), (apply, 0) };
-        for (var zone = 0; zone <= 10; zone++) plan.Add(([ReportId, (byte)(zone < 8 ? 0x20 + zone : 0x90 + zone - 8)], 0));
-        if (zones.Any(z => z.Effect == BoardEffect.Rainbow))
+        if (CanUseGlobalRainbow(zones, completeBoardZones))
         {
+            var plan = new List<(byte[], int)> { ([ReportId, DLedOutputCount, 0x00, 0x00], 0), ([ReportId, DLedStripControl, 0x00], 0), (apply, 0) };
+            for (var zone = 0; zone <= 10; zone++) plan.Add(([ReportId, (byte)(zone < 8 ? 0x20 + zone : 0x90 + zone - 8)], 0));
             // Gaps as captured (frida-gcc-red-rainbow.jsonl): 140 ms after the clear, 60 ms before the wave, 110 ms before its apply.
             plan.Add((apply, 140));
             plan.Add(([ReportId, EffectAllZones, .. BuildEffect(BoardEffect.Static, 0, 0, 0, 8, 0)], 0));
@@ -207,18 +214,70 @@ public sealed class GigabyteRgb : IDisposable
             plan.Add(([ReportId, ApplyCommand, 0x04, 0x00], 25));
             return plan;
         }
-        plan.Add((apply, 100));
-        foreach (var zone in zones) plan.Add((BuildZonePacket(ForZone(zone)), 0));
-        plan.Add((apply, 25));
-        return plan;
+        if (initialize)
+        {
+            // Captured GCC connection + ClearIT8297Parameter sequence. Restore the complete desired state after reset.
+            var plan = new List<(byte[], int)> { ([ReportId, DLedOutputCount, 0, 0], 0), ([ReportId, DLedStripControl, 0], 0), (apply, 0) };
+            for (var zone = 0; zone <= 10; zone++) plan.Add(([ReportId, (byte)(zone < 8 ? 0x20 + zone : 0x90 + zone - 8)], 0));
+            plan.Add((apply, 100));
+            plan.AddRange(packets.Select(packet => (packet, 0)));
+            plan.Add((apply, 25));
+            return plan;
+        }
+        // Replacing a descriptor in place can leave the previous global-wave routing active on IT5711.
+        // Preserve GCC's reset/apply/settle sequence, restricted to exactly the selected descriptor slots.
+        var selectedApply = BuildApplyPacket(zones.Select(z => z.Zone));
+        return [.. packets.Select(packet => (new byte[] { ReportId, packet[1] }, 0)), (selectedApply, 100),
+            .. packets.Select(packet => (packet, 0)), (selectedApply, 25)];
+    }
+
+    /// <summary>The global wave is allowed only with an explicit complete zone catalog and identical Rainbow settings on every zone.</summary>
+    public static bool CanUseGlobalRainbow(IReadOnlyList<BoardZoneEffect> zones, IReadOnlyList<BoardZone>? completeBoardZones)
+    {
+        if (completeBoardZones == null || completeBoardZones.Count == 0 || zones.Count != completeBoardZones.Count || zones.Count == 0) return false;
+        var known = completeBoardZones.Select(z => z.Number).ToArray();
+        if (known.Any(z => z is < 0 or > 10) || known.Distinct().Count() != known.Length) return false;
+        // These are the only two board catalogs Sora currently exposes. A selected-zone subset must never
+        // become authority for a controller-wide effect merely because a caller passed it as a catalog.
+        if (!known.Order().SequenceEqual(ZonesFor("Z890 GAMING X WIFI7").Select(z => z.Number).Order())
+            && !known.Order().SequenceEqual(Enumerable.Range(0, 11))) return false;
+        if (zones.Select(z => z.Zone).Distinct().Count() != zones.Count || !zones.Select(z => z.Zone).Order().SequenceEqual(known.Order())) return false;
+        var reference = zones[0];
+        return zones.All(z => z.Effect == BoardEffect.Rainbow && z.Brightness == reference.Brightness && z.Speed == reference.Speed);
+    }
+
+    private static bool IsCompleteCatalog(IReadOnlyList<BoardZone> catalog)
+    {
+        var known = catalog.Select(z => z.Number).Order().ToArray();
+        return known.SequenceEqual(ZonesFor("Z890 GAMING X WIFI7").Select(z => z.Number).Order()) || known.SequenceEqual(Enumerable.Range(0, 11));
+    }
+
+    private static int[] ValidateZones(IEnumerable<int> zones)
+    {
+        var selected = zones.ToArray();
+        if (selected.Any(z => z is < 0 or > 10)) throw new ArgumentOutOfRangeException(nameof(zones));
+        if (selected.Distinct().Count() != selected.Length) throw new ArgumentException("A lighting zone must be supplied only once.", nameof(zones));
+        return selected;
+    }
+
+    /// <summary>GCC MCU_8297.Apply: low/high bytes of only the modified divisions, rather than Apply(-1).</summary>
+    public static byte[] BuildApplyPacket(IEnumerable<int> zones)
+    {
+        var selected = ValidateZones(zones);
+        var mask = selected.Aggregate(0u, (value, zone) => value | (1u << zone));
+        return [ReportId, ApplyCommand, (byte)mask, (byte)(mask >> 8)];
     }
 
     /// <summary>
     /// One sync frame: Static colour on the given zones and apply, without the clear and wait, for zones that already hold a
     /// Static packet from <see cref="ApplyZones"/>. The colour carries the brightness; the controller runs at full level.
     /// </summary>
-    public static IReadOnlyList<byte[]> FramePackets(IEnumerable<int> zones, byte red, byte green, byte blue) =>
-        [.. zones.Select(zone => BuildZonePacket(new BoardZoneEffect(zone, BoardEffect.Static, red, green, blue, 8, 0))), [ReportId, ApplyCommand, 0xFF, 0x07]];
+    public static IReadOnlyList<byte[]> FramePackets(IEnumerable<int> zones, byte red, byte green, byte blue)
+    {
+        var selected = ValidateZones(zones);
+        if (selected.Length == 0) return [];
+        return [.. selected.Select(zone => BuildZonePacket(new BoardZoneEffect(zone, BoardEffect.Static, red, green, blue, 8, 0))), BuildApplyPacket(selected)];
+    }
 
     public void SendFrame(IEnumerable<int> zones, byte red, byte green, byte blue)
     {
@@ -226,9 +285,9 @@ public sealed class GigabyteRgb : IDisposable
     }
 
     /// <summary>Sends <see cref="Plan"/>. The board shows this only until the next restart, unless <see cref="KeepAfterRestart"/> follows.</summary>
-    public void ApplyZones(IReadOnlyList<BoardZoneEffect> zones)
+    public void ApplyZones(IReadOnlyList<BoardZoneEffect> zones, IReadOnlyList<BoardZone>? completeBoardZones = null, bool initialize = false)
     {
-        foreach (var (packet, wait) in Plan(zones))
+        foreach (var (packet, wait) in Plan(zones, completeBoardZones, initialize))
         {
             Send(packet);
             if (wait > 0) Thread.Sleep(wait);

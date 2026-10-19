@@ -1,0 +1,127 @@
+<UserControl x:Class="Sora.App.LogitechPanel" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Sora.App">
+  <Grid>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <local:PageHeader Title="Logitech" Subtitle="Your gear. Your settings.">
+      <Button x:Name="RefreshButton" Content="Refresh devices" Click="RefreshClick" Style="{StaticResource QuietButton}"/>
+    </local:PageHeader>
+    <Border Grid.Row="1" Background="{StaticResource InsetBrush}" CornerRadius="8" Padding="14,10" Margin="0,16,0,14">
+      <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <StackPanel><TextBlock x:Name="ConnectionText" Text="Looking for Logitech devices…" FontSize="13"/><TextBlock x:Name="ConflictText" Foreground="{StaticResource WarnTextBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/></StackPanel>
+        <ComboBox x:Name="DevicePicker" local:ControlState.Placeholder="No supported mouse" Grid.Column="1" Width="175" Margin="16,0,0,0" VerticalAlignment="Center" AutomationProperties.Name="Logitech device" SelectionChanged="DeviceChanged"/>
+      </Grid>
+    </Border>
+    <Grid Grid.Row="2">
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+      <Grid Margin="0,0,0,18"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <StackPanel><TextBlock x:Name="DeviceTitle" Text="G502 HERO" FontSize="29" FontWeight="Light"/><TextBlock x:Name="DeviceSubtitle" Text="Wired gaming mouse" Style="{StaticResource CaptionText}" Margin="0,4,0,0"/></StackPanel>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="CONFIGURATION" Style="{StaticResource Eyebrow}"/><TextBlock x:Name="ModeText" Text="Not connected" FontSize="13" Margin="0,4,0,0"/></StackPanel>
+      </Grid>
+      <TabControl x:Name="Sections" Grid.Row="1" SelectionChanged="SectionChanged">
+        <TabItem Header="Sensitivity" x:Name="SensitivityTab">
+          <Grid Margin="0,18,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="0.95*"/><ColumnDefinition Width="20"/><ColumnDefinition Width="1.05*"/></Grid.ColumnDefinitions>
+            <Border Style="{StaticResource Card}" Padding="12"><Grid><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+              <Viewbox Stretch="Uniform" MaxHeight="420"><local:LogitechMouseView x:Name="MousePreview"/></Viewbox>
+              <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,8,0,14"><TextBlock Text="HERO 25K" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="#71D8EE"/><TextBlock Text="Precision starts here" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,4,0,0"/></StackPanel>
+            </Grid></Border>
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto"><StackPanel x:Name="SensitivityEditor" Margin="0,0,6,0">
+              <TextBlock Text="DPI SPEEDS" Style="{StaticResource Eyebrow}"/>
+              <local:LogitechDpiScale x:Name="DpiScale" Margin="0,8,0,4"/>
+              <TextBlock x:Name="LiveDpiText" Text="Live mouse DPI: —" Style="{StaticResource CaptionText}"/>
+              <TextBlock Text="Speeds (comma separated)" Style="{StaticResource FieldLabel}"/><TextBox x:Name="StagesInput" Text="400, 800, 1600" TextChanged="StagesChanged" AutomationProperties.Name="DPI speeds"/>
+              <TextBlock Text="Speed to edit / apply" Style="{StaticResource FieldLabel}"/><ComboBox x:Name="StagePicker" local:ControlState.Placeholder="Read mouse to view DPI stages" SelectionChanged="StageChanged" AutomationProperties.Name="DPI stage to edit"/>
+              <TextBlock Text="The outlined marker and Live mouse DPI show the mouse’s actual speed. Edits below take effect when you apply the profile." Style="{StaticResource CaptionText}" Margin="0,6,0,0"/>
+              <TextBlock Text="DPI shift speed · hold G6" Style="{StaticResource FieldLabel}" Margin="0,16,0,6"/><TextBox x:Name="ShiftDpiInput" Text="4000" TextChanged="ShiftChanged" AutomationProperties.Name="DPI shift speed"/>
+              <TextBlock Text="Hold the thumb DPI Shift button to use this speed; release it to return. DPI Up/Down move through your regular speeds." Style="{StaticResource CaptionText}" Margin="0,6,0,10"/>
+              <StackPanel Orientation="Horizontal" Margin="0,10,0,4"><TextBlock x:Name="DpiValue" Text="—" FontSize="48" FontWeight="Light"/><TextBlock Text="DPI" FontSize="13" Foreground="{StaticResource SecondaryTextBrush}" VerticalAlignment="Bottom" Margin="10,0,0,12"/></StackPanel>
+              <Slider x:Name="DpiSlider" Minimum="100" Maximum="25600" TickFrequency="50" IsSnapToTickEnabled="True" ValueChanged="SensitivityChanged" AutomationProperties.Name="Mouse DPI"/>
+              <TextBlock x:Name="RangeText" Text="Connect your mouse to read its sensitivity range." Style="{StaticResource CaptionText}" Margin="0,8,0,12"/>
+              <WrapPanel x:Name="DpiStops" Margin="0,0,0,18"/>
+              <TextBlock Text="Exact DPI" Style="{StaticResource FieldLabel}"/><TextBox x:Name="DpiInput" TextChanged="DpiInputChanged" AutomationProperties.Name="Exact mouse DPI"/>
+              <Border BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,22,0,18"/>
+              <TextBlock Text="REPORT RATE" Style="{StaticResource Eyebrow}"/><ComboBox x:Name="RatePicker" SelectionChanged="RateChanged" Margin="0,12,0,0" AutomationProperties.Name="Mouse report rate"/>
+              <TextBlock Text="How often your mouse reports to the PC. Higher rates give more frequent movement updates." Style="{StaticResource CaptionText}" Margin="0,8,0,18"/>
+              <TextBlock Text="SENSITIVITY PRESETS" Style="{StaticResource Eyebrow}"/><ComboBox x:Name="PresetPicker" SelectionChanged="PresetChanged" Margin="0,10,0,0" AutomationProperties.Name="Sensitivity preset"/>
+              <TextBox x:Name="PresetName" Text="My sensitivity" Margin="0,8,0,0" AutomationProperties.Name="Preset name"/>
+              <WrapPanel Margin="0,8,0,0"><Button Content="Save preset" Click="SavePresetClick" Style="{StaticResource SmallButton}" Margin="0,0,6,6"/><Button Content="Import" Click="ImportClick" Style="{StaticResource SmallButton}" Margin="0,0,6,6"/><Button Content="Export" Click="ExportClick" Style="{StaticResource SmallButton}"/></WrapPanel>
+              <TextBlock Text="Presets stage DPI and report rate. Apply sends them to your mouse." Style="{StaticResource CaptionText}" Margin="0,6,0,0"/>
+              <WrapPanel Margin="0,12,0,0"><Button Content="Restore defaults" Click="ControlsDefaultClick" Style="{StaticResource SmallButton}" Margin="0,0,8,6"/><Button Content="Stop Sora controls" Click="StopControlsClick" Style="{StaticResource SmallButton}"/></WrapPanel>
+            </StackPanel></ScrollViewer>
+          </Grid>
+        </TabItem>
+        <TabItem Header="Assignments" x:Name="AssignmentsTab">
+          <Grid Margin="0,16,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="1.05*"/><ColumnDefinition Width="18"/><ColumnDefinition/></Grid.ColumnDefinitions>
+            <Border Style="{StaticResource Card}" Padding="10"><Grid><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid>
+              <Viewbox Stretch="Uniform"><local:LogitechMouseView x:Name="AssignmentPreview"/></Viewbox>
+              </Grid><StackPanel Grid.Row="1"><WrapPanel HorizontalAlignment="Center"><Button Content="View 1" Click="FrontViewClick" Style="{StaticResource SmallButton}" Margin="0,0,8,6"/><Button Content="View 2" Click="SideViewClick" Style="{StaticResource SmallButton}"/></WrapPanel><CheckBox x:Name="GShiftLayerCheck" Content="Edit G-Shift layer" Checked="AssignmentLayerChanged" Unchecked="AssignmentLayerChanged" HorizontalAlignment="Center" Margin="0,8,0,8"/></StackPanel>
+            </Grid></Border>
+            <ScrollViewer x:Name="AssignmentScroll" Grid.Column="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="AssignmentEditor" Margin="{StaticResource ScrollContentInset}">
+              <TextBlock Text="BUTTON" Style="{StaticResource Eyebrow}"/><ComboBox x:Name="ButtonPicker" SelectionChanged="AssignmentButtonChanged" Margin="0,8,0,0" AutomationProperties.Name="Mouse button to assign"/>
+              <TextBlock x:Name="AssignmentCurrentText" Style="{StaticResource SecondaryText}" Margin="0,8,0,10"/>
+              <ComboBox x:Name="ActionCategory" SelectionChanged="ActionFilterChanged" SelectedIndex="0" AutomationProperties.Name="Assignment category"><ComboBoxItem Content="Commands"/><ComboBoxItem Content="Keys"/><ComboBoxItem Content="Actions"/><ComboBoxItem Content="Macros"/><ComboBoxItem Content="System"/></ComboBox>
+              <TextBox x:Name="ActionSearch" local:ControlState.Placeholder="Search assignments" TextChanged="ActionFilterChanged" Margin="0,8,0,8" AutomationProperties.Name="Search assignments" ToolTip="Search for a command, key, macro or system control"/>
+              <ListBox x:Name="ActionList" Height="190" DisplayMemberPath="Name" Background="{StaticResource InsetBrush}" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource SeparatorBrush}" Padding="4" AutomationProperties.Name="Available assignments"><ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}"><Setter Property="Padding" Value="8,5"/><Setter Property="Foreground" Value="{StaticResource TextBrush}"/></Style></ListBox.ItemContainerStyle></ListBox>
+              <TextBlock Text="Custom shortcut (focus and press keys)" Style="{StaticResource FieldLabel}"/><TextBox x:Name="ShortcutCapture" local:ControlState.Placeholder="Focus here, then press a shortcut" IsReadOnly="True" PreviewKeyDown="CaptureShortcut" AutomationProperties.Name="Capture custom shortcut"/>
+              <TextBlock Text="Application or HTTPS link" Style="{StaticResource FieldLabel}"/><TextBox x:Name="ActionTarget" local:ControlState.Placeholder="Choose an application or enter an HTTPS link" AutomationProperties.Name="Assignment launch target"/>
+              <WrapPanel Margin="0,10,0,0"><Button Content="Use assignment" Click="UseAssignmentClick" Style="{StaticResource SmallButton}" Margin="0,0,8,6"/><Button Content="Use shortcut" Click="UseShortcutClick" Style="{StaticResource SmallButton}" Margin="0,0,8,6"/><Button Content="Browse app…" Click="BrowseActionClick" Style="{StaticResource SmallButton}"/></WrapPanel>
+                <TextBlock Text="Drag an assignment onto a mouse marker, or select a button and choose Use assignment. G1 stays primary click. Hold a G-Shift button for the alternate layer. Apply two or more named profiles, then assign Next Sora control profile to cycle them." Style="{StaticResource CaptionText}" Margin="0,12,0,0"/>
+              <TextBlock Text="CONTROL PROFILE" Style="{StaticResource Eyebrow}" Margin="0,20,0,8"/><TextBox x:Name="ControlProfileName" Text="Desktop: Default" TextChanged="ControlNameChanged" AutomationProperties.Name="Mouse control profile name"/>
+              <WrapPanel Margin="0,8,0,0"><Button Content="Import profile" Click="ImportControlsClick" Style="{StaticResource SmallButton}" Margin="0,0,8,6"/><Button Content="Export profile" Click="ExportControlsClick" Style="{StaticResource SmallButton}"/></WrapPanel>
+            <TextBlock Text="All button assignments" Style="{StaticResource FieldLabel}" Margin="0,20,0,8"/><ListBox x:Name="AssignmentLegend" BorderThickness="0" Background="Transparent" SelectionChanged="LegendSelectionChanged" AutomationProperties.Name="Mouse assignments" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollBarVisibility="Disabled"><ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap"/></DataTemplate></ListBox.ItemTemplate></ListBox></StackPanel></ScrollViewer>
+          </Grid>
+        </TabItem>
+        <TabItem Header="Macros" x:Name="MacrosTab">
+          <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel x:Name="MacroEditor" Margin="0,16,6,0">
+            <TextBlock Text="Macro library" Style="{StaticResource SectionText}"/><ComboBox x:Name="MacroPicker" SelectionChanged="MacroSelectionChanged" Margin="0,10,0,0" AutomationProperties.Name="Saved macro"/>
+            <TextBlock Text="Name" Style="{StaticResource FieldLabel}"/><TextBox x:Name="MacroName" Text="New macro" AutomationProperties.Name="Macro name"/>
+            <TextBlock Text="Playback" Style="{StaticResource FieldLabel}"/><ComboBox x:Name="MacroMode" SelectedIndex="0" AutomationProperties.Name="Macro playback mode"><ComboBoxItem Content="No repeat" Tag="NoRepeat"/><ComboBoxItem Content="Repeat while held" Tag="WhileHeld"/><ComboBoxItem Content="Toggle" Tag="Toggle"/><ComboBoxItem Content="Sequence (press / hold / release)" Tag="Sequence"/></ComboBox>
+            <TextBlock Text="Steps: phase | delay in ms | key codes" Style="{StaticResource FieldLabel}"/><TextBox x:Name="MacroSteps" AcceptsReturn="True" MinHeight="150" Text="Press | 50 | 17+67" VerticalScrollBarVisibility="Auto" FontFamily="{StaticResource MonoFont}" AutomationProperties.Name="Macro chord steps"/>
+            <TextBlock Text="Each line taps a key/chord after its delay. 17=Ctrl, 16=Shift, 18=Alt, 65–90=A–Z. Use Capture below to insert a chord. Sequence phases: Press, Hold, Release. Playback stops and releases input when Sora stops or the mouse disconnects." Style="{StaticResource CaptionText}" Margin="0,8,0,0"/>
+            <TextBox x:Name="MacroChordCapture" local:ControlState.Placeholder="Focus here, then press a chord" IsReadOnly="True" PreviewKeyDown="CaptureMacroChord" Margin="0,12,0,0" AutomationProperties.Name="Capture macro chord"/>
+            <WrapPanel Margin="0,12,0,0"><Button Content="Save to profile" Click="SaveMacroClick" Style="{StaticResource PrimaryButton}" Margin="0,0,8,6"/><Button Content="New macro" Click="NewMacroClick" Style="{StaticResource SmallButton}" Margin="0,0,8,6"/><Button Content="Delete macro" Click="DeleteMacroClick" Style="{StaticResource SmallButton}"/></WrapPanel>
+            <TextBlock Text="Saving stages the macro in this profile. Assign it to a button on Assignments, then Apply profile." Style="{StaticResource CaptionText}" Margin="0,10,0,0"/>
+          </StackPanel></ScrollViewer>
+        </TabItem>
+        <TabItem Header="LIGHTSYNC" x:Name="LightingTab">
+          <Grid Margin="0,18,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="0.95*"/><ColumnDefinition Width="20"/><ColumnDefinition Width="1.05*"/></Grid.ColumnDefinitions>
+            <Border Style="{StaticResource Card}" Padding="12"><Grid><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Viewbox Stretch="Uniform" StretchDirection="DownOnly"><local:LogitechMouseView x:Name="LightPreview"/></Viewbox><StackPanel Grid.Row="1" Margin="0,12,0,12"><TextBlock Text="Select the logo or DPI indicator" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/><TextBlock Text="Static preview · animations run on the mouse" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,4,0,0"/></StackPanel></Grid></Border>
+            <ScrollViewer x:Name="LightingScroll" Grid.Column="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="LightEditor" Margin="{StaticResource ScrollContentInset}">
+              <CheckBox x:Name="LinkZonesCheck" Content="Sync DPI and logo lighting" Checked="ReactiveOptionChanged" Unchecked="ReactiveOptionChanged" Margin="0,0,0,8"/>
+              <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Lighting zone" Style="{StaticResource FieldLabel}" Margin="0,0,0,6"/><ComboBox x:Name="ZonePicker" SelectionChanged="ZoneChanged" AutomationProperties.Name="Lighting zone"/></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="Effect" Style="{StaticResource FieldLabel}" Margin="0,0,0,6"/><ComboBox x:Name="EffectPicker" SelectionChanged="EffectChanged" AutomationProperties.Name="Mouse lighting effect"/></StackPanel></Grid>
+              <TextBlock Text="Color" Style="{StaticResource FieldLabel}" Margin="0,6,0,6"/><TextBox x:Name="HexInput" Text="#53D0EF" TextChanged="LightChanged" AutomationProperties.Name="Mouse lighting hex color"/>
+              <TextBlock x:Name="HexError" Style="{StaticResource ValidationMessage}"/>
+              <ContentControl x:Name="ColorPickerHost" Margin="0,10,0,0" HorizontalAlignment="Left"/>
+              <Grid x:Name="RgbFields" Margin="0,8,0,0" RequestBringIntoView="RgbBringIntoView"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="R" Style="{StaticResource Eyebrow}"/><TextBox x:Name="RedInput" Text="83" TextChanged="RgbChanged" AutomationProperties.Name="Lighting red"/></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="G" Style="{StaticResource Eyebrow}"/><TextBox x:Name="GreenInput" Text="208" TextChanged="RgbChanged" AutomationProperties.Name="Lighting green"/></StackPanel><StackPanel Grid.Column="4"><TextBlock Text="B" Style="{StaticResource Eyebrow}"/><TextBox x:Name="BlueInput" Text="239" TextChanged="RgbChanged" AutomationProperties.Name="Lighting blue"/></StackPanel></Grid>
+              <WrapPanel Margin="0,10,0,0"><Button Style="{StaticResource Swatch}" Background="#53D0EF" Width="28" Height="28" Tag="#53D0EF" Click="SwatchClick" Margin="0,0,8,0" ToolTip="Ice blue"/><Button Style="{StaticResource Swatch}" Background="#A78BFA" Width="28" Height="28" Tag="#A78BFA" Click="SwatchClick" Margin="0,0,8,0" ToolTip="Violet"/><Button Style="{StaticResource Swatch}" Background="#FF5E81" Width="28" Height="28" Tag="#FF5E81" Click="SwatchClick" Margin="0,0,8,0" ToolTip="Rose"/><Button Style="{StaticResource Swatch}" Background="#A9E86C" Width="28" Height="28" Tag="#A9E86C" Click="SwatchClick" Margin="0,0,8,0" ToolTip="Lime"/><Button Style="{StaticResource Swatch}" Background="White" Width="28" Height="28" Tag="#FFFFFF" Click="SwatchClick" ToolTip="White"/></WrapPanel>
+              <TextBlock x:Name="BrightnessLabel" Text="Brightness · 100%" Style="{StaticResource FieldLabel}"/><Slider x:Name="BrightnessSlider" Minimum="1" Maximum="100" Value="100" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="LightChanged" AutomationProperties.Name="Mouse lighting brightness"/>
+              <TextBlock x:Name="PeriodLabel" Text="Cycle duration · 5.0 s" Style="{StaticResource FieldLabel}"/><Slider x:Name="PeriodSlider" Minimum="1000" Maximum="20000" Value="5000" TickFrequency="100" IsSnapToTickEnabled="True" ValueChanged="LightChanged" AutomationProperties.Name="Mouse lighting cycle duration"/>
+              <TextBlock Text="Screen sampler area" Style="{StaticResource FieldLabel}"/><ComboBox x:Name="ScreenAreaPicker" SelectedIndex="0" SelectionChanged="ReactiveOptionChanged" AutomationProperties.Name="Screen sampler area"><ComboBoxItem Content="Whole screen"/><ComboBoxItem Content="Left half"/><ComboBoxItem Content="Right half"/></ComboBox>
+              <TextBlock x:Name="ReactiveHint" Style="{StaticResource CaptionText}" Margin="0,8,0,0"/>
+              <WrapPanel Margin="0,12,0,0"><Button Content="Save color" Click="SaveColorClick" Style="{StaticResource SmallButton}" Margin="0,0,8,6"/><Button Content="Windows lighting settings" Click="WindowsLightingClick" Style="{StaticResource QuietButton}"/></WrapPanel><WrapPanel x:Name="CustomPalette" Margin="0,8,0,0"/>
+              <TextBlock Text="With sync on, edits and the preview cover both lights. Apply lighting sends the look to the mouse and saves it for startup." Style="{StaticResource CaptionText}" Margin="0,22,0,0"/>
+            </StackPanel></ScrollViewer>
+          </Grid>
+        </TabItem>
+        <TabItem Header="Onboard memory" x:Name="MemoryTab">
+          <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="0,18,6,0">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Your mouse's saved profiles" Style="{StaticResource SectionText}"/><TextBlock Text="Inspect the actual onboard slots, DPI stages, button assignments and G-Shift layer." Style="{StaticResource CaptionText}" Margin="0,6,12,0"/></StackPanel><Button Grid.Column="1" x:Name="MemoryReadButton" Content="Read memory" Click="ReadMemoryClick" Style="{StaticResource SmallButton}"/></Grid>
+            <TextBlock x:Name="MemoryStatus" Text="Memory is read only when you request it. Slot editing and flash writes are not yet available." Style="{StaticResource CaptionText}" Margin="0,14,0,14"/>
+            <StackPanel x:Name="MemorySlots"/>
+          </StackPanel></ScrollViewer>
+        </TabItem>
+        <TabItem Header="Device settings" x:Name="DetailsTab">
+          <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="0,18,6,0">
+            <Border Style="{StaticResource Card}" Padding="20"><StackPanel><TextBlock Text="G502 HERO settings" Style="{StaticResource SectionText}"/><TextBlock x:Name="FirmwareText" Text="Firmware: checking…" Style="{StaticResource SecondaryText}" Margin="0,10,0,12"/><CheckBox x:Name="DpiAlwaysOnCheck" Content="DPI lighting · Always on" Margin="0,6,0,12"/><CheckBox x:Name="StartupEffectCheck" Content="Device startup effect · Enable" Margin="0,0,0,12"/><Button x:Name="ApplyDeviceSettingsButton" Content="Apply device settings" Click="ApplyDeviceSettingsClick" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"/><TextBlock Text="These preferences persist in the mouse. Applying DPI lighting also sends G HUB’s captured indicator refresh. Onboard profile slots are preserved." Style="{StaticResource CaptionText}" Margin="0,10,0,0"/></StackPanel></Border>
+            <Border Style="{StaticResource Card}" Padding="20" Margin="0,14,0,0"><StackPanel><TextBlock Text="Connection &amp; capabilities" Style="{StaticResource SectionText}"/><TextBlock x:Name="DetailsText" Style="{StaticResource SecondaryText}" Margin="0,12,0,0"/></StackPanel></Border>
+            <Border Style="{StaticResource Card}" Padding="20" Margin="0,14,0,0"><StackPanel><TextBlock Text="Integration coverage" Style="{StaticResource SectionText}"/><TextBlock Style="{StaticResource SecondaryText}" Margin="0,12,0,0" Text="Wired G502 HERO: DPI stages and hold-to-shift, report rate, button assignments, G-Shift, chord macros, per-zone firmware effects, screen sampling, audio level lighting, color palettes, startup/DPI lighting preferences and onboard profile inspection."/><TextBlock Style="{StaticResource CaptionText}" Margin="0,12,0,0" Text="Current limits: primary click stays native; G9 cycles saved Sora profiles after at least two named profiles are applied. Automatic application profiles, vendor action integrations, onboard profile editing and firmware updates are unavailable. Audio lighting follows speaker level; frequency analysis and exact G HUB effect timing remain unverified."/><Button Content="Open investigation &amp; feature coverage" Click="ReportClick" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" Margin="0,12,0,0"/></StackPanel></Border>
+          </StackPanel></ScrollViewer>
+        </TabItem>
+      </TabControl>
+    </Grid>
+    <Border Grid.Row="3" Background="{StaticResource WindowBrush}" BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,16,0,0">
+      <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0"><TextBlock x:Name="EditStatus" Text="Connect your mouse to get started." FontSize="13"/><TextBlock x:Name="ErrorText" Style="{StaticResource CaptionText}" Foreground="{StaticResource WarnTextBrush}" Margin="0,4,0,0" Visibility="Collapsed"/></StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Button x:Name="OriginalButton" Content="Load original" Click="OriginalClick" Style="{StaticResource QuietButton}" Margin="0,0,12,0" ToolTip="Stage the settings saved before Sora's first Apply"/><Button x:Name="DiscardButton" Content="Discard" Click="DiscardClick" Style="{StaticResource QuietButton}" Margin="0,0,12,0"/><Button x:Name="ApplyButton" Content="Apply to mouse" Click="ApplyClick" Style="{StaticResource PrimaryButton}" MinWidth="140"/></StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

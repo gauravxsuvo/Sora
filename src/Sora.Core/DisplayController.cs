@@ -17,20 +17,28 @@ public sealed class DisplayController(Func<IDisplayTransport>? open = null) : IA
 
     public static string? FindConflict()
     {
-        // One process snapshot covers both names; GetProcessesByName would take a full snapshot per name.
+        // The vendor changed its helper executable names in DeepCool 1.2.14.
         var processes = Process.GetProcesses();
         try
         {
-            string? found = null;
+            var names = new List<string>();
             foreach (var process in processes)
             {
-                var name = process.ProcessName;
-                if (name.Equals("DeepCool", StringComparison.OrdinalIgnoreCase)) return "Exit DeepCool from its system tray icon.";
-                if (name.Equals("DeepCoolDisplayService", StringComparison.OrdinalIgnoreCase)) found = "Stop Deep Cool Display Service in Windows Services.";
+                try { names.Add(process.ProcessName); }
+                catch (InvalidOperationException) { } // A process can exit after the snapshot.
             }
-            return found;
+            return FindConflict(names);
         }
         finally { foreach (var process in processes) process.Dispose(); }
+    }
+
+    internal static string? FindConflict(IEnumerable<string> processNames)
+    {
+        var names = new HashSet<string>(processNames, StringComparer.OrdinalIgnoreCase);
+        if (names.Contains("DeepCool")) return "Exit DeepCool from its system tray icon.";
+        if (names.Contains("JZFSDisplayService")) return "Stop JZFS Display Service in Windows Services.";
+        if (names.Contains("DeepCoolDisplayService")) return "Stop Deep Cool Display Service in Windows Services.";
+        return null;
     }
 
     public async Task TickAsync(SensorSample? sample, DisplaySettings settings, bool requested, string? conflict, CancellationToken token = default)

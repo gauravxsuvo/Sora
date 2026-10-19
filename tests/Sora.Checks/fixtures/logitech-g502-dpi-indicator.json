@@ -1,0 +1,15 @@
+{
+  "device": "046D:C08B",
+  "firmware": "174.0.5",
+  "source": "G HUB WriteFile capture during physical DPI Up/Down and held DPI Shift, 18 October 2026",
+  "stages": [400, 800, 1600],
+  "shiftDpi": 4000,
+  "changes": [
+    { "dpi": 400, "level": 1, "sensor": "10FF0A3C000190", "indicator": "11FF055C00000200010000000000000000000000" },
+    { "dpi": 800, "level": 2, "sensor": "10FF0A3C000320", "indicator": "11FF055C00000200020000000000000000000000" },
+    { "dpi": 1600, "level": 3, "sensor": "10FF0A3C000640", "indicator": "11FF055C00000200030000000000000000000000" },
+    { "dpi": 4000, "level": 4, "sensor": "10FF0A3C000FA0", "indicator": "11FF055C00000200040000000000000000000000" }
+  ],
+  "off": "11FF055C00000100000000000000000000000000",
+  "statusOnWithoutPatternEcho": "00020000000000000000000000000000"
+}

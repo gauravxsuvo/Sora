@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using Sora.Core;
+using Microsoft.Win32;
 
 namespace Sora.App;
 
@@ -18,12 +19,21 @@ internal sealed class SoraHost
     private readonly DisplayController display = new();
     private readonly CancellationTokenSource lifetime = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(1) };
-    private readonly string dataDirectory = Path.Combine(AppContext.BaseDirectory, "data");
+    private readonly string dataDirectory = SoraData.DirectoryPath;
     private Task sensorTask = Task.CompletedTask;
     private SensorSample? latest;
     private DateTime conflictCheckedAt = DateTime.MinValue, presenceCheckedAt = DateTime.MinValue;
     private string? lastLoggedStatus;
     private bool stopping;
+    private readonly object stopSync = new();
+    private Task? stopTask;
+    private bool hardwareOutputEnabled;
+    private bool suspended;
+    private int displayRequestRevision;
+    private int ticking;
+    private CancellationTokenSource? recovery;
+    private Task recoveryTask = Task.CompletedTask;
+    private readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
 
     public DisplaySettings Settings { get; private set; } = new();
     public bool Requested { get; private set; }
@@ -39,10 +49,16 @@ internal sealed class SoraHost
     // True while a window is showing readings; conflict checks are only needed then or while the display runs.
     public bool Watched { get; set; }
     public LightingService Lighting { get; }
+    public FanService Fans { get; }
+    public GpuFanService GpuFans { get; }
+    public LogitechService Logitech { get; }
+    public LogitechReactiveLighting LogitechLighting { get; }
     public event Action? Updated;
 
-    public SoraHost()
+    public SoraHost(string? dataDirectoryOverride = null)
     {
+        if (dataDirectoryOverride == null) SoraData.Migrate();
+        if (dataDirectoryOverride != null) dataDirectory = Path.GetFullPath(dataDirectoryOverride);
         try
         {
             var file = Path.Combine(dataDirectory, "settings.json");
@@ -61,19 +77,92 @@ internal sealed class SoraHost
         timer.Tick += async (_, _) => await TickAsync();
         Lighting = new LightingService(this);
         Lighting.Load();
+        Fans = new FanService(this);
+        Fans.Load();
+        GpuFans = new GpuFanService(this);
+        Logitech = new LogitechService(this);
+        LogitechLighting = new LogitechReactiveLighting(this);
     }
 
-    // applyLighting is off for screenshots and measurements, which must not touch hardware.
-    public void Start(bool applyLighting = true)
+    // Screenshot/measurement sessions read sensors but never start hardware output or saved profiles.
+    public void Start(bool applyHardware = true)
     {
-        Requested = Settings.AutoStartDisplay;
+        hardwareOutputEnabled = applyHardware;
+        Lighting.AutomaticChangesAllowed = applyHardware;
+        Requested = false;
         sensorTask = sensors.RunAsync(lifetime.Token);
         timer.Start();
         _ = TickAsync();
-        if (applyLighting) _ = Lighting.ApplyAtStartupAsync(lifetime.Token);
+        if (applyHardware)
+        {
+            SystemEvents.PowerModeChanged += PowerModeChanged;
+            // No wait at sign-in: the user wants their lighting straight away; each part retries on its own if hardware is not ready yet.
+            QueueRecovery("startup", 0);
+        }
     }
 
-    public Task SetRequestedAsync(bool on) { Requested = on; return TickAsync(); }
+    private void PowerModeChanged(object sender, PowerModeChangedEventArgs e)
+    {
+        _ = dispatcher.InvokeAsync(async () =>
+        {
+            if (stopping) return;
+            if (e.Mode == PowerModes.Suspend)
+            {
+                suspended = true; recovery?.Cancel();
+                Volatile.Write(ref latest, null);
+                Lighting.SetSuspended(true); Fans.CancelResponseMeasurement();
+                await GpuFans.SuspendAsync();
+                await Logitech.SetSuspendedAsync(true);
+                await LogitechLighting.SuspendAsync(true);
+                await display.DisposeAsync();
+                Log("Suspended: output paused; saved hardware profiles retained.");
+            }
+            else if (e.Mode == PowerModes.Resume)
+            {
+                suspended = false; Lighting.SetSuspended(false); Volatile.Write(ref latest, null);
+                await Logitech.SetSuspendedAsync(false);
+                await LogitechLighting.SuspendAsync(false);
+                conflictCheckedAt = presenceCheckedAt = DateTime.MinValue;
+                QueueRecovery("resume", 5000);
+            }
+        });
+    }
+    private void QueueRecovery(string reason, int delayMs)
+    {
+        recovery?.Cancel();
+        var pending = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+        recovery = pending;
+        var previous = recoveryTask;
+        recoveryTask = RecoverAsync(previous, pending, reason, delayMs);
+    }
+    private async Task RecoverAsync(Task previous, CancellationTokenSource pending, string reason, int delayMs)
+    {
+        var token = pending.Token;
+        try
+        {
+            await previous;
+            await Task.Delay(delayMs, token);
+            if (stopping || suspended) return;
+            Log("Restoring saved settings after " + reason + ".");
+            if (reason == "startup" && displayRequestRevision == 0) Requested = Settings.AutoStartDisplay;
+            await TickAsync();
+            // Each independent controller catches its own errors; one unavailable device must not block the others.
+            await Task.WhenAll(RestorePartAsync("Lighting", () => Lighting.ApplyAtStartupAsync(token)),
+                RestorePartAsync("Motherboard fans", () => Fans.ApplyAtStartupAsync(token)),
+                RestorePartAsync("GPU fans", () => GpuFans.ApplyAtStartupAsync(token)));
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception error) when (error is not OutOfMemoryException) { Log("Hardware recovery: " + error); }
+        finally { if (ReferenceEquals(recovery, pending)) recovery = null; pending.Dispose(); }
+    }
+    private async Task RestorePartAsync(string name, Func<Task> restore)
+    {
+        try { await restore(); }
+        catch (OperationCanceledException) { }
+        catch (Exception error) when (error is not OutOfMemoryException) { Log(name + " recovery: " + error.Message); }
+    }
+
+    public Task SetRequestedAsync(bool on) { displayRequestRevision++; Requested = on; return TickAsync(); }
 
     public Task SaveSettingsAsync(DisplaySettings settings)
     {
@@ -95,7 +184,7 @@ internal sealed class SoraHost
 
     public async Task TickAsync()
     {
-        if (stopping) return;
+        if (stopping || suspended || Interlocked.Exchange(ref ticking, 1) != 0) return;
         try
         {
             // A process snapshot every 5 s instead of every second, and none at all while nobody needs the answer.
@@ -114,25 +203,41 @@ internal sealed class SoraHost
                 catch (Exception error) when (error is IOException or System.ComponentModel.Win32Exception) { CoolerPresent = null; Log("LD360 scan: " + error.Message); }
             }
             var status = display.Status;
+            await Logitech.TickAsync(hardwareOutputEnabled);
+            await LogitechLighting.TickAsync(hardwareOutputEnabled);
             if (lastLoggedStatus != status.Title) { Log(status.Title + " · " + status.Detail); lastLoggedStatus = status.Title; }
         }
         catch (Exception error) when (error is not OutOfMemoryException) { Log(error.ToString()); }
+        finally { Volatile.Write(ref ticking, 0); }
         Updated?.Invoke();
     }
 
-    public async Task StopAsync()
+    public Task StopAsync()
     {
-        if (stopping) return;
+        lock (stopSync) return stopTask ??= StopCoreAsync();
+    }
+
+    private async Task StopCoreAsync()
+    {
         stopping = true;
+        Lighting.AutomaticChangesAllowed = false;
+        SystemEvents.PowerModeChanged -= PowerModeChanged;
         timer.Stop();
         Requested = false;
-        lifetime.Cancel();
-        await Lighting.ExitLightingAsync();
-        try { await display.TickAsync(null, Settings, false, DisplayController.FindConflict()); }
-        catch (Exception error) when (error is not OutOfMemoryException) { Log(error.Message); }
-        await display.DisposeAsync();
-        try { await sensorTask; } catch (Exception error) when (error is not OutOfMemoryException) { Log(error.Message); }
-        lifetime.Dispose();
+        var failures = await CleanupSequence.RunAsync(
+            ("Cancel runtime", () => { lifetime.Cancel(); return Task.CompletedTask; }),
+            ("Cancel recovery", () => { recovery?.Cancel(); return Task.CompletedTask; }),
+            ("Startup recovery", () => recoveryTask),
+            ("Motherboard fans", Fans.StopAsync),
+            ("GPU fans", GpuFans.StopAsync),
+            ("Mouse controls", Logitech.StopAsync),
+            ("Mouse lighting", LogitechLighting.StopAsync),
+            ("Lighting", () => hardwareOutputEnabled ? Lighting.ExitLightingAsync() : Task.CompletedTask),
+            ("Display close", () => display.TickAsync(null, Settings, false, DisplayController.FindConflict())),
+            ("Display disposal", async () => await display.DisposeAsync()),
+            ("Sensors", () => sensorTask),
+            ("Runtime disposal", () => { lifetime.Dispose(); return Task.CompletedTask; }));
+        foreach (var failure in failures) Log(failure.Part + " exit cleanup: " + failure.Error);
     }
 
     public void Log(string message)

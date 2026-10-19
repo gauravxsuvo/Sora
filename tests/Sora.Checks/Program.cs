@@ -10,6 +10,95 @@ if (args.Contains("--keyboard-inspect-extended"))
     return 0;
 }
 
+if (args.Contains("--keyboard-wireless-read-reliability"))
+{
+    var outputIndex = Array.IndexOf(args, "--output");
+    if (outputIndex < 0 || outputIndex + 1 >= args.Length) throw new ArgumentException("Supply --output PATH.");
+    var output = Path.GetFullPath(args[outputIndex + 1]);
+    if (File.Exists(output) || File.Exists(output + ".trace.jsonl")) throw new IOException("Preserve previous evidence; choose a new output path.");
+    Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+    using var trace = new StreamWriter(output + ".trace.jsonl") { AutoFlush = true };
+    using var receiver = new KreoReceiver(KreoReceiver.Find() ?? throw new IOException("No Kreo receiver found."));
+    receiver.DiagnosticTrace += entry => trace.WriteLine(JsonSerializer.Serialize(entry));
+    var reads = new List<object>(); var failedReads = 0; var firstAttemptFailures = 0; var attempts = 0;
+    receiver.DiagnosticTrace += entry =>
+    {
+        if (entry.Stage != "read.reply" || entry.Reply == null) return;
+        attempts++;
+        if (entry.Attempt == 1 && (!entry.Reply.Complete || entry.Reply.Data.Length < entry.ExpectedLength)) firstAttemptFailures++;
+    };
+    // Known read commands only; six full cycles, no configuration writes or unknown-command probes.
+    for (var cycle = 1; cycle <= 6; cycle++)
+    foreach (var (command, length) in new (byte, int)[] { (0x44, 128), (0x41, 504), (0x49, 490), (0x4a, 2) })
+    {
+        var started = DateTimeOffset.UtcNow;
+        var reply = await receiver.ReadWithRetryAsync(command, 0, length);
+        var readPassed = reply.Complete && reply.Data.Length == length && reply.BadChecksums == 0;
+        if (!readPassed) failedReads++;
+        reads.Add(new { cycle, command, expectedLength = length, actualLength = reply.Data.Length, passed = readPassed,
+            reply.Error, reply.Packets, reply.PacketsReceived, reply.BadChecksums,
+            durationSeconds = (DateTimeOffset.UtcNow - started).TotalSeconds });
+        File.WriteAllText(output, JsonSerializer.Serialize(new { configurationWrites = 0, completed = false, reads, failedReads, firstAttemptFailures, attempts }, new JsonSerializerOptions { WriteIndented = true }));
+        await Task.Delay(150);
+    }
+    var report = new { configurationWrites = 0, completed = true, reads, failedReads, firstAttemptFailures, attempts, passed = failedReads == 0 };
+    File.WriteAllText(output, JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new { report.completed, report.passed, reads = reads.Count, failedReads, firstAttemptFailures, attempts }));
+    return report.passed ? 0 : 1;
+}
+
+if (args.Contains("--keyboard-wireless-verify-profile"))
+{
+    var outputIndex = Array.IndexOf(args, "--output");
+    if (outputIndex < 0 || outputIndex + 1 >= args.Length) throw new ArgumentException("Supply --output PATH.");
+    var output = Path.GetFullPath(args[outputIndex + 1]);
+    Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+    var model = KreoModel.All.Single(m => m.Name == "Swarm 75");
+    using var receiver = new KreoReceiver(KreoReceiver.Find() ?? throw new IOException("No Kreo receiver found."));
+    // Persist each bounded event immediately, including failed reads and partial writes before recovery.
+    using var trace = new StreamWriter(output + ".trace.jsonl", append: false) { AutoFlush = true };
+    receiver.DiagnosticTrace += entry => trace.WriteLine(JsonSerializer.Serialize(entry));
+    KreoState? original = null;
+    var confirmed = new List<string>(); string? failure = null, restoreFailure = null;
+    static bool SameReceiverState(KreoState a, KreoState b) => a.Lighting.SequenceEqual(b.Lighting) &&
+        a.Keys.AsSpan(0, 504).SequenceEqual(b.Keys.AsSpan(0, 504)) &&
+        a.EffectPalette!.AsSpan(0, 490).SequenceEqual(b.EffectPalette!.AsSpan(0, 490));
+    try
+    {
+        original = (await receiver.ReadStateAsync(model)).State;
+        File.WriteAllText(output + ".state-backup.json", JsonSerializer.Serialize(original));
+        var desired = original.Copy();
+        KreoProtocol.SetLighting(desired, model, 1, 2, 0, 0);
+        KreoProtocol.SetEffectColor(desired, model, 1, 0, KreoProtocol.ParseHex("#12ABEF"));
+        KreoProtocol.Remap(desired, model.Keys.Single(k => k.Label == "F12").Index, KreoActions.ForVirtualKey(0x7a));
+        await receiver.ApplyAsync(original, desired, model,
+            backup => File.WriteAllText(output + ".receiver-backup.json", JsonSerializer.Serialize(backup)));
+        var actual = (await receiver.ReadStateAsync(model)).State;
+        if (!SameReceiverState(actual, desired)) throw new IOException("Receiver profile readback differs from the complete intended blocks.");
+        confirmed.Add("Production receiver Apply: Static #12ABEF, F12 -> F11, all lighting/key-map/palette bytes match");
+        await Task.Delay(600);
+    }
+    catch (Exception error) { failure = error.ToString(); }
+    finally
+    {
+        if (original != null)
+        {
+            try
+            {
+                var current = (await receiver.ReadStateAsync(model)).State;
+                await receiver.ApplyAsync(current, original, model, _ => { });
+                var restored = (await receiver.ReadStateAsync(model)).State;
+                if (!SameReceiverState(restored, original)) throw new IOException("Receiver original-state restoration differs.");
+                confirmed.Add("Original lighting, 504-byte key map and complete 490-byte palette restored and read back");
+            }
+            catch (Exception error) { restoreFailure = error.ToString(); }
+        }
+        File.WriteAllText(output, JsonSerializer.Serialize(new { confirmed, failure, restoreFailure, perKeyColorsWritten = false, physicalKeypressVerified = false }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+    Console.WriteLine(File.ReadAllText(output));
+    return failure == null && restoreFailure == null ? 0 : 1;
+}
+
 if (args.Contains("--keyboard-wireless-verify-blocks"))
 {
     // Reversible receiver writes: one effect-palette colour (cmd 9) and F12 -> F11 (cmd 1), each read back and restored.
@@ -238,6 +327,39 @@ async Task Throws(Func<Task> run)
 }
 SensorSample Fresh() => new(42, 125, 37, 5400, DateTimeOffset.UtcNow);
 KreoState SwarmFixture() => JsonSerializer.Deserialize<KreoState>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "kreo-swarm75.json")))!;
+await Check("Fan maintenance validates full backups and recovers all headers after every native/firmware write failure", () =>
+{ FanMaintenanceChecks.Run(); return Task.CompletedTask; });
+await Check("Incomplete update checks never claim hardware is up to date", () =>
+{
+    var complete = new UpdateReport("Z890 GAMING X WIFI7", "F20", "8AARL032", [], [], [], DateTimeOffset.UtcNow);
+    Require(!complete.Incomplete && complete.ResultLabel == "No updates found" && complete.ResultDetail.Contains("does not cover every device's firmware"));
+    foreach (var report in new[] { complete with { Notes = ["BIOS check failed: offline"] },
+        complete with { Notes = ["Driver tables have no matching package"] }, complete with { BoardSection = null } })
+        Require(report.Incomplete && report.ResultLabel == "Check incomplete" && report.EmptyMessage.Contains("unknown"), "A failed/skipped update check claimed success.");
+    return Task.CompletedTask;
+});
+await Check("Lighting cleanup joins slow workers before releasing ownership, including failures and cancellation", CleanupJoinChecks.Run);
+await Check("Independent shutdown steps all run after synchronous, asynchronous or cancelled cleanup failures", async () =>
+{
+    for (var failingStep = 0; failingStep < 12; failingStep++)
+    {
+        var invoked = new List<int>();
+        var steps = Enumerable.Range(0, 12).Select(index => (Part: "controller " + index, Run: (Func<Task>)(() =>
+        {
+            invoked.Add(index);
+            if (index != failingStep) return Task.CompletedTask;
+            return (index % 3) switch
+            {
+                0 => throw new IOException("Synchronous cleanup failed"),
+                1 => Task.FromException(new IOException("Asynchronous cleanup failed")),
+                _ => Task.FromCanceled(new CancellationToken(true))
+            };
+        }))).ToArray();
+        var errors = await CleanupSequence.RunAsync(steps);
+        Require(invoked.SequenceEqual(Enumerable.Range(0, 12)), "An earlier cleanup failure skipped a later controller.");
+        Require(errors.Count == 1 && errors[0].Part == "controller " + failingStep, "Cleanup lost the failed controller/error.");
+    }
+});
 await Check("Kreo packets match recovered headers and reject unrelated commands", async () =>
 {
     var request = KreoProtocol.Request(0x82, 1, 6);
@@ -497,7 +619,7 @@ await Check("Gigabyte RGB zone packets match GCC's captured exit sequence", () =
     return Task.CompletedTask;
 });
 
-await Check("Board rainbow wave is GCC's captured Wave17 packet; saved Wave is sent as colour cycle", () =>
+await Check("Board global rainbow uses captured Wave17; independent zones use their spectrum cycle", () =>
 {
     Require(Convert.ToHexString(GigabyteRgb.RainbowWavePacket()) == "CC220000000000000000000964000000000000000000260200000000000007000000", "Wave17 packet from frida-gcc-red-rainbow.jsonl");
     foreach (var effect in new[] { BoardEffect.Rainbow, BoardEffect.Wave })
@@ -514,14 +636,39 @@ await Check("Board Rainbow sends GCC's captured wave sequence, not per-zone colo
 {
     // Sora 0.6.2-0.6.3 converted Rainbow to Color cycle before applying, so the wave never reached the board.
     var zones = GigabyteRgb.ZonesFor("Z890 GAMING X WIFI7").Select(z => new BoardZoneEffect(z.Number, BoardEffect.Rainbow, 10, 132, 255, 8, 8)).ToArray();
-    var sent = GigabyteRgb.Plan(zones).Select(step => Convert.ToHexString(step.Packet)).ToArray();
+    var catalog = GigabyteRgb.ZonesFor("Z890 GAMING X WIFI7");
+    var sent = GigabyteRgb.Plan(zones, catalog).Select(step => Convert.ToHexString(step.Packet)).ToArray();
     // frida-gcc-wave.jsonl / frida-ioctl.jsonl: what GCC sends when the fans flow.
     var tail = new[] { "CC28FF07", "CC20FF070000000000000001FF000000000000000000000000000000000000000000", "CC28FF07", Convert.ToHexString(GigabyteRgb.RainbowWavePacket()), "CC280400" };
     Require(sent.TakeLast(5).SequenceEqual(tail), "wave sequence: " + string.Join(" ", sent.TakeLast(5)));
     Require(!sent.Any(p => p.Length > 30 && p.Substring(22, 2) == "04"), "no colour cycle packets");
     Require(sent.Take(2).SequenceEqual(new[] { "CC340000", "CC3200" }), "GCC's connect setup first");
-    var cycle = GigabyteRgb.Plan(zones.Select(z => z with { Effect = BoardEffect.ColorCycle }).ToArray()).Select(step => Convert.ToHexString(step.Packet)).ToArray();
+    var cycle = GigabyteRgb.Plan(zones.Select(z => z with { Effect = BoardEffect.ColorCycle }).ToArray(), catalog).Select(step => Convert.ToHexString(step.Packet)).ToArray();
     Require(!cycle.Contains(Convert.ToHexString(GigabyteRgb.RainbowWavePacket())) && cycle.Count(p => p.Length > 30 && p.Substring(22, 2) == "04") == zones.Length, "Color cycle stays per zone");
+    var ioOnly = new[] { new BoardZoneEffect(9, BoardEffect.Rainbow, 0, 0, 0, 8, 8) };
+    var partial = GigabyteRgb.Plan(ioOnly, catalog).Select(step => Convert.ToHexString(step.Packet)).ToArray();
+    Require(partial.Length == 4 && partial[0] == "CC91" && partial[1] == "CC280002" && partial[2].StartsWith("CC910002") && partial[2].Substring(22, 2) == "04" && partial[^1] == "CC280002", "I/O cover reset and spectrum affect only division 9");
+    var logo = GigabyteRgb.Plan([new BoardZoneEffect(0, BoardEffect.Static, 255, 0, 0, 8, 9)]);
+    Require(logo.Count == 4 && Convert.ToHexString(logo[0].Packet) == "CC20" && Convert.ToHexString(logo[1].Packet) == "CC280100" && logo[1].Wait >= 100
+        && logo[2].Packet.SequenceEqual(GigabyteRgb.BuildZonePacket(new BoardZoneEffect(0, BoardEffect.Static, 255, 0, 0, 8, 9))) && Convert.ToHexString(logo[3].Packet) == "CC280100",
+        "GAME ON clears only descriptor 0, applies and settles before the red write; no unrelated zone is reset");
+    Require(!GigabyteRgb.CanUseGlobalRainbow(ioOnly, [new BoardZone(9, "I/O cover", false)]), "a selected-zone subset is not a complete catalog");
+    Require(!GigabyteRgb.CanUseGlobalRainbow(zones, null), "global scope requires explicit catalog");
+    var mixed = zones.Select(z => z.Zone == 9 ? z with { Effect = BoardEffect.Static } : z).ToArray();
+    var mixedPlan = GigabyteRgb.Plan(mixed, catalog).Select(step => Convert.ToHexString(step.Packet)).ToArray();
+    Require(mixedPlan.Length == mixed.Length * 2 + 2 && !mixedPlan.Contains(Convert.ToHexString(GigabyteRgb.RainbowWavePacket()))
+        && mixedPlan.Take(mixed.Length).SequenceEqual(mixed.Select(z => Convert.ToHexString(GigabyteRgb.BuildZonePacket(z)[..2])))
+        && mixedPlan[mixed.Length] == "CC28F502" && mixedPlan[^1] == "CC28F502", "mixed state resets and applies only the supplied descriptors");
+    Require(!GigabyteRgb.CanUseGlobalRainbow(zones.Select(z => z.Zone == 9 ? z with { Brightness = 0 } : z).ToArray(), catalog), "different brightness requires per-zone effects");
+    Require(GigabyteRgb.Plan([]).Count == 0, "empty selection does not write or apply");
+    var initialized = GigabyteRgb.Plan(mixed, catalog, initialize: true);
+    Require(initialized.Take(3).Select(s => Convert.ToHexString(s.Packet)).SequenceEqual(new[] { "CC340000", "CC3200", "CC28FF07" })
+        && initialized.Skip(3).Take(11).Select(s => Convert.ToHexString(s.Packet)).SequenceEqual(Enumerable.Range(0, 11).Select(z => $"CC{(z < 8 ? 0x20 + z : 0x90 + z - 8):X2}"))
+        && initialized[14].Wait >= 100 && initialized[14].Packet.SequenceEqual(new byte[] { 0xCC, 0x28, 0xFF, 7 })
+        && initialized.Skip(15).Take(mixed.Length).Select(s => Convert.ToHexString(s.Packet)).SequenceEqual(mixed.Select(z => Convert.ToHexString(GigabyteRgb.BuildZonePacket(GigabyteRgb.ForZone(z))))),
+        "first initialization uses the physically verified reset/settle sequence and restores every desired zone");
+    try { GigabyteRgb.Plan(ioOnly, catalog, initialize: true); Require(false, "initialization with unknown untouched-zone settings accepted"); } catch (ArgumentException) { }
+    try { GigabyteRgb.Plan([ioOnly[0], ioOnly[0]]); Require(false, "duplicate zone accepted"); } catch (ArgumentException) { }
     return Task.CompletedTask;
 });
 
@@ -529,9 +676,11 @@ await Check("Sync frames are one Static packet per board light plus apply", () =
 {
     var zones = new[] { 0, 2, 4, 5, 6, 7, 9 };
     var frame = GigabyteRgb.FramePackets(zones, 0x12, 0x34, 0x56).Select(Convert.ToHexString).ToArray();
-    Require(frame.Length == zones.Length + 1 && frame[^1] == "CC28FF07", "apply last");
+    Require(frame.Length == zones.Length + 1 && frame[^1] == "CC28F502", "only selected divisions apply last");
     Require(frame[0].StartsWith("CC2001000000000000000001FF0056341200"), "zone 0 Static, full level, colour 0x123456: " + frame[0][..40]);
     Require(frame[^2].StartsWith("CC910002"), "zone 9 on header 0x91");
+    Require(GigabyteRgb.FramePackets([9], 1, 2, 3).Select(Convert.ToHexString).Last() == "CC280002", "a partial frame never applies other divisions");
+    Require(GigabyteRgb.FramePackets([], 1, 2, 3).Count == 0, "empty frame does not write");
     return Task.CompletedTask;
 });
 
@@ -546,8 +695,45 @@ await Check("ENE writes are limited to the control block, apply byte and effect 
     Require(EneDram.GccBrightness(EneMode.Rainbow, 0, 0, 0) == 9 && EneDram.GccBrightness(EneMode.Static, 1, 0, 0) == 1 && EneDram.GccBrightness(EneMode.Off, 0, 0, 0) == null, "rainbow 9, at least 1, Off untouched");
     foreach (var refused in new ushort[] { 0x8024, 0x8028, 0x802A, 0x802E, 0x80A0, 0x80F8, 0x80F9, 0x8100, 0x815F, 0x8178, 0x1000, 0x1C00, 0xF01C, 0xE020 }) Require(!dimm.CanWrite(refused), $"0x{refused:X4} must be refused");
     Require(EneDram.Encode(0x01, 0x02, 0x03, EneColorOrder.Rbg).SequenceEqual(new byte[] { 0x01, 0x03, 0x02 }), "ENE colour order is R, B, G");
+    // Off is written as GCC's Static black; both it and the controller's own mode 0 read back as Off, a dim Static does not.
+    Require(EneDram.IsOff([0, 1, 0, 0], new byte[24]) && EneDram.IsOff([0, 0, 2, 1], Enumerable.Repeat((byte)0xFF, 24).ToArray()), "Static black and mode 0 are Off");
+    Require(!EneDram.IsOff([0, 1, 0, 0], [.. new byte[23], 1]) && !EneDram.IsOff([0, 5, 0, 1], new byte[24]), "a dim Static or a Rainbow is not Off");
     return Task.CompletedTask;
 });
+
+await Check("Kreo receiver rejects corrupt settings payloads", KreoRecoveryChecks.CorruptRead);
+await Check("Kreo receiver rejects corrupt acknowledgements", KreoRecoveryChecks.CorruptAcknowledgement);
+await Check("Kreo wired partial writes restore every changed block", KreoRecoveryChecks.WiredRollback);
+await Check("Kreo receiver captured blocks, malformed framing, selector isolation and retry", KreoRecoveryChecks.ReceiverFraming);
+await Check("Kreo receiver complete acknowledgement echoes match captured traffic", KreoRecoveryChecks.AcknowledgementCorrelation);
+await Check("Kreo wired every partial stage, failed readback, backup and restore failure", KreoRecoveryChecks.WiredFailureStages);
+await Check("Kreo receiver each apply stage restores after corrupt, short or rejected readback; diagnostics cannot interrupt recovery", KreoRecoveryChecks.ReceiverApplyRecovery);
+await Check("Kreo receiver failed durable backup prevents every hardware write", KreoRecoveryChecks.ReceiverBackupFailure);
+await Check("DeepCool current display/fan helpers block competing writes without blocking sensor readers", () =>
+{
+    Require(DisplayController.FindConflict(["JZFSDisplayService"]) != null);
+    Require(DisplayController.FindConflict(["deepcooldisplayservice"]) != null);
+    Require(DisplayController.FindConflict(["DeepCool"]) != null);
+    Require(DisplayController.FindConflict(["JZFSSensorBridgeServer", "lghub_updater", "Sora"]) == null);
+    Require(GigabyteFans.IsFanControllerProcess("FanControlService"));
+    Require(GigabyteFans.IsFanControllerProcess("fancontrol"));
+    Require(!GigabyteFans.IsFanControllerProcess("JZFSSensorBridgeServer"));
+    return Task.CompletedTask;
+});
+await Check("Gigabyte native fan curves, captured register maps, isolated writes and failure rollback", () => { FanChecks.Run(); return Task.CompletedTask; });
+await Check("Firmware Zero-RPM isolation, readback, partial failures and restoration", () => { FanFirmwareChecks.Run(); return Task.CompletedTask; });
+await Check("Fan minimum-duty calibration, restart verification, thermal abort and cancellation", FanCalibrationChecks.Run);
+await Check("Storage SMART parsing, unsigned counters, malformed responses and CSV export", () => { StorageChecks.Run(); return Task.CompletedTask; });
+await Check("NVIDIA fan profiles, thermal limits, native backup isolation and transaction rollback", () => { GpuFanChecks.Run(); return Task.CompletedTask; });
+await Check("Wi-Fi channels, signal freshness, antenna comparisons and CSV export", () => { WifiChecks.Run(Require); return Task.CompletedTask; });
+await Check("Gigabyte updates: exact board, GCC driver matching, safe links", () => { UpdateChecks.Run(Require); return Task.CompletedTask; });
+await Check("Hardware maintenance: exact firmware advisory identity and reviewed support routes", () => { HardwareMaintenanceChecks.Run(Require); return Task.CompletedTask; });
+
+await Check("Logitech HID++ correlation, captured DPI/lighting, onboard CRC and preset validation", () => { LogitechChecks.Run(Require); return Task.CompletedTask; });
+await Check("Logitech DPI Shift release, stage buttons, G-Shift layers and macro cancellation", LogitechRuntimeChecks.Run);
+await Check("Logitech standard buttons stay native, remaps do not double-inject and held routing changes are refused", LogitechButtonRoutingChecks.Run);
+
+await Check("Startup routing preserves both deployments, absent/disabled tasks, read failures and explicit-action validation (31 cases)", () => { StartupRoutingChecks.Run(Require); return Task.CompletedTask; });
 
 Console.WriteLine($"{passed} passed, {failures} failed");
 return failures == 0 ? 0 : 1;

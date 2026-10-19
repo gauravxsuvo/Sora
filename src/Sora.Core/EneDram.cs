@@ -44,6 +44,9 @@ public sealed record EneDimm(int Slot, byte Address, string Name, ushort ChipId,
         register >= ColorBase && register < ColorBase + 3 * LedCount;
 }
 
+/// <summary>One DIMM's effect for <see cref="EneDram.Apply(Smbus, IReadOnlyList{EneTarget}, EneColorOrder)"/>. Speed 0 (fast) to 4 (slow).</summary>
+public sealed record EneTarget(EneDimm Dimm, EneMode Mode, byte Red, byte Green, byte Blue, byte Speed, bool Reverse);
+
 public sealed record EneProbe(string Controller, int PciVendor, int PciDevice, bool SpdWriteProtected, IReadOnlyList<SpdSlot> Spd,
     IReadOnlyList<EneCandidate> Candidates, IReadOnlyList<EneDimm> Dimms);
 
@@ -145,17 +148,34 @@ public static class EneDram
     /// Writes one effect to every DIMM, then reads it back. Holds the SMBus lock per DIMM, re-checks the controller's
     /// identity first, and writes only registers allowed by <see cref="EneDimm.CanWrite"/>. Nothing is saved to the controller's flash.
     /// </summary>
-    public static void Apply(Smbus bus, IReadOnlyList<EneDimm> dimms, EneMode mode, byte red, byte green, byte blue, byte speed, bool reverse, EneColorOrder order)
+    public static void Apply(Smbus bus, IReadOnlyList<EneDimm> dimms, EneMode mode, byte red, byte green, byte blue, byte speed, bool reverse, EneColorOrder order) =>
+        Apply(bus, dimms.Select(dimm => new EneTarget(dimm, mode, red, green, blue, speed, reverse)).ToArray(), order);
+
+    /// <summary>
+    /// Each DIMM's own effect in one pass: every DIMM's registers first, then all apply bytes back to back, so effects that run in
+    /// the controllers (Rainbow, Color cycle, Breathing) start together instead of one stick a readback later than the other.
+    /// </summary>
+    /// <remarks>
+    /// Off is sent as Static black, as GCC does (with GCC running the sticks read Static, colours 0). The controller's own Off
+    /// (mode 0) did not hold on this kit: a stick left in mode 0 lit up again when the other stick was applied (0.8.3).
+    /// </remarks>
+    public static void Apply(Smbus bus, IReadOnlyList<EneTarget> targets, EneColorOrder order)
     {
-        if (speed > 4) throw new ArgumentOutOfRangeException(nameof(speed));
-        Write(bus, dimms.Select(dimm =>
+        if (targets.Any(t => t.Speed > 4)) throw new ArgumentOutOfRangeException(nameof(targets), "ENE speed is 0-4.");
+        Write(bus, targets.Select(target =>
         {
+            var (mode, red, green, blue) = target.Mode == EneMode.Off ? (EneMode.Static, (byte)0, (byte)0, (byte)0) : (target.Mode, target.Red, target.Green, target.Blue);
+            var dimm = target.Dimm;
             var colors = new byte[dimm.LedCount * 3];
             var one = Encode(red, green, blue, order);
             for (var i = 0; i < dimm.LedCount; i++) one.CopyTo(colors, i * 3);
-            return (dimm, new EneSnapshot([0x00, (byte)mode, speed, (byte)(reverse ? 1 : 0)], colors, dimm.HasBrightness ? GccBrightness(mode, red, green, blue) : null));
+            return (dimm, new EneSnapshot([0x00, (byte)mode, target.Mode == EneMode.Off ? (byte)0 : target.Speed, (byte)(target.Reverse && target.Mode != EneMode.Off ? 1 : 0)], colors,
+                dimm.HasBrightness ? GccBrightness(mode, red, green, blue) : null));
         }).ToArray());
     }
+
+    /// <summary>True for what <see cref="Apply"/> writes for Off: Static with every LED black.</summary>
+    public static bool IsOff(byte[] control, byte[] colors) => control is [0x00, (byte)EneMode.Off, ..] || control is [0x00, (byte)EneMode.Static, ..] && colors.All(c => c == 0);
 
     /// <summary>Puts back the registers captured during the scan.</summary>
     public static void Restore(Smbus bus, IReadOnlyList<EneDimm> dimms) => Write(bus, dimms.Select(dimm => (dimm, dimm.Original)).ToArray());
@@ -172,22 +192,28 @@ public static class EneDram
     /// </remarks>
     public static void WriteFrame(Smbus bus, IReadOnlyList<EneDimm> dimms, byte red, byte green, byte blue, EneColorOrder order, EneFrameWrite method = EneFrameWrite.Bytes, byte? lastBrightness = null)
     {
+        if (dimms.Count == 0) return;
         var one = Encode(red, green, blue, order);
         var brightness = GccBrightness(EneMode.Static, red, green, blue)!.Value;
         using var held = bus.Lock();
-        foreach (var dimm in dimms)
-        {
-            if (method != EneFrameWrite.Bytes)
+        if (method != EneFrameWrite.Bytes)
+            foreach (var dimm in dimms)
             {
                 var colors = new byte[dimm.LedCount * 3];
                 for (var led = 0; led < dimm.LedCount; led++) one.CopyTo(colors, led * 3);
                 WriteColorBlock(bus, dimm, colors, method);
             }
-            else
-                for (var led = 0; led < dimm.LedCount; led++)
-                    for (var c = 0; c < 3; c++) WriteRegister(bus, dimm, (ushort)(dimm.ColorBase + led * 3 + c), one[c]);
-            if (dimm.HasBrightness && brightness != lastBrightness) WriteRegister(bus, dimm, (ushort)(dimm.ControlBase + 9), brightness);
+        else
+        {
+            // Register by register across the DIMMs, not DIMM by DIMM: writing one stick's whole block first put tens of ms of byte
+            // writes between the sticks, and DDR5_A2 visibly led DDR5_B2. Interleaved, they are at most one register apart.
+            var registers = dimms.Max(d => d.LedCount) * 3;
+            for (var i = 0; i < registers; i++)
+                foreach (var dimm in dimms)
+                    if (i < dimm.LedCount * 3) WriteRegister(bus, dimm, (ushort)(dimm.ColorBase + i), one[i % 3]);
         }
+        if (brightness != lastBrightness)
+            foreach (var dimm in dimms.Where(d => d.HasBrightness)) WriteRegister(bus, dimm, (ushort)(dimm.ControlBase + 9), brightness);
         // Apply last and back to back, so every stick shows the frame at the same moment.
         foreach (var dimm in dimms) WriteRegister(bus, dimm, (ushort)(dimm.ControlBase + 0x0F), 0x01);
     }

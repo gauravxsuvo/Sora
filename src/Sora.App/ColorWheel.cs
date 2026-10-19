@@ -5,6 +5,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
 
 namespace Sora.App;
 
@@ -18,16 +21,34 @@ internal sealed class ColorWheel : Grid
     private readonly Image ring = new() { IsHitTestVisible = false }, square = new() { IsHitTestVisible = false };
     private readonly Ellipse hueMarker = Marker(), squareMarker = Marker();
     private double hue, saturation = 1, value = 1, side;
+    private string reportedHex = "#FF0000";
     private enum Drag { None, Hue, Square }
     private Drag drag;
 
     /// <summary>Raised while the user drags or presses keys, with the new colour as #RRGGBB.</summary>
     public event Action<string>? ColorPicked;
 
+    protected override AutomationPeer OnCreateAutomationPeer() => new ColourPeer(this);
+    private sealed class ColourPeer(ColorWheel owner) : FrameworkElementAutomationPeer(owner), IValueProvider
+    {
+        protected override string GetClassNameCore() => "ColourPicker";
+        protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Custom;
+        protected override string GetNameCore() => string.IsNullOrEmpty(base.GetNameCore()) ? "Colour picker" : base.GetNameCore();
+        public override object? GetPattern(PatternInterface pattern) => pattern == PatternInterface.Value ? this : base.GetPattern(pattern);
+        public bool IsReadOnly => !owner.IsEnabled;
+        public string Value => owner.Hex;
+        public void SetValue(string value)
+        {
+            if (!owner.IsEnabled) throw new ElementNotEnabledException();
+            if (!TryParse(value, out _)) throw new ArgumentException("Use #RRGGBB.", nameof(value));
+            owner.Hex = value; owner.Changed();
+        }
+    }
+
     public ColorWheel()
     {
         Focusable = true;
-        FocusVisualStyle = null;
+        SetResourceReference(FocusVisualStyleProperty, "FocusRing");
         Background = Brushes.Transparent;
         Cursor = Cursors.Hand;
         Children.Add(ring);
@@ -50,6 +71,7 @@ internal sealed class ColorWheel : Grid
             (var h, saturation, this.value) = ToHsv(color);
             if (saturation > 0 && this.value > 0) hue = h;
             Draw();
+            AnnounceValue();
         }
     }
 
@@ -166,7 +188,16 @@ internal sealed class ColorWheel : Grid
     private void Changed()
     {
         Draw();
+        AnnounceValue();
         ColorPicked?.Invoke(Hex);
+    }
+
+    private void AnnounceValue()
+    {
+        var current = Hex;
+        if (current == reportedHex) return;
+        var previous = reportedHex; reportedHex = current;
+        UIElementAutomationPeer.FromElement(this)?.RaisePropertyChangedEvent(ValuePatternIdentifiers.ValueProperty, previous, current);
     }
 
     /// <summary>Hue ring, red on the left, going clockwise through yellow, green, cyan, blue and magenta. Edges are anti-aliased.</summary>
@@ -225,7 +256,7 @@ internal sealed class ColorWheel : Grid
         return ((hue + 360) % 360, max == 0 ? 0 : delta / max, max);
     }
 
-    private static bool TryParse(string? hex, out Color color)
+    internal static bool TryParse(string? hex, out Color color)
     {
         color = default;
         if (hex is not { Length: 7 } || hex[0] != '#' || !int.TryParse(hex.AsSpan(1), System.Globalization.NumberStyles.HexNumber, null, out var rgb)) return false;

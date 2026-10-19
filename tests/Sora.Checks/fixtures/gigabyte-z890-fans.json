@@ -1,0 +1,2360 @@
+[
+  {
+    "Header": 0,
+    "Name": "CPU",
+    "Registers": [
+      {
+        "Bank": 0,
+        "Address": 21,
+        "Value": 208,
+        "Register": {
+          "Bank": 0,
+          "Address": 21
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 96,
+        "Value": 0,
+        "Register": {
+          "Bank": 0,
+          "Address": 96
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 97,
+        "Value": 20,
+        "Register": {
+          "Bank": 0,
+          "Address": 97
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 98,
+        "Value": 75,
+        "Register": {
+          "Bank": 0,
+          "Address": 98
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 99,
+        "Value": 66,
+        "Register": {
+          "Bank": 0,
+          "Address": 99
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 100,
+        "Value": 4,
+        "Register": {
+          "Bank": 0,
+          "Address": 100
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 101,
+        "Value": 3,
+        "Register": {
+          "Bank": 0,
+          "Address": 101
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 102,
+        "Value": 0,
+        "Register": {
+          "Bank": 0,
+          "Address": 102
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 16,
+        "Value": 30,
+        "Register": {
+          "Bank": 2,
+          "Address": 16
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 17,
+        "Value": 4,
+        "Register": {
+          "Bank": 2,
+          "Address": 17
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 18,
+        "Value": 129,
+        "Register": {
+          "Bank": 2,
+          "Address": 18
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 19,
+        "Value": 108,
+        "Register": {
+          "Bank": 2,
+          "Address": 19
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 20,
+        "Value": 40,
+        "Register": {
+          "Bank": 2,
+          "Address": 20
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 21,
+        "Value": 4,
+        "Register": {
+          "Bank": 2,
+          "Address": 21
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 22,
+        "Value": 129,
+        "Register": {
+          "Bank": 2,
+          "Address": 22
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 23,
+        "Value": 150,
+        "Register": {
+          "Bank": 2,
+          "Address": 23
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 24,
+        "Value": 50,
+        "Register": {
+          "Bank": 2,
+          "Address": 24
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 25,
+        "Value": 2,
+        "Register": {
+          "Bank": 2,
+          "Address": 25
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 26,
+        "Value": 128,
+        "Register": {
+          "Bank": 2,
+          "Address": 26
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 27,
+        "Value": 192,
+        "Register": {
+          "Bank": 2,
+          "Address": 27
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 28,
+        "Value": 29,
+        "Register": {
+          "Bank": 2,
+          "Address": 28
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 16,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 16
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 17,
+        "Value": 2,
+        "Register": {
+          "Bank": 3,
+          "Address": 17
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 18,
+        "Value": 70,
+        "Register": {
+          "Bank": 3,
+          "Address": 18
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 19,
+        "Value": 4,
+        "Register": {
+          "Bank": 3,
+          "Address": 19
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 20,
+        "Value": 75,
+        "Register": {
+          "Bank": 3,
+          "Address": 20
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 21,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 21
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 22,
+        "Value": 75,
+        "Register": {
+          "Bank": 3,
+          "Address": 22
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 23,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 23
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 24,
+        "Value": 75,
+        "Register": {
+          "Bank": 3,
+          "Address": 24
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 25,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 25
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 26,
+        "Value": 75,
+        "Register": {
+          "Bank": 3,
+          "Address": 26
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 27,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 27
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 28,
+        "Value": 3,
+        "Register": {
+          "Bank": 3,
+          "Address": 28
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 29,
+        "Value": 16,
+        "Register": {
+          "Bank": 3,
+          "Address": 29
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 30,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 30
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 31,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 31
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 112,
+        "Value": 213,
+        "Register": {
+          "Bank": 3,
+          "Address": 112
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 113,
+        "Value": 234,
+        "Register": {
+          "Bank": 3,
+          "Address": 113
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 114,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 114
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 115,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 115
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 116,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 116
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 117,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 117
+        }
+      }
+    ]
+  },
+  {
+    "Header": 1,
+    "Name": "System 1",
+    "Registers": [
+      {
+        "Bank": 0,
+        "Address": 22,
+        "Value": 192,
+        "Register": {
+          "Bank": 0,
+          "Address": 22
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 104,
+        "Value": 0,
+        "Register": {
+          "Bank": 0,
+          "Address": 104
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 105,
+        "Value": 20,
+        "Register": {
+          "Bank": 0,
+          "Address": 105
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 106,
+        "Value": 60,
+        "Register": {
+          "Bank": 0,
+          "Address": 106
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 107,
+        "Value": 63,
+        "Register": {
+          "Bank": 0,
+          "Address": 107
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 108,
+        "Value": 4,
+        "Register": {
+          "Bank": 0,
+          "Address": 108
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 109,
+        "Value": 1,
+        "Register": {
+          "Bank": 0,
+          "Address": 109
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 110,
+        "Value": 0,
+        "Register": {
+          "Bank": 0,
+          "Address": 110
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 32,
+        "Value": 30,
+        "Register": {
+          "Bank": 2,
+          "Address": 32
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 33,
+        "Value": 4,
+        "Register": {
+          "Bank": 2,
+          "Address": 33
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 34,
+        "Value": 134,
+        "Register": {
+          "Bank": 2,
+          "Address": 34
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 35,
+        "Value": 111,
+        "Register": {
+          "Bank": 2,
+          "Address": 35
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 36,
+        "Value": 40,
+        "Register": {
+          "Bank": 2,
+          "Address": 36
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 37,
+        "Value": 4,
+        "Register": {
+          "Bank": 2,
+          "Address": 37
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 38,
+        "Value": 134,
+        "Register": {
+          "Bank": 2,
+          "Address": 38
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 39,
+        "Value": 159,
+        "Register": {
+          "Bank": 2,
+          "Address": 39
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 40,
+        "Value": 45,
+        "Register": {
+          "Bank": 2,
+          "Address": 40
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 41,
+        "Value": 4,
+        "Register": {
+          "Bank": 2,
+          "Address": 41
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 42,
+        "Value": 134,
+        "Register": {
+          "Bank": 2,
+          "Address": 42
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 43,
+        "Value": 183,
+        "Register": {
+          "Bank": 2,
+          "Address": 43
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 44,
+        "Value": 109,
+        "Register": {
+          "Bank": 2,
+          "Address": 44
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 32,
+        "Value": 50,
+        "Register": {
+          "Bank": 3,
+          "Address": 32
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 33,
+        "Value": 4,
+        "Register": {
+          "Bank": 3,
+          "Address": 33
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 34,
+        "Value": 55,
+        "Register": {
+          "Bank": 3,
+          "Address": 34
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 35,
+        "Value": 4,
+        "Register": {
+          "Bank": 3,
+          "Address": 35
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 36,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 36
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 37,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 37
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 38,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 38
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 39,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 39
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 40,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 40
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 41,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 41
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 42,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 42
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 43,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 43
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 44,
+        "Value": 3,
+        "Register": {
+          "Bank": 3,
+          "Address": 44
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 45,
+        "Value": 102,
+        "Register": {
+          "Bank": 3,
+          "Address": 45
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 46,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 46
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 47,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 47
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 118,
+        "Value": 207,
+        "Register": {
+          "Bank": 3,
+          "Address": 118
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 119,
+        "Value": 231,
+        "Register": {
+          "Bank": 3,
+          "Address": 119
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 120,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 120
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 121,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 121
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 122,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 122
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 123,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 123
+        }
+      }
+    ]
+  },
+  {
+    "Header": 2,
+    "Name": "System 2",
+    "Registers": [
+      {
+        "Bank": 0,
+        "Address": 23,
+        "Value": 192,
+        "Register": {
+          "Bank": 0,
+          "Address": 23
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 112,
+        "Value": 0,
+        "Register": {
+          "Bank": 0,
+          "Address": 112
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 113,
+        "Value": 20,
+        "Register": {
+          "Bank": 0,
+          "Address": 113
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 114,
+        "Value": 60,
+        "Register": {
+          "Bank": 0,
+          "Address": 114
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 115,
+        "Value": 63,
+        "Register": {
+          "Bank": 0,
+          "Address": 115
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 116,
+        "Value": 4,
+        "Register": {
+          "Bank": 0,
+          "Address": 116
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 117,
+        "Value": 1,
+        "Register": {
+          "Bank": 0,
+          "Address": 117
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 118,
+        "Value": 0,
+        "Register": {
+          "Bank": 0,
+          "Address": 118
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 48,
+        "Value": 30,
+        "Register": {
+          "Bank": 2,
+          "Address": 48
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 49,
+        "Value": 4,
+        "Register": {
+          "Bank": 2,
+          "Address": 49
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 50,
+        "Value": 134,
+        "Register": {
+          "Bank": 2,
+          "Address": 50
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 51,
+        "Value": 111,
+        "Register": {
+          "Bank": 2,
+          "Address": 51
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 52,
+        "Value": 40,
+        "Register": {
+          "Bank": 2,
+          "Address": 52
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 53,
+        "Value": 4,
+        "Register": {
+          "Bank": 2,
+          "Address": 53
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 54,
+        "Value": 134,
+        "Register": {
+          "Bank": 2,
+          "Address": 54
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 55,
+        "Value": 159,
+        "Register": {
+          "Bank": 2,
+          "Address": 55
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 56,
+        "Value": 45,
+        "Register": {
+          "Bank": 2,
+          "Address": 56
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 57,
+        "Value": 4,
+        "Register": {
+          "Bank": 2,
+          "Address": 57
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 58,
+        "Value": 134,
+        "Register": {
+          "Bank": 2,
+          "Address": 58
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 59,
+        "Value": 183,
+        "Register": {
+          "Bank": 2,
+          "Address": 59
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 60,
+        "Value": 109,
+        "Register": {
+          "Bank": 2,
+          "Address": 60
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 48,
+        "Value": 50,
+        "Register": {
+          "Bank": 3,
+          "Address": 48
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 49,
+        "Value": 4,
+        "Register": {
+          "Bank": 3,
+          "Address": 49
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 50,
+        "Value": 55,
+        "Register": {
+          "Bank": 3,
+          "Address": 50
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 51,
+        "Value": 4,
+        "Register": {
+          "Bank": 3,
+          "Address": 51
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 52,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 52
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 53,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 53
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 54,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 54
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 55,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 55
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 56,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 56
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 57,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 57
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 58,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 58
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 59,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 59
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 60,
+        "Value": 3,
+        "Register": {
+          "Bank": 3,
+          "Address": 60
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 61,
+        "Value": 102,
+        "Register": {
+          "Bank": 3,
+          "Address": 61
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 62,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 62
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 63,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 63
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 128,
+        "Value": 207,
+        "Register": {
+          "Bank": 3,
+          "Address": 128
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 129,
+        "Value": 231,
+        "Register": {
+          "Bank": 3,
+          "Address": 129
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 130,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 130
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 131,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 131
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 132,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 132
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 133,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 133
+        }
+      }
+    ]
+  },
+  {
+    "Header": 3,
+    "Name": "System 3",
+    "Registers": [
+      {
+        "Bank": 0,
+        "Address": 120,
+        "Value": 0,
+        "Register": {
+          "Bank": 0,
+          "Address": 120
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 121,
+        "Value": 20,
+        "Register": {
+          "Bank": 0,
+          "Address": 121
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 122,
+        "Value": 60,
+        "Register": {
+          "Bank": 0,
+          "Address": 122
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 123,
+        "Value": 63,
+        "Register": {
+          "Bank": 0,
+          "Address": 123
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 124,
+        "Value": 4,
+        "Register": {
+          "Bank": 0,
+          "Address": 124
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 125,
+        "Value": 1,
+        "Register": {
+          "Bank": 0,
+          "Address": 125
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 126,
+        "Value": 0,
+        "Register": {
+          "Bank": 0,
+          "Address": 126
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 127,
+        "Value": 192,
+        "Register": {
+          "Bank": 0,
+          "Address": 127
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 64,
+        "Value": 30,
+        "Register": {
+          "Bank": 2,
+          "Address": 64
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 65,
+        "Value": 4,
+        "Register": {
+          "Bank": 2,
+          "Address": 65
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 66,
+        "Value": 134,
+        "Register": {
+          "Bank": 2,
+          "Address": 66
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 67,
+        "Value": 111,
+        "Register": {
+          "Bank": 2,
+          "Address": 67
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 68,
+        "Value": 40,
+        "Register": {
+          "Bank": 2,
+          "Address": 68
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 69,
+        "Value": 4,
+        "Register": {
+          "Bank": 2,
+          "Address": 69
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 70,
+        "Value": 134,
+        "Register": {
+          "Bank": 2,
+          "Address": 70
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 71,
+        "Value": 159,
+        "Register": {
+          "Bank": 2,
+          "Address": 71
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 72,
+        "Value": 45,
+        "Register": {
+          "Bank": 2,
+          "Address": 72
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 73,
+        "Value": 4,
+        "Register": {
+          "Bank": 2,
+          "Address": 73
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 74,
+        "Value": 134,
+        "Register": {
+          "Bank": 2,
+          "Address": 74
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 75,
+        "Value": 183,
+        "Register": {
+          "Bank": 2,
+          "Address": 75
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 76,
+        "Value": 109,
+        "Register": {
+          "Bank": 2,
+          "Address": 76
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 64,
+        "Value": 50,
+        "Register": {
+          "Bank": 3,
+          "Address": 64
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 65,
+        "Value": 4,
+        "Register": {
+          "Bank": 3,
+          "Address": 65
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 66,
+        "Value": 55,
+        "Register": {
+          "Bank": 3,
+          "Address": 66
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 67,
+        "Value": 4,
+        "Register": {
+          "Bank": 3,
+          "Address": 67
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 68,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 68
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 69,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 69
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 70,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 70
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 71,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 71
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 72,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 72
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 73,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 73
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 74,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 74
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 75,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 75
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 76,
+        "Value": 3,
+        "Register": {
+          "Bank": 3,
+          "Address": 76
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 77,
+        "Value": 102,
+        "Register": {
+          "Bank": 3,
+          "Address": 77
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 78,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 78
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 79,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 79
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 134,
+        "Value": 207,
+        "Register": {
+          "Bank": 3,
+          "Address": 134
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 135,
+        "Value": 231,
+        "Register": {
+          "Bank": 3,
+          "Address": 135
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 136,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 136
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 137,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 137
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 138,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 138
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 139,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 139
+        }
+      }
+    ]
+  },
+  {
+    "Header": 4,
+    "Name": "CPU OPT",
+    "Registers": [
+      {
+        "Bank": 0,
+        "Address": 160,
+        "Value": 0,
+        "Register": {
+          "Bank": 0,
+          "Address": 160
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 161,
+        "Value": 20,
+        "Register": {
+          "Bank": 0,
+          "Address": 161
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 162,
+        "Value": 75,
+        "Register": {
+          "Bank": 0,
+          "Address": 162
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 163,
+        "Value": 66,
+        "Register": {
+          "Bank": 0,
+          "Address": 163
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 164,
+        "Value": 2,
+        "Register": {
+          "Bank": 0,
+          "Address": 164
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 165,
+        "Value": 3,
+        "Register": {
+          "Bank": 0,
+          "Address": 165
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 166,
+        "Value": 0,
+        "Register": {
+          "Bank": 0,
+          "Address": 166
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 167,
+        "Value": 208,
+        "Register": {
+          "Bank": 0,
+          "Address": 167
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 80,
+        "Value": 30,
+        "Register": {
+          "Bank": 2,
+          "Address": 80
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 81,
+        "Value": 2,
+        "Register": {
+          "Bank": 2,
+          "Address": 81
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 82,
+        "Value": 128,
+        "Register": {
+          "Bank": 2,
+          "Address": 82
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 83,
+        "Value": 87,
+        "Register": {
+          "Bank": 2,
+          "Address": 83
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 84,
+        "Value": 40,
+        "Register": {
+          "Bank": 2,
+          "Address": 84
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 85,
+        "Value": 2,
+        "Register": {
+          "Bank": 2,
+          "Address": 85
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 86,
+        "Value": 128,
+        "Register": {
+          "Bank": 2,
+          "Address": 86
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 87,
+        "Value": 108,
+        "Register": {
+          "Bank": 2,
+          "Address": 87
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 88,
+        "Value": 50,
+        "Register": {
+          "Bank": 2,
+          "Address": 88
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 89,
+        "Value": 4,
+        "Register": {
+          "Bank": 2,
+          "Address": 89
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 90,
+        "Value": 129,
+        "Register": {
+          "Bank": 2,
+          "Address": 90
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 91,
+        "Value": 129,
+        "Register": {
+          "Bank": 2,
+          "Address": 91
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 92,
+        "Value": 13,
+        "Register": {
+          "Bank": 2,
+          "Address": 92
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 80,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 80
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 81,
+        "Value": 4,
+        "Register": {
+          "Bank": 3,
+          "Address": 81
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 82,
+        "Value": 70,
+        "Register": {
+          "Bank": 3,
+          "Address": 82
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 83,
+        "Value": 8,
+        "Register": {
+          "Bank": 3,
+          "Address": 83
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 84,
+        "Value": 75,
+        "Register": {
+          "Bank": 3,
+          "Address": 84
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 85,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 85
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 86,
+        "Value": 75,
+        "Register": {
+          "Bank": 3,
+          "Address": 86
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 87,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 87
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 88,
+        "Value": 75,
+        "Register": {
+          "Bank": 3,
+          "Address": 88
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 89,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 89
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 90,
+        "Value": 75,
+        "Register": {
+          "Bank": 3,
+          "Address": 90
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 91,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 91
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 92,
+        "Value": 3,
+        "Register": {
+          "Bank": 3,
+          "Address": 92
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 93,
+        "Value": 49,
+        "Register": {
+          "Bank": 3,
+          "Address": 93
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 94,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 94
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 95,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 95
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 144,
+        "Value": 171,
+        "Register": {
+          "Bank": 3,
+          "Address": 144
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 145,
+        "Value": 213,
+        "Register": {
+          "Bank": 3,
+          "Address": 145
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 146,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 146
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 147,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 147
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 148,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 148
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 149,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 149
+        }
+      }
+    ]
+  },
+  {
+    "Header": 5,
+    "Name": "System 4 / Pump",
+    "Registers": [
+      {
+        "Bank": 0,
+        "Address": 168,
+        "Value": 0,
+        "Register": {
+          "Bank": 0,
+          "Address": 168
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 169,
+        "Value": 20,
+        "Register": {
+          "Bank": 0,
+          "Address": 169
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 170,
+        "Value": 72,
+        "Register": {
+          "Bank": 0,
+          "Address": 170
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 171,
+        "Value": 61,
+        "Register": {
+          "Bank": 0,
+          "Address": 171
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 172,
+        "Value": 1,
+        "Register": {
+          "Bank": 0,
+          "Address": 172
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 173,
+        "Value": 3,
+        "Register": {
+          "Bank": 0,
+          "Address": 173
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 174,
+        "Value": 0,
+        "Register": {
+          "Bank": 0,
+          "Address": 174
+        }
+      },
+      {
+        "Bank": 0,
+        "Address": 175,
+        "Value": 208,
+        "Register": {
+          "Bank": 0,
+          "Address": 175
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 96,
+        "Value": 34,
+        "Register": {
+          "Bank": 2,
+          "Address": 96
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 97,
+        "Value": 2,
+        "Register": {
+          "Bank": 2,
+          "Address": 97
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 98,
+        "Value": 132,
+        "Register": {
+          "Bank": 2,
+          "Address": 98
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 99,
+        "Value": 82,
+        "Register": {
+          "Bank": 2,
+          "Address": 99
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 100,
+        "Value": 46,
+        "Register": {
+          "Bank": 2,
+          "Address": 100
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 101,
+        "Value": 3,
+        "Register": {
+          "Bank": 2,
+          "Address": 101
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 102,
+        "Value": 132,
+        "Register": {
+          "Bank": 2,
+          "Address": 102
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 103,
+        "Value": 112,
+        "Register": {
+          "Bank": 2,
+          "Address": 103
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 104,
+        "Value": 56,
+        "Register": {
+          "Bank": 2,
+          "Address": 104
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 105,
+        "Value": 3,
+        "Register": {
+          "Bank": 2,
+          "Address": 105
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 106,
+        "Value": 134,
+        "Register": {
+          "Bank": 2,
+          "Address": 106
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 107,
+        "Value": 148,
+        "Register": {
+          "Bank": 2,
+          "Address": 107
+        }
+      },
+      {
+        "Bank": 2,
+        "Address": 108,
+        "Value": 77,
+        "Register": {
+          "Bank": 2,
+          "Address": 108
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 96,
+        "Value": 64,
+        "Register": {
+          "Bank": 3,
+          "Address": 96
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 97,
+        "Value": 5,
+        "Register": {
+          "Bank": 3,
+          "Address": 97
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 98,
+        "Value": 68,
+        "Register": {
+          "Bank": 3,
+          "Address": 98
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 99,
+        "Value": 14,
+        "Register": {
+          "Bank": 3,
+          "Address": 99
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 100,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 100
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 101,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 101
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 102,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 102
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 103,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 103
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 104,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 104
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 105,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 105
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 106,
+        "Value": 60,
+        "Register": {
+          "Bank": 3,
+          "Address": 106
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 107,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 107
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 108,
+        "Value": 3,
+        "Register": {
+          "Bank": 3,
+          "Address": 108
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 109,
+        "Value": 2,
+        "Register": {
+          "Bank": 3,
+          "Address": 109
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 110,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 110
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 111,
+        "Value": 0,
+        "Register": {
+          "Bank": 3,
+          "Address": 111
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 150,
+        "Value": 178,
+        "Register": {
+          "Bank": 3,
+          "Address": 150
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 151,
+        "Value": 199,
+        "Register": {
+          "Bank": 3,
+          "Address": 151
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 152,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 152
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 153,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 153
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 154,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 154
+        }
+      },
+      {
+        "Bank": 3,
+        "Address": 155,
+        "Value": 255,
+        "Register": {
+          "Bank": 3,
+          "Address": 155
+        }
+      }
+    ]
+  }
+]

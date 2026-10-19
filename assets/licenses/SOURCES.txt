@@ -1,0 +1,2 @@
+MahApps.Metro.IconPacks 6.2.1 license source: https://github.com/MahApps/MahApps.Metro.IconPacks/blob/d7d1c4ab6202143fd83410d715d323a2dbddf320/LICENSE
+Lucide and Feather attribution source: https://github.com/lucide-icons/lucide/blob/fa238cf2787d64393b74121631b518cee0c909c2/LICENSE

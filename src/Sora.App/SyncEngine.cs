@@ -25,6 +25,7 @@ internal sealed class SyncEngine
     private readonly bool memory, board;
     private readonly CancellationTokenSource stop = new();
     private Task? task;
+    private int appliedFrames;
 
     public SyncEngine(SoraHost host, SyncLighting sync, bool memory, bool board) => (this.host, this.sync, this.memory, this.board) = (host, sync, memory, board);
 
@@ -33,12 +34,18 @@ internal sealed class SyncEngine
     public void Start() => task = Task.Run(Run);
 
     public bool Running => task is { IsCompleted: false };
+    public bool HasAppliedFrame => Volatile.Read(ref appliedFrames) > 0;
+    public bool CoversBothTargets => memory && board;
+    public SyncLighting Look => sync;
 
     /// <summary>Stops and waits for the current frame to finish, so the hardware is free when this returns.</summary>
     public void Stop()
     {
         stop.Cancel();
-        try { task?.Wait(3000); } catch (AggregateException) { }
+        if (task is { } worker)
+            CleanupSequence.JoinAsync(worker, TimeSpan.FromSeconds(3),
+                () => host.Log("Lighting sync is still stopping; waiting for its hardware handles to close."))
+                .GetAwaiter().GetResult();
     }
 
     /// <summary>The colour at a moment of the effect, already scaled by the brightness.</summary>
@@ -102,7 +109,7 @@ internal sealed class SyncEngine
                 {
                     controller = new GigabyteRgb();
                     zones = GigabyteRgb.ZonesFor(GigabyteRgb.BoardModel()).Select(z => z.Number).ToArray();
-                    controller.ApplyZones(zones.Select(z => new BoardZoneEffect(z, BoardEffect.Static, r0, g0, b0, 8, 0)).ToArray());
+                    controller.ApplyZones(zones.Select(z => new BoardZoneEffect(z, BoardEffect.Static, r0, g0, b0, 8, 0)).ToArray(), GigabyteRgb.ZonesFor(GigabyteRgb.BoardModel()), initialize: true);
                 }
                 catch (Exception error) when (error is System.IO.IOException or InvalidOperationException or System.ComponentModel.Win32Exception)
                 {
@@ -153,6 +160,7 @@ internal sealed class SyncEngine
                     }
                     last = color;
                     frames++;
+                    Volatile.Write(ref appliedFrames, frames);
                 }
                 // Every two seconds: stop if another RGB program appeared. Every ten: re-check each DIMM is still the same ENE controller.
                 if (frameStart - conflictAt > 2000)

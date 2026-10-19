@@ -1,19 +1,5 @@
-<UserControl x:Class="Sora.App.LightingPanel" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Sora.App" Focusable="True">
-  <UserControl.Resources>
-    <!-- Selectable lighting zone: a colour dot and a name; selected chips get the accent outline. -->
-    <Style x:Key="ZoneChip" TargetType="ToggleButton">
-      <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}"/><Setter Property="FontSize" Value="13"/><Setter Property="FontFamily" Value="{StaticResource UIFont}"/>
-      <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/><Setter Property="Margin" Value="0,0,6,6"/><Setter Property="Cursor" Value="Hand"/>
-      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ToggleButton">
-        <Border x:Name="Body" Background="{StaticResource InsetBrush}" BorderBrush="{StaticResource InputBorderBrush}" BorderThickness="1" CornerRadius="15" Padding="10,5,12,5"><ContentPresenter VerticalAlignment="Center"/></Border>
-        <ControlTemplate.Triggers>
-          <Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="{StaticResource TextBrush}"/></Trigger>
-          <Trigger Property="IsChecked" Value="True"><Setter TargetName="Body" Property="Background" Value="{StaticResource AccentSubtleBrush}"/><Setter TargetName="Body" Property="BorderBrush" Value="{StaticResource AccentBrush}"/><Setter Property="Foreground" Value="{StaticResource TextBrush}"/></Trigger>
-          <Trigger Property="IsEnabled" Value="False"><Setter Property="Foreground" Value="{StaticResource DisabledTextBrush}"/></Trigger>
-        </ControlTemplate.Triggers>
-      </ControlTemplate></Setter.Value></Setter>
-    </Style>
-  </UserControl.Resources>
+<UserControl x:Class="Sora.App.LightingPanel" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Sora.App" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks" Focusable="True">
+
   <Grid>
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="20"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <local:PageHeader Title="Lighting" Subtitle="RGB memory and motherboard lighting, without GIGABYTE Control Center.">
@@ -23,17 +9,18 @@
       </StackPanel>
     </local:PageHeader>
 
-    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-      <StackPanel>
+    <ScrollViewer x:Name="PageScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Margin="{StaticResource ScrollContentInset}">
         <!-- Conflict banner: another RGB program owns the hardware, so editing is possible but applying is not. -->
-        <Border x:Name="ConflictBanner" Visibility="Collapsed" Background="#1FFFD60A" BorderBrush="#40FFD60A" BorderThickness="1" CornerRadius="10" Padding="16,12" Margin="0,0,0,16">
+        <Border x:Name="ConflictBanner" Visibility="Collapsed" Background="{StaticResource WarningSurfaceBrush}" BorderBrush="{StaticResource WarningBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16,12" Margin="0,0,0,16">
           <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/></Grid.ColumnDefinitions>
-            <TextBlock Text="&#xE7BA;" FontFamily="{StaticResource Icons}" FontSize="16" Foreground="{StaticResource Warn}" Margin="0,1,12,0"/>
+            <iconPacks:PackIconLucide Kind="TriangleAlert" Width="18" Height="18" Foreground="{StaticResource Warn}" Margin="0,1,12,0" VerticalAlignment="Top"/>
             <StackPanel Grid.Column="1"><TextBlock x:Name="ConflictTitle" Text="" FontSize="14" FontWeight="SemiBold"/><TextBlock Text="Exit it from its tray icon (right-click, Exit), then press Check again. Two programs driving the same lights would keep overwriting each other." Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,3,0,0"/></StackPanel>
           </Grid>
         </Border>
 
         <!-- Sync: one look for the RAM and the board, edited in one card instead of two. -->
+        <local:Notice x:Name="AvailabilityNotice" Tone="Information" Margin="0,0,0,16" Visibility="Collapsed"/>
         <Border Style="{StaticResource Card}" Padding="24,12,24,12" Margin="0,0,0,16">
           <CheckBox x:Name="SyncToggle" Checked="SyncToggled" Unchecked="SyncToggled" AutomationProperties.Name="Sync memory and motherboard">
             <StackPanel><TextBlock Text="Sync memory and motherboard" FontSize="14"/><TextBlock x:Name="SyncCaption" Text="One effect, colour, brightness and speed for the RAM and every board light." Style="{StaticResource CaptionText}" TextWrapping="Wrap"/></StackPanel>
@@ -69,7 +56,7 @@
                       <TextBox x:Name="SyncHex" Grid.Column="2" MaxLength="7" TextChanged="SyncChanged" FontFamily="{StaticResource MonoFont}" AutomationProperties.Name="Sync hex color"/>
                     </Grid>
                     <WrapPanel x:Name="SyncSwatches" Margin="0,10,0,0"/>
-                    <TextBlock x:Name="SyncColorError" Foreground="{StaticResource ErrorTextBrush}" FontSize="12" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="SyncColorError" Style="{StaticResource ValidationMessage}"/>
                   </StackPanel>
                 </Grid>
                 <Grid Margin="0,12,0,0">
@@ -100,6 +87,9 @@
                 <StackPanel x:Name="DimmPreview" AutomationProperties.Name="Memory lighting preview"/>
               </Border>
               <TextBlock x:Name="MemoryNotice" Visibility="Collapsed" Foreground="{StaticResource WarnTextBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0"/>
+              <CheckBox x:Name="MemorySyncToggle" Content="Sync RAM modules" IsChecked="True" Checked="MemorySyncToggled" Unchecked="MemorySyncToggled" Margin="0,12,0,0"/>
+              <TextBlock Text="Turn off to give each module its own effect and colour. Memory + motherboard sync overrides both modules." Style="{StaticResource CaptionText}" Margin="0,6,0,0"/>
+              <ComboBox x:Name="ModulePicker" DisplayMemberPath="Label" SelectionChanged="ModuleChanged" Margin="0,10,0,0" Visibility="Collapsed" AutomationProperties.Name="Memory module"/>
               <TextBlock Text="Effect" Style="{StaticResource FieldLabel}" Margin="0,14,0,6"/>
               <ComboBox x:Name="MemoryEffect" SelectionChanged="MemoryChanged" AutomationProperties.Name="Memory effect"/>
               <Grid x:Name="MemoryColorRow" Margin="0,14,0,0">
@@ -113,7 +103,7 @@
                     <TextBox x:Name="MemoryHex" Grid.Column="2" MaxLength="7" TextChanged="MemoryChanged" FontFamily="{StaticResource MonoFont}" AutomationProperties.Name="Memory hex color"/>
                   </Grid>
                   <WrapPanel x:Name="MemorySwatches" Margin="0,10,0,0"/>
-                  <TextBlock x:Name="MemoryColorError" Foreground="{StaticResource ErrorTextBrush}" FontSize="12" TextWrapping="Wrap"/>
+                  <TextBlock x:Name="MemoryColorError" Style="{StaticResource ValidationMessage}"/>
                 </StackPanel>
               </Grid>
               <Grid Margin="0,12,0,0">
@@ -151,7 +141,7 @@
                     <TextBox x:Name="BoardHex" Grid.Column="2" MaxLength="7" TextChanged="BoardChanged" FontFamily="{StaticResource MonoFont}" AutomationProperties.Name="Motherboard hex color"/>
                   </Grid>
                   <WrapPanel x:Name="BoardSwatches" Margin="0,10,0,0"/>
-                  <TextBlock x:Name="BoardColorError" Foreground="{StaticResource ErrorTextBrush}" FontSize="12" TextWrapping="Wrap"/>
+                  <TextBlock x:Name="BoardColorError" Style="{StaticResource ValidationMessage}"/>
                 </StackPanel>
               </Grid>
               <Grid Margin="0,12,0,0">
@@ -176,9 +166,10 @@
             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="40"/><ColumnDefinition/></Grid.ColumnDefinitions>
             <StackPanel VerticalAlignment="Top">
               <CheckBox x:Name="StartupApply" Checked="StartupApplyChanged" Unchecked="StartupApplyChanged" AutomationProperties.Name="Apply when Sora starts"><StackPanel><TextBlock Text="Apply when Sora starts" FontSize="14"/><TextBlock Text="RAM lighting resets after a shutdown, so Sora sets it again at sign-in." Style="{StaticResource CaptionText}" TextWrapping="Wrap"/></StackPanel></CheckBox>
-              <CheckBox x:Name="ExitRainbow" Margin="0,10,0,0" Checked="ExitRainbowChanged" Unchecked="ExitRainbowChanged" AutomationProperties.Name="Rainbow when Sora closes"><StackPanel><TextBlock Text="Rainbow when Sora closes" FontSize="14"/><TextBlock Text="Like GCC: the RAM goes back to its own rainbow and the board to its rainbow wave." Style="{StaticResource CaptionText}" TextWrapping="Wrap"/></StackPanel></CheckBox>
+              <CheckBox x:Name="ExitRainbow" Margin="0,10,0,0" Checked="ExitRainbowChanged" Unchecked="ExitRainbowChanged" AutomationProperties.Name="Rainbow when Sora closes"><StackPanel><TextBlock Text="Rainbow when Sora closes" FontSize="14"/><TextBlock Text="Like GCC: the RAM goes back to its own rainbow and the board to its rainbow wave (a board that keeps its lighting stays as it is)." Style="{StaticResource CaptionText}" TextWrapping="Wrap"/></StackPanel></CheckBox>
+              <CheckBox x:Name="KeepOnBoard" Margin="0,10,0,0" Checked="KeepOnBoardChanged" Unchecked="KeepOnBoardChanged" AutomationProperties.Name="Keep motherboard lighting after shutdown"><StackPanel><TextBlock Text="Keep motherboard lighting after shutdown" FontSize="14"/><TextBlock x:Name="KeepOnBoardCaption" Text="Saved in the motherboard's lighting controller, as GCC does when it closes, so the board starts with your lighting before Windows loads. Animated sync is kept as its closest built-in effect." Style="{StaticResource CaptionText}" TextWrapping="Wrap"/><TextBlock Text="The RAM has no safe save (its only one rewrites the sticks' controller flash, which GCC never does), so Sora sets it at sign-in." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,4,0,0"/></StackPanel></CheckBox>
             </StackPanel>
-            <Grid Grid.Column="2">
+            <Grid Grid.Column="2" VerticalAlignment="Top">
               <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
               <StackPanel VerticalAlignment="Center" Margin="0,0,12,0"><TextBlock Text="Original memory lighting" FontSize="14"/><TextBlock x:Name="BackupText" Text="Saved the first time Sora reads your RAM." Style="{StaticResource CaptionText}" TextWrapping="Wrap"/></StackPanel>
               <Button x:Name="RestoreButton" Grid.Column="1" Content="Restore" Click="RestoreClicked" VerticalAlignment="Center" IsEnabled="False"/>

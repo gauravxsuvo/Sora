@@ -5,15 +5,36 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>Sora</AssemblyName>
-    <Version>0.6.11</Version>
+    <Version>0.11.0</Version>
     <Product>Sora</Product>
-    <Description>DeepCool LD360 and Kreo keyboard controls</Description>
+    <Description>Hardware controls, GPU fans, SSD health and Wi-Fi antenna tools</Description>
     <ApplicationIcon>../../assets/Sora.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Sora mostly idles in the tray: no background GC thread, and the GC hands memory back more readily. -->
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
     <TieredPGO>false</TieredPGO>
   </PropertyGroup>
-  <ItemGroup><ProjectReference Include="../Sora.Core/Sora.Core.csproj" /></ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Sora.Core/Sora.Core.csproj" />
+    <PackageReference Include="MahApps.Metro.IconPacks.Lucide" Version="6.2.1" />
+    <Resource Include="../../assets/Sora.ico" Link="Assets/Sora.ico" />
+    <Resource Include="../../assets/fonts/Inter/*.ttf" Link="Assets/Fonts/Inter/%(Filename)%(Extension)" />
+    <None Include="../../assets/fonts/Inter/LICENSE.txt" Link="licenses/Inter-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
   <ItemGroup><None Include="../../docs/Kreo-keyboard.md" Link="Kreo-keyboard.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Gigabyte-fan-control.md" Link="Gigabyte-fan-control.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/fan-maintenance-workflow.md" Link="fan-maintenance-workflow.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/hardware-maintenance-findings.md" Link="hardware-maintenance-findings.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/GCC-hardware-tools.md" Link="GCC-hardware-tools.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Gigabyte-ssd-tool.md" Link="Gigabyte-ssd-tool.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Gigabyte-wifi-compass.md" Link="Gigabyte-wifi-compass.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Gigabyte-gpu-fan-control.md" Link="Gigabyte-gpu-fan-control.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/lighting-zone-fixes.md" Link="lighting-zone-fixes.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Logitech-GHUB.md" Link="Logitech-GHUB.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Logitech-GHUB-plan.md" Link="Logitech-GHUB-plan.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/logitech-plan.md" Link="logitech-plan.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Sora-0.10.1.md" Link="Sora-0.10.1.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Sora-0.10.3.md" Link="Sora-0.10.3.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Sora-0.10.5.md" Link="Sora-0.10.5.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Sora-0.11.0.md" Link="ReleaseNotes.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
 </Project>
