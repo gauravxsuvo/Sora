@@ -58,6 +58,11 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 [Files]
 #include PayloadInclude
 
+[Dirs]
+; A reinstall can reuse the directory left by a keep-data uninstall.
+; Remove it when empty even when this setup did not originally create it.
+Name: "{app}"; Flags: uninsalwaysuninstall
+
 [Icons]
 Name: "{commonprograms}\Sora\Sora"; Filename: "{app}\Sora.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Assets\sora-brand-{#AppVersion}.ico"; AppUserModelID: "Sora.Desktop"; Comment: "Hardware controls and maintenance"
 Name: "{commondesktop}\Sora"; Filename: "{app}\Sora.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Assets\sora-brand-{#AppVersion}.ico"; AppUserModelID: "Sora.Desktop"; Tasks: desktopicon; Comment: "Hardware controls and maintenance"
