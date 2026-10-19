@@ -32,7 +32,13 @@ $result = [ordered]@{ passed = $false; version = $Version; sha256 = $Sha256; git
 function Check([string]$Name, [bool]$Passed) {
     $checks.Add([ordered]@{ name = $Name; passed = $Passed })
     Write-Output "$Passed : $Name"
-    if (-not $Passed) { throw "Failed: $Name" }
+    if (-not $Passed) {
+        if (Test-Path -LiteralPath $install) {
+            Get-ChildItem -LiteralPath $install -Force | Select-Object Name,Attributes,Length |
+                ConvertTo-Json | Set-Content (Join-Path $root 'installation-leftovers.json')
+        }
+        throw "Failed: $Name"
+    }
 }
 Add-Type -TypeDefinition @'
 using System;
@@ -68,7 +74,19 @@ function Setup([string]$File, [string]$Label, [string[]]$Extra = @()) {
 }
 function Uninstall([string]$Label, [switch]$Purge) {
     $extra = @(); if ($Purge) { $extra += '/PURGEDATA=1' }
-    return Setup (Join-Path $install 'unins000.exe') $Label $extra
+    $code = Setup (Join-Path $install 'unins000.exe') $Label $extra
+    # Inno's launcher can return while its temporary uninstaller is still finishing.
+    # Wait for the actual uninstall log to close before checking removal or reinstalling.
+    $log = Join-Path $root ($Label + '.log')
+    $deadline = [DateTime]::UtcNow.AddSeconds(30)
+    do {
+        $text = if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Raw } else { '' }
+        if ($text -match 'Log closed\.') { break }
+        if ([DateTime]::UtcNow -gt $deadline) { throw "Uninstaller did not finish its log: $Label" }
+        Start-Sleep -Milliseconds 200
+    } while ($true)
+    if ($code -eq 0 -and $text -notmatch 'Uninstallation process succeeded\.') { throw "Uninstall launcher returned success without completed removal: $Label" }
+    return $code
 }
 function Payload([string]$Label) {
     $manifest = Get-Content (Join-Path $install 'sora-package.json') -Raw | ConvertFrom-Json
