@@ -30,9 +30,9 @@ The server defaults to port 3000 locally. `npm test` covers public routes, HTTP 
 See [the operating guide](../../docs/sora-updater-operations.md). With publisher access-key values loaded into this shell's environment (never command arguments or tracked files):
 
 ```powershell
-node publish-release.mjs upload E:\Sora\artifacts\RELEASE\Sora-Setup-0.12.0-x64.exe E:\Sora\artifacts\METADATA\stable.json
+node publish-release.mjs upload E:\Sora\artifacts\RELEASE\Sora-Setup-0.12.1-x64.exe E:\Sora\artifacts\METADATA\stable.json
 # Only after qualification, with the same exact artifacts:
-node publish-release.mjs promote E:\Sora\artifacts\RELEASE\Sora-Setup-0.12.0-x64.exe E:\Sora\artifacts\METADATA\stable.json
+node publish-release.mjs promote E:\Sora\artifacts\RELEASE\Sora-Setup-0.12.1-x64.exe E:\Sora\artifacts\METADATA\stable.json
 ```
 
 `upload` never changes the stable feed. Both commands verify the signed metadata, local artifact and public download bytes. `promote` additionally requires an increasing sequence and performs a conditional feed write against the old ETag. Concurrent promotions fail rather than overwriting each other. Existing immutable artifact keys are verified, never replaced. A failed post-write public verification means promotion may already have happened: inspect the live feed/cache before retrying.

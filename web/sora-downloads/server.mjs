@@ -10,6 +10,8 @@ const staticFiles = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']], ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/app.mjs', ['app.mjs', 'text/javascript; charset=utf-8']], ['/release-verification.mjs', ['release-verification.mjs', 'text/javascript; charset=utf-8']],
   ['/sora-mark.svg', ['sora-mark.svg', 'image/svg+xml']], ['/sora-updates.png', ['sora-updates.png', 'image/png']],
+  ['/sora-mark.png', ['sora-mark.png', 'image/png']], ['/apple-touch-icon.png', ['apple-touch-icon.png', 'image/png']],
+  ['/favicon.ico', ['favicon.ico', 'image/x-icon']],
   ['/update-policy.json', ['update-policy.json', 'application/json']], ['/robots.txt', ['robots.txt', 'text/plain']],
   ['/sitemap.xml', ['sitemap.xml', 'application/xml']]
 ]);

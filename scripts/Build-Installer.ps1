@@ -115,12 +115,14 @@ $include = Join-Path $output 'payload-files.iss'
 [IO.File]::WriteAllLines($include, $entries, [Text.UTF8Encoding]::new($false))
 $template = Join-Path $PSScriptRoot '..\installer\Sora.iss'
 Copy-Item -LiteralPath $template -Destination (Join-Path $output 'Sora.iss')
+$brandIcon = Join-Path $output 'setup-brand.ico'
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..\assets\Sora.ico') -Destination $brandIcon
 $info = [Diagnostics.ProcessStartInfo]::new($compilerPath)
 $info.UseShellExecute = $false
 $info.CreateNoWindow = $true
 $info.RedirectStandardOutput = $true
 $info.RedirectStandardError = $true
-$info.Arguments = '"{0}" "/DAppVersion={1}" "/DPayloadInclude={2}" "/DInstallerOutput={3}"' -f (Join-Path $output 'Sora.iss'),$version,$include,$output
+$info.Arguments = '"{0}" "/DAppVersion={1}" "/DPayloadInclude={2}" "/DInstallerOutput={3}" "/DBrandIcon={4}"' -f (Join-Path $output 'Sora.iss'),$version,$include,$output,$brandIcon
 $process = [Diagnostics.Process]::Start($info)
 try {
     $stdout = $process.StandardOutput.ReadToEndAsync()

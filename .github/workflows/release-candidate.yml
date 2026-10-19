@@ -64,7 +64,7 @@ jobs:
           $keyFile = Join-Path $env:RUNNER_TEMP 'sora-release-key.pem'
           try {
             [IO.File]::WriteAllText($keyFile, $env:SORA_RELEASE_PRIVATE_KEY)
-            dotnet run --project scripts/Sora.ReleaseTool -- prepare "artifacts/release/setup/Sora-Setup-$version-x64.exe" $version $env:SORA_FEED_SEQUENCE docs/Sora-0.12.0.md release/update-policy.json $keyFile artifacts/release/metadata
+            dotnet run --project scripts/Sora.ReleaseTool -- prepare "artifacts/release/setup/Sora-Setup-$version-x64.exe" $version $env:SORA_FEED_SEQUENCE "docs/Sora-$version.md" release/update-policy.json $keyFile artifacts/release/metadata
             if ($LASTEXITCODE -ne 0) { throw 'Release metadata signing failed' }
           } finally { if (Test-Path -LiteralPath $keyFile) { Remove-Item -LiteralPath $keyFile -Force } }
       - name: Upload and promote

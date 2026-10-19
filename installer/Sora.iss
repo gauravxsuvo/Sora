@@ -15,6 +15,9 @@ AppName=Sora
 AppVersion={#AppVersion}
 AppVerName=Sora {#AppVersion}
 AppPublisher=Sora
+#ifdef BrandIcon
+SetupIconFile={#BrandIcon}
+#endif
 VersionInfoVersion={#AppVersion}.0
 DefaultDirName={autopf}\Sora
 UsePreviousAppDir=no

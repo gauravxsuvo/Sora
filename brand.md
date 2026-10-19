@@ -10,6 +10,8 @@ The supplied MangoDisk screenshot is a **sidebar layout reference only**: its co
 
 ## Palette
 
+The Sora logo is the circular flowing-cut mark reconstructed from the user's reference. Its master is `assets/brand/sora-mark-source.svg`; the transparent gaps are part of the silhouette. The default logo gradient runs from violet `#6030F4` to lilac `#9657FF`, with white, ink and `currentColor` variants. Gradients are reserved for the brand mark; existing interface accent colours retain their established roles. Regenerate the SVGs, transparent PNGs, WPF geometry, website icons and multi-size Windows ICO together with `scripts/Build-Brand.ps1`. Do not use the historical cloud or spiral artwork for new UI or exports.
+
 Use the centralized brushes in `Theme.xaml`. Do not add one-off hex colours to controls when an existing token fits.
 
 | Use | Token | Current value |

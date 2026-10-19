@@ -2,7 +2,7 @@
 
 ## Current state
 
-The implementation targets `https://sora.portways.app`. That Portways project and storage are not created yet. Application code, release tooling and the website are local. No installed Sora, shortcut, startup task or hardware profile has been changed by this work. Candidate version: 0.12.0.
+The implementation targets `https://sora.portways.app`. Portways provisioning has not been verified from this workspace. The updater baseline was pushed to GitHub; the subsequent branding changes are local. No installed Sora, shortcut, startup task or hardware profile has been changed by this work. Current candidate: 0.12.1, with the reference-derived circular violet logo. The previously signed 0.12.0 candidate is retained unchanged.
 
 The user's free-only requirement supersedes the plan's paid publisher-certificate assumption. Sora verifies **its own signed metadata plus the installer hash**, rather than requiring an Authenticode publisher certificate. Windows may therefore display an unknown-publisher/SmartScreen prompt for initial downloads. There is no paid signing service, updater service subscription or telemetry requirement in this implementation; hosting/storage still use the user's Portways instance.
 
@@ -42,8 +42,8 @@ This is framework-dependent: the .NET 8 **Windows Desktop Runtime x64** must be 
 ## Sign and publish
 
 ```powershell
-dotnet run --project scripts/Sora.ReleaseTool -- prepare artifacts/RELEASE/setup/Sora-Setup-0.12.0-x64.exe 0.12.0 1 docs/Sora-0.12.0.md release/update-policy.json .release-keys/release-2026.pem artifacts/RELEASE/metadata
-dotnet run --project scripts/Sora.ReleaseTool -- verify artifacts/RELEASE/metadata/stable.json release/update-policy.json artifacts/RELEASE/setup/Sora-Setup-0.12.0-x64.exe
+dotnet run --project scripts/Sora.ReleaseTool -- prepare artifacts/RELEASE/setup/Sora-Setup-0.12.1-x64.exe 0.12.1 2 docs/Sora-0.12.1.md release/update-policy.json .release-keys/release-2026.pem artifacts/RELEASE/metadata
+dotnet run --project scripts/Sora.ReleaseTool -- verify artifacts/RELEASE/metadata/stable.json release/update-policy.json artifacts/RELEASE/setup/Sora-Setup-0.12.1-x64.exe
 ```
 
 Use a sequence greater than every previously promoted feed. Feed validity is 30 days; **refresh the signature and promotion with an increased sequence before expiry**, even if the installer version is unchanged. An expired feed produces a check error, not an automatic bypass. The payload is exact UTF-8 JSON encoded in base64; signatures use ECDSA P-256/SHA-256 with 64-byte IEEE P1363 encoding. The exact installer SHA-256 is calculated after all final packaging.

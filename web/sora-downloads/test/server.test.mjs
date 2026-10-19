@@ -13,7 +13,7 @@ async function withServer(storage, run) {
 test('static website, method restrictions and honest unconfigured feed', () => withServer(null, async base => {
   const home = await fetch(base); assert.equal(home.status, 200); assert.match(await home.text(), /Your hardware/);
   assert.match(home.headers.get('content-security-policy'), /object-src 'none'/);
-  for (const path of ['/styles.css', '/app.mjs', '/release-verification.mjs', '/sora-mark.svg', '/sora-updates.png', '/update-policy.json']) assert.equal((await fetch(base + path)).status, 200, path);
+  for (const path of ['/styles.css', '/app.mjs', '/release-verification.mjs', '/sora-mark.svg', '/sora-mark.png', '/favicon.ico', '/apple-touch-icon.png', '/sora-updates.png', '/update-policy.json']) assert.equal((await fetch(base + path)).status, 200, path);
   assert.equal((await fetch(base + '/healthz')).status, 200);
   assert.equal((await fetch(base + '/channels/stable.json')).status, 503);
   assert.equal((await fetch(base + '/', { method: 'POST' })).status, 405);

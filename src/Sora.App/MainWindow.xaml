@@ -6,7 +6,7 @@
     <Border Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,0,1,0">
       <DockPanel Margin="{StaticResource SidebarInset}" LastChildFill="True">
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="{StaticResource SidebarBrandSpacing}">
-          <Path Data="{StaticResource SoraMark}" Fill="{StaticResource SoraSkyBrush}" Stretch="Uniform" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" AutomationProperties.Name="Sora logo"/>
+          <Path Data="{StaticResource SoraMark}" Fill="{StaticResource SoraBrandBrush}" Stretch="Uniform" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" AutomationProperties.Name="Sora logo"/>
           <TextBlock Text="Sora" FontSize="{StaticResource SidebarBrandFontSize}" FontWeight="SemiBold" VerticalAlignment="Center"/>
         </StackPanel>
         <Grid DockPanel.Dock="Top" Height="34" Margin="{StaticResource SearchInset}">
