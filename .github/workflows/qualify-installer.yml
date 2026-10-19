@@ -5,7 +5,7 @@ on:
       version:
         description: 'Published candidate version'
         required: true
-        default: '0.12.2'
+        default: '0.12.3'
         type: string
       sha256:
         description: 'Expected candidate SHA-256'

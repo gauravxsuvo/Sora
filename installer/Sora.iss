@@ -142,6 +142,8 @@ function DirectoryError: String;
 var
   Path, Parent: String;
   Attributes: LongWord;
+  Entry: TFindRec;
+  RetainedDataOnly, FoundData: Boolean;
 begin
   Result := '';
   Path := NormalPath(ExpandConstant('{app}'));
@@ -159,8 +161,27 @@ begin
     if CompareText(Path, Parent) = 0 then Break;
     Path := Parent;
   end;
-  if DirExists(ExpandConstant('{app}')) and not FileExists(ExpandConstant('{app}\sora-package.json')) then
-    Result := 'The destination already exists without a Sora installer manifest. Inspect it before installing.';
+  if DirExists(ExpandConstant('{app}')) and not FileExists(ExpandConstant('{app}\sora-package.json')) then begin
+    { Keeping legacy installed data leaves only this directory after uninstall.
+      Permit reinstall without overwriting it; continue refusing any other unowned content. }
+    RetainedDataOnly := True;
+    FoundData := False;
+    if FindFirst(ExpandConstant('{app}\*'), Entry) then begin
+      try
+        repeat
+          if (Entry.Name <> '.') and (Entry.Name <> '..') then begin
+            if (CompareText(Entry.Name, 'data') = 0) and ((Entry.Attributes and $10) <> 0) and ((Entry.Attributes and $400) = 0) then
+              FoundData := True
+            else RetainedDataOnly := False;
+          end;
+        until not FindNext(Entry);
+      finally
+        FindClose(Entry);
+      end;
+    end;
+    if not RetainedDataOnly or not FoundData then
+      Result := 'The destination already exists without a Sora installer manifest. Inspect it before installing.';
+  end;
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
