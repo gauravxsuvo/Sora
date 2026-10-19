@@ -1,5 +1,7 @@
 # Setup and website improvements, 19 October 2026
 
+This is the historical 0.12.2 candidate record. The subsequent [0.12.4 stable release record](stable-release-0.12.4.md) documents the fixes found during actual installed Windows qualification, all 46 passing lifecycle checks and stable-feed activation.
+
 ## Findings
 
 The installed `C:\Program Files\Sora\Sora.exe` reports 0.12.1 and its extracted executable icon is the purple circular mark. The common Start menu shortcut and user's OneDrive desktop shortcut point to that installed executable. The Start menu's old blue Recent icon is therefore consistent with Windows shell caching, not an old installed binary. The new installer supplies `Assets/sora-brand-VERSION.ico`, sets explicit shortcut icons and AppUserModelID, repairs owned existing shortcuts and notifies the shell. It does not delete Windows' global icon database or restart Explorer.
