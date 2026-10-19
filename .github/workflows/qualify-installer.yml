@@ -1,0 +1,54 @@
+name: Qualify published Sora installer
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Published candidate version'
+        required: true
+        default: '0.12.2'
+        type: string
+      sha256:
+        description: 'Expected candidate SHA-256'
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  installed-lifecycle:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Install the registered Windows Desktop runtime
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $index = Invoke-RestMethod https://builds.dotnet.microsoft.com/dotnet/release-metadata/8.0/releases.json
+          $runtime = $index.releases[0].windowsdesktop.files | Where-Object { $_.rid -eq 'win-x64' -and $_.name -like '*.exe' }
+          if (@($runtime).Count -ne 1) { throw 'Expected one official x64 Windows Desktop installer' }
+          $file = Join-Path $env:RUNNER_TEMP 'windowsdesktop-runtime.exe'
+          Invoke-WebRequest $runtime.url -OutFile $file
+          if ((Get-FileHash $file -Algorithm SHA512).Hash -ne $runtime.hash) { throw 'Microsoft runtime hash mismatch' }
+          $signature = Get-AuthenticodeSignature $file
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') { throw 'Invalid Microsoft runtime signature' }
+          $process = Start-Process $file -ArgumentList '/install /quiet /norestart' -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -notin @(0,3010)) { throw "Runtime install failed: $($process.ExitCode)" }
+      - name: Check application logic
+        shell: pwsh
+        run: ./test.ps1
+      - name: Exercise exact published installer on disposable Windows
+        shell: pwsh
+        env:
+          CANDIDATE_VERSION: ${{ inputs.version }}
+          CANDIDATE_SHA256: ${{ inputs.sha256 }}
+        run: |
+          ./scripts/Test-ReleaseLifecycle.ps1 -Version $env:CANDIDATE_VERSION -Sha256 $env:CANDIDATE_SHA256 -ArtifactDirectory artifacts/installed-lifecycle
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: installed-lifecycle-evidence
+          path: artifacts/installed-lifecycle/
+          if-no-files-found: warn
