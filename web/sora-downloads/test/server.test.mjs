@@ -18,6 +18,8 @@ test('static website, method restrictions and honest unconfigured feed', () => w
   for (const path of ['/styles.css', '/app.mjs', '/release-verification.mjs', '/sora-mark.svg', '/sora-mark.png', '/favicon.ico', '/apple-touch-icon.png', '/sora-updates.png', '/update-policy.json']) assert.equal((await fetch(base + path)).status, 200, path);
   assert.equal((await fetch(base + '/healthz')).status, 200);
   assert.equal((await fetch(base + '/channels/stable.json')).status, 503);
+  assert.equal((await fetch(base + '/channels/beta.json')).status, 503);
+  assert.equal((await fetch(base + '/channels/unknown.json')).status, 404);
   assert.equal((await fetch(base + '/', { method: 'POST' })).status, 405);
   assert.equal((await fetch(base + '/.release-keys/key.pem')).status, 404);
   assert.equal((await fetch(base + '/releases/1.0.0/win-x64/Sora-Setup-2.0.0-x64.exe')).status, 404);
@@ -49,6 +51,12 @@ test('release proxy streams ranges and HEAD; feeds are never cached', () => with
   assert.match(file.headers.get('cache-control'), /immutable/); assert.match(file.headers.get('content-disposition'), /Sora-Setup-0.12.0/);
   const head = await fetch(base + path, { method: 'HEAD' }); assert.equal(head.status, 200); assert.equal(await head.text(), '');
   const feed = await fetch(base + '/channels/stable.json'); assert.equal(feed.headers.get('cache-control'), 'no-store');
+  const betaFeed = await fetch(base + '/channels/beta.json'); assert.equal(betaFeed.headers.get('cache-control'), 'no-store');
+  const betaPath = '/releases/0.13.0-beta.3/win-x64/Sora-Setup-0.13.0-beta.3-x64.exe';
+  const beta = await fetch(base + betaPath); assert.equal(beta.status, 200); assert.equal(await beta.text(), 'abc');
+  assert.match(beta.headers.get('content-disposition'), /0.13.0-beta.3/);
+  assert.equal((await fetch(base + betaPath.replace('0.13.0-beta.3-x64.exe', '0.13.0-beta.4-x64.exe'))).status, 404);
+  assert.equal((await fetch(base + betaPath.replaceAll('-beta.3', '-rc.3'))).status, 404);
   assert.equal((await fetch(base + path, { headers: { range: 'bytes=0-2,5-7' } })).status, 416);
 }));
 test('storage failures do not leak credentials and rate limits can be retried', () => withServer({

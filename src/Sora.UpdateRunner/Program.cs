@@ -33,12 +33,15 @@ internal static class Program
                 !string.Equals(parent.MainModule?.FileName, UpdatePaths.InstalledExe, StringComparison.OrdinalIgnoreCase))
                 throw new IOException("The initiating Sora process could not be verified.");
             RequireNoOtherSora(parentId);
-            var policy = BundledUpdatePolicy.Load();
+            var channelPath = Path.Combine(stage, "channel.txt"); UpdatePaths.RejectLinks(channelPath);
+            if (File.Exists(channelPath) && new FileInfo(channelPath).Length > 16) throw new IOException("Invalid staged update channel.");
+            var channel = File.Exists(channelPath) ? UpdateChannelSettings.Validate(File.ReadAllText(channelPath)) : "stable";
+            var policy = BundledUpdatePolicy.Load().ForChannel(channel);
             var envelope = ReadEnvelope(stage);
             var sequence = long.Parse(File.ReadAllText(Path.Combine(stage, "sequence.txt")), System.Globalization.CultureInfo.InvariantCulture);
             var release = ReleaseFeed.Verify(envelope, policy, DateTimeOffset.UtcNow, sequence, Environment.OSVersion.Version);
             var installedVersion = InstalledVersion();
-            if (ReleaseFeed.ParseVersion(release.Version) <= installedVersion) throw new IOException("The update is not newer than the installed Sora.");
+            if (ReleaseVersion.Parse(release.Version).CompareTo(installedVersion) <= 0) throw new IOException("The update is not newer than the installed Sora.");
             var installer = Path.Combine(stage, "installer.exe");
             UpdatePaths.RejectLinks(installer);
             // Keep the file open through execution so it cannot be replaced after verification.
@@ -71,7 +74,7 @@ internal static class Program
                 return 3;
             }
             if (setup.ExitCode != 0) throw new IOException("Setup failed with exit code " + setup.ExitCode + ". See installer.log; use the retained installer for repair.");
-            if (InstalledVersion() != ReleaseFeed.ParseVersion(release.Version)) throw new IOException("The installed Sora version did not match the update.");
+            if (InstalledVersion() != ReleaseVersion.Parse(release.Version)) throw new IOException("The installed Sora version did not match the update.");
             Result(stage, "installed", "Sora " + release.Version + " installed.");
             // Release the startup gate before launching the new host.
             gate.Dispose(); gate = null;
@@ -119,11 +122,13 @@ internal static class Program
         if (new FileInfo(path).Length > ReleaseFeed.MaximumEnvelopeBytes) throw new IOException("Invalid staged release metadata.");
         return File.ReadAllBytes(path);
     }
-    private static Version InstalledVersion()
+    private static ReleaseVersion InstalledVersion()
     {
         UpdatePaths.RejectLinks(UpdatePaths.InstallDirectory);
         var version = FileVersionInfo.GetVersionInfo(UpdatePaths.InstalledExe);
-        return new(version.FileMajorPart, version.FileMinorPart, version.FileBuildPart);
+        var product = ReleaseVersion.Parse((version.ProductVersion ?? "").Trim().Split('+')[0]);
+        if (product.Number != new Version(version.FileMajorPart, version.FileMinorPart, version.FileBuildPart)) throw new IOException("Installed Sora version metadata is inconsistent.");
+        return product;
     }
     private static void RequireNoOtherSora(int allowedPid)
     {

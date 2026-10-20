@@ -1,7 +1,10 @@
 const decode = value => Uint8Array.from(atob(value), character => character.charCodeAt(0));
 const numericVersion = value => /^\d{1,5}\.\d{1,5}\.\d{1,5}$/.test(value) && value.split('.').every(part => Number(part) <= 65535 && (part === '0' || !part.startsWith('0')));
+const betaVersion = value => typeof value === 'string' && /^\d{1,5}\.\d{1,5}\.\d{1,5}-beta\.[1-9]\d{0,4}$/.test(value) && numericVersion(value.split('-')[0]) && Number(value.split('-beta.')[1]) <= 65535;
 
 export async function verifyRelease(envelope, policy, now = Date.now()) {
+  const channel = policy.channel ?? 'stable';
+  if (!['stable', 'beta'].includes(channel)) throw new Error('Unknown update channel.');
   if (envelope.algorithm !== 'ECDSA-P256-SHA256-P1363' || !Object.hasOwn(policy.publicKeys, envelope.keyId)) throw new Error('Untrusted release signing key.');
   if (typeof envelope.payload !== 'string' || envelope.payload.length > 128 * 1024) throw new Error('Invalid release metadata size.');
   const payload = decode(envelope.payload);
@@ -9,8 +12,8 @@ export async function verifyRelease(envelope, policy, now = Date.now()) {
   if (!await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, decode(envelope.signature), payload)) throw new Error('Release signature verification failed.');
   const release = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(payload));
   const published = Date.parse(release.publishedAt), expires = Date.parse(release.expiresAt);
-  if (release.schemaVersion !== 1 || release.product !== 'Sora' || release.channel !== 'stable' || release.platform !== 'win-x64' ||
-      !numericVersion(release.version) || !Number.isSafeInteger(release.sequence) || release.sequence < 1 ||
+  if (release.schemaVersion !== 1 || release.product !== 'Sora' || release.channel !== channel || release.platform !== 'win-x64' ||
+      !(channel === 'beta' ? betaVersion(release.version) : numericVersion(release.version)) || !Number.isSafeInteger(release.sequence) || release.sequence < 1 ||
       !Number.isFinite(published) || !Number.isFinite(expires) || published > now + 300000 || expires <= now || expires <= published || expires - published > 45 * 86400000 ||
       !Number.isSafeInteger(release.size) || release.size < 1 || release.size > 2 * 1024 ** 3 || !/^[a-f0-9]{64}$/i.test(release.sha256) ||
       typeof release.notes !== 'string' || release.notes.length > 16000) throw new Error('Release metadata is expired or incompatible.');

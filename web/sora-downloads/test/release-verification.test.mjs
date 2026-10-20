@@ -26,3 +26,15 @@ test('website public trust policy stays in sync with the desktop policy', async 
   assert.deepEqual(website, desktop);
   assert.ok(!('privateKey' in website));
 });
+
+test('beta publishing retains signatures, strict versions and channel isolation', async () => {
+  const betaPolicy = { ...policy, channel: 'beta' };
+  const beta = { ...release, channel: 'beta', version: '0.13.0-beta.3', installerUrl: 'https://sora.portways.app/releases/0.13.0-beta.3/win-x64/Sora-Setup-0.13.0-beta.3-x64.exe' };
+  assert.deepEqual(await verifyRelease(signed(beta), betaPolicy), beta);
+  await assert.rejects(verifyRelease(signed(beta), policy));
+  await assert.rejects(verifyRelease(signed(release), betaPolicy));
+  for (const version of ['0.13.0', '0.13.0-beta.0', '0.13.0-beta.01', '0.13.0-beta.65536', '0.013.0-beta.1', '0.13.0-beta.2+hash'])
+    await assert.rejects(verifyRelease(signed({ ...beta, version }), betaPolicy));
+  const bad = signed(beta); bad.signature = signed(release).signature;
+  await assert.rejects(verifyRelease(bad, betaPolicy), /signature/);
+});

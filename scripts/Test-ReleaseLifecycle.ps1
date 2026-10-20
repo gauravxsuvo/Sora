@@ -155,6 +155,13 @@ try {
         $legionUi = Get-Content $legionUiFile -Raw | ConvertFrom-Json
         Check 'Installed Legion interaction scenarios pass with zero physical configuration writes' ($legionUi.passed -and $legionUi.synthetic -and $legionUi.configurationWrites -eq 0)
     }
+    $numericCandidate = [version]($Version -split '-')[0]
+    if ($numericCandidate -gt [version]'0.13.0' -or ($numericCandidate -eq [version]'0.13.0' -and ($Version -notmatch '-beta\.' -or [int]($Version -split '-beta\.')[1] -ge 3))) {
+        $updateUiFile = Join-Path $root 'application-update-ui.json'
+        Check 'Installed beta channel Check and Download buttons run successfully' ((Run $exe @('--application-update-ui-check','--output',('"' + $updateUiFile + '"'))) -eq 0)
+        $updateUi = Get-Content $updateUiFile -Raw | ConvertFrom-Json
+        Check 'Installed updater rejects tampering and isolates channels without executing fixture installers' ($updateUi.passed -and $updateUi.synthetic -and $updateUi.configurationWrites -eq 0 -and $updateUi.installerExecutions -eq 0)
+    }
     for ($cycle = 1; $cycle -le 3; $cycle++) {
         $image = Join-Path $root "hardware-ui-$cycle.png"
         Check "Installed read-only hardware UI cycle $cycle exits successfully" ((Run $exe @('--screenshot',('"' + $image + '"'),'--settings','--isolated-ui-check','--hardware-ui-check')) -eq 0)

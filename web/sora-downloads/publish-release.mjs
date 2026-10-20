@@ -12,13 +12,15 @@ async function digest(stream, limit) {
 }
 
 try {
-  const [mode, installerPath, feedPath] = process.argv.slice(2);
-  if (!['upload', 'promote'].includes(mode) || !installerPath || !feedPath || process.argv.length !== 5)
-    throw new Error('Usage: node publish-release.mjs upload|promote INSTALLER_PATH SIGNED_FEED_PATH');
+  const [mode, installerPath, feedPath, channel = 'stable'] = process.argv.slice(2);
+  if (!['upload', 'promote'].includes(mode) || !installerPath || !feedPath || !['stable', 'beta'].includes(channel) || ![5, 6].includes(process.argv.length))
+    throw new Error('Usage: node publish-release.mjs upload|promote INSTALLER_PATH SIGNED_FEED_PATH [stable|beta]');
   const config = storageConfig(process.env, { internal: false });
   if (!config) throw new Error('Set the S3 endpoint, bucket and separately revocable release-publisher access-key environment variables.');
   if (process.env.S3_PREFIX) throw new Error('Production publishing is not permitted with preview storage credentials.');
   const policy = JSON.parse(await readFile(new URL('./public/update-policy.json', import.meta.url), 'utf8'));
+  policy.channel = channel;
+  policy.feedUrl = new URL(`/channels/${channel}.json`, policy.feedUrl).href;
   const bytes = await readFile(feedPath);
   if (bytes.length > 131072) throw new Error('Oversized feed.');
   const release = await verifyRelease(JSON.parse(bytes), policy);
@@ -53,7 +55,7 @@ try {
     if (remote.length !== release.size || remote.hash.toUpperCase() !== release.sha256.toUpperCase()) throw new Error('Public artifact bytes do not match the signed release. Refusing promotion.');
     console.log(`Public installer verified: Sora ${release.version}.`);
     if (mode === 'promote') {
-      const feedKey = config.prefix + 'channels/stable.json';
+      const feedKey = config.prefix + `channels/${channel}.json`;
       let etag;
       try {
         const old = await client.send(new GetObjectCommand({ Bucket: config.bucket, Key: feedKey }));
@@ -77,8 +79,8 @@ try {
         ContentType: 'application/json', CacheControl: 'no-store', ...(etag ? { IfMatch: etag } : { IfNoneMatch: '*' }) }));
       const promoted = await fetch(policy.feedUrl, { cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(30000) });
       if (!promoted.ok || !Buffer.from(await promoted.arrayBuffer()).equals(bytes)) throw new Error('Feed was written, but the public feed did not return matching bytes. Check cache/routing before retrying.');
-      console.log(`Stable feed promoted to sequence ${release.sequence}. No installed client is forced to restart.`);
-    } else console.log('Stable feed is unchanged. Qualify the installer, then run promote with the same signed feed.');
+      console.log(`${channel} feed promoted to sequence ${release.sequence}. No installed client is forced to restart.`);
+    } else console.log(`${channel} feed is unchanged. Qualify the installer, then run promote with the same signed feed.`);
   } finally { client.destroy(); }
 } catch (error) {
   // SDK error messages may include endpoint details. Do not serialize request objects or credentials.
