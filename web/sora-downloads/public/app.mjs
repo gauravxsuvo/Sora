@@ -1,4 +1,5 @@
 import { verifyRelease } from './release-verification.mjs';
+import { loadBeta } from './beta-download.mjs';
 
 const status = document.querySelector('#release-status');
 const button = document.querySelector('#download-button');
@@ -50,3 +51,7 @@ document.querySelector('#copy-hash').addEventListener('click', async () => {
   catch { message.textContent = 'Select the checksum above and copy it manually.'; }
 });
 loadRelease();
+const betaButton = document.querySelector('#beta-download-button');
+betaButton.addEventListener('click', event => { if (betaButton.getAttribute('aria-disabled') === 'true') event.preventDefault(); });
+document.querySelector('#beta-retry').addEventListener('click', () => loadBeta());
+loadBeta();

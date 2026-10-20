@@ -11,6 +11,13 @@ on:
         description: 'Expected candidate SHA-256'
         required: true
         type: string
+      source:
+        description: 'Installer download source'
+        type: choice
+        options:
+          - stable
+          - github-prerelease
+        default: stable
 permissions:
   contents: read
 jobs:
@@ -44,8 +51,17 @@ jobs:
         env:
           CANDIDATE_VERSION: ${{ inputs.version }}
           CANDIDATE_SHA256: ${{ inputs.sha256 }}
+          CANDIDATE_SOURCE: ${{ inputs.source }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          ./scripts/Test-ReleaseLifecycle.ps1 -Version $env:CANDIDATE_VERSION -Sha256 $env:CANDIDATE_SHA256 -ArtifactDirectory artifacts/installed-lifecycle
+          $arguments = @{ Version = $env:CANDIDATE_VERSION; Sha256 = $env:CANDIDATE_SHA256; ArtifactDirectory = 'artifacts/installed-lifecycle' }
+          if ($env:CANDIDATE_SOURCE -eq 'github-prerelease') {
+            if ($env:CANDIDATE_VERSION -notmatch '^\d+\.\d+\.\d+-beta\.\d+$') { throw 'Expected a beta version.' }
+            gh release download "v$env:CANDIDATE_VERSION" --repo $env:GITHUB_REPOSITORY --pattern "Sora-Setup-$env:CANDIDATE_VERSION-x64.exe" --dir artifacts/candidate
+            if ($LASTEXITCODE -ne 0) { throw 'Candidate download failed.' }
+            $arguments.CandidateInstaller = "artifacts/candidate/Sora-Setup-$env:CANDIDATE_VERSION-x64.exe"
+          }
+          ./scripts/Test-ReleaseLifecycle.ps1 @arguments
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -2,6 +2,9 @@
 #ifndef AppVersion
   #error AppVersion is required
 #endif
+#ifndef AppNumericVersion
+  #define AppNumericVersion AppVersion
+#endif
 #ifndef PayloadInclude
   #error PayloadInclude is required
 #endif
@@ -21,7 +24,8 @@ AppUpdatesURL=https://sora.portways.app/#download
 #ifdef BrandIcon
 SetupIconFile={#BrandIcon}
 #endif
-VersionInfoVersion={#AppVersion}.0
+VersionInfoVersion={#AppNumericVersion}.0
+VersionInfoProductTextVersion={#AppVersion}
 DefaultDirName={autopf}\Sora
 UsePreviousAppDir=no
 DisableDirPage=yes
@@ -37,7 +41,7 @@ SolidCompression=yes
 WizardStyle=modern
 SetupLogging=yes
 UninstallLogging=yes
-UninstallDisplayIcon={app}\Assets\sora-brand-{#AppVersion}.ico
+UninstallDisplayIcon={app}\Assets\sora-brand-{#AppNumericVersion}.ico
 CloseApplications=no
 RestartApplications=no
 AllowCancelDuringInstall=no
@@ -64,8 +68,8 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 Name: "{app}"; Flags: uninsalwaysuninstall
 
 [Icons]
-Name: "{commonprograms}\Sora\Sora"; Filename: "{app}\Sora.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Assets\sora-brand-{#AppVersion}.ico"; AppUserModelID: "Sora.Desktop"; Comment: "Hardware controls and maintenance"
-Name: "{commondesktop}\Sora"; Filename: "{app}\Sora.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Assets\sora-brand-{#AppVersion}.ico"; AppUserModelID: "Sora.Desktop"; Tasks: desktopicon; Comment: "Hardware controls and maintenance"
+Name: "{commonprograms}\Sora\Sora"; Filename: "{app}\Sora.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Assets\sora-brand-{#AppNumericVersion}.ico"; AppUserModelID: "Sora.Desktop"; Comment: "Hardware controls and maintenance"
+Name: "{commondesktop}\Sora"; Filename: "{app}\Sora.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Assets\sora-brand-{#AppNumericVersion}.ico"; AppUserModelID: "Sora.Desktop"; Tasks: desktopicon; Comment: "Hardware controls and maintenance"
 
 ; Hardware cleanup requires the app to exit normally. Setup never force-closes it or launches hardware controls.
 [Code]
@@ -255,7 +259,7 @@ begin
       Result := 'The installed Sora version could not be read. Inspect the existing installation.';
       Exit;
     end;
-    PackageVersion := PackVersionComponents({#StringChange(AppVersion, '.', ',')}, 0);
+    PackageVersion := PackVersionComponents({#StringChange(AppNumericVersion, '.', ',')}, 0);
     if ComparePackedVersion(ExistingVersion, PackageVersion) > 0 then
       Result := 'A newer Sora is installed. Downgrades need a separate settings and rollback review.';
   end;

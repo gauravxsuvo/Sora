@@ -5,14 +5,16 @@ import { once } from 'node:events';
 import { makeServer } from '../server.mjs';
 import { storageConfig } from '../storage.mjs';
 
-async function withServer(storage, run) {
-  const server = makeServer({ storage, logger: { error() {} } }); server.listen(0, '127.0.0.1'); await once(server, 'listening');
+async function withServer(storage, run, betaLookup = async () => ({ available: false })) {
+  const server = makeServer({ storage, betaLookup, logger: { error() {} } }); server.listen(0, '127.0.0.1'); await once(server, 'listening');
   try { await run(`http://127.0.0.1:${server.address().port}`); }
   finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 }
 test('static website, method restrictions and honest unconfigured feed', () => withServer(null, async base => {
   const home = await fetch(base); assert.equal(home.status, 200); const html = await home.text(); assert.match(html, /Your setup/); assert.doesNotMatch(html, /\u2014/);
   assert.match(home.headers.get('content-security-policy'), /object-src 'none'/);
+  assert.match(html, /id="beta-download-button"[^>]*aria-disabled="true"/);
+  assert.equal((await fetch(base + '/beta-download.mjs')).status, 200);
   for (const path of ['/styles.css', '/app.mjs', '/release-verification.mjs', '/sora-mark.svg', '/sora-mark.png', '/favicon.ico', '/apple-touch-icon.png', '/sora-updates.png', '/update-policy.json']) assert.equal((await fetch(base + path)).status, 200, path);
   assert.equal((await fetch(base + '/healthz')).status, 200);
   assert.equal((await fetch(base + '/channels/stable.json')).status, 503);
@@ -20,6 +22,21 @@ test('static website, method restrictions and honest unconfigured feed', () => w
   assert.equal((await fetch(base + '/.release-keys/key.pem')).status, 404);
   assert.equal((await fetch(base + '/releases/1.0.0/win-x64/Sora-Setup-2.0.0-x64.exe')).status, 404);
 }));
+
+test('beta availability endpoint supports GET and HEAD without storage or cached metadata', () => withServer(null, async base => {
+  const response = await fetch(base + '/api/beta-release');
+  assert.equal(response.status, 200); assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.deepEqual(await response.json(), { available: false });
+  const head = await fetch(base + '/api/beta-release', { method: 'HEAD' });
+  assert.equal(head.status, 200); assert.equal(await head.text(), '');
+}));
+
+test('beta lookup outages return a retryable unavailable response', () => withServer(null, async base => {
+  const response = await fetch(base + '/api/beta-release');
+  assert.equal(response.status, 503); assert.equal(response.headers.get('retry-after'), '60');
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.deepEqual(await response.json(), { available: false, unavailable: true });
+}, async () => ({ available: false, unavailable: true })));
 test('release proxy streams ranges and HEAD; feeds are never cached', () => withServer({
   async get(key, options) {
     assert.match(key, /^(channels|releases)\//);

@@ -59,9 +59,11 @@ try {
     if ($reader.ReadUInt32() -ne 0x4550 -or $reader.ReadUInt16() -ne 0x8664) { throw 'Sora.exe must be a Windows x64 executable.' }
 } finally { $reader.Dispose() }
 $versionInfo = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
-$version = '{0}.{1}.{2}' -f $versionInfo.FileMajorPart,$versionInfo.FileMinorPart,$versionInfo.FileBuildPart
+$numericVersion = '{0}.{1}.{2}' -f $versionInfo.FileMajorPart,$versionInfo.FileMinorPart,$versionInfo.FileBuildPart
+$version = ($versionInfo.ProductVersion -split '\+')[0]
+if ($version -notmatch '^\d+\.\d+\.\d+(-beta\.\d+)?$' -or ($version -split '-')[0] -ne $numericVersion) { throw 'Unrecognized Sora product version.' }
 if ($versionInfo.ProductName -ne 'Sora' -or $versionInfo.FilePrivatePart -ne 0) { throw 'Unrecognized Sora product/version metadata.' }
-if ([version]$version -ge [version]'0.12.0') {
+if ([version]$numericVersion -ge [version]'0.12.0') {
     foreach ($name in @('UpdateRunner\Sora.UpdateRunner.exe','UpdateRunner\Sora.UpdateRunner.dll','UpdateRunner\Sora.UpdateRunner.deps.json','UpdateRunner\Sora.UpdateRunner.runtimeconfig.json')) {
         if ($name -notin $files.relative) { throw "Incomplete updater-enabled publish: $name" }
     }
@@ -128,7 +130,7 @@ $info.UseShellExecute = $false
 $info.CreateNoWindow = $true
 $info.RedirectStandardOutput = $true
 $info.RedirectStandardError = $true
-$info.Arguments = '"{0}" "/DAppVersion={1}" "/DPayloadInclude={2}" "/DInstallerOutput={3}" "/DBrandIcon={4}"' -f (Join-Path $output 'Sora.iss'),$version,$include,$output,$brandIcon
+$info.Arguments = '"{0}" "/DAppVersion={1}" "/DPayloadInclude={2}" "/DInstallerOutput={3}" "/DBrandIcon={4}" "/DAppNumericVersion={5}"' -f (Join-Path $output 'Sora.iss'),$version,$include,$output,$brandIcon,$numericVersion
 $process = [Diagnostics.Process]::Start($info)
 try {
     $stdout = $process.StandardOutput.ReadToEndAsync()

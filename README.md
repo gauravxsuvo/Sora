@@ -4,7 +4,7 @@
 
 A native Windows hardware hub for supported cooler displays, keyboards, mice, lighting, fans, storage health, and Wi-Fi measurements.
 
-[Download for Windows](https://sora.portways.app/#download) · [User guide](docs/user-guide.md) · [Release notes](docs/Sora-0.12.5.md)
+[Download for Windows](https://sora.portways.app/#download) · [Download beta](https://github.com/gauravxsuvo/Sora/releases/tag/v0.13.0-beta.1) · [User guide](docs/user-guide.md) · [Beta release notes](docs/Sora-0.13.0-beta.1.md)
 
 ## Installation
 
@@ -18,6 +18,7 @@ Normal upgrades preserve preferences and profiles. Uninstall lets you keep saved
 
 | Hardware | Coverage |
 | --- | --- |
+| Lenovo Legion laptops (experimental) | Source-based power presets, legacy charging modes, firmware GPU settings, four-zone RGB, and Spectrum profile/brightness controls; interfaces are detected independently. [Coverage and limitations](docs/Lenovo-Legion.md) |
 | DeepCool LD360 | Display of live CPU temperature, utilization, and package power |
 | Supported Kreo keyboards and receivers | Model-dependent key mapping and lighting |
 | Logitech G502 HERO | DPI, button profiles, macros, lighting, and selected device preferences |
@@ -60,3 +61,5 @@ See [installer packaging](docs/program-files-installation.md) for the Inno Setup
 Report the Sora version, device model, Windows version, and steps to reproduce in [Issues](https://github.com/gauravxsuvo/Sora/issues). Redact personal information from diagnostics before sharing.
 
 Dependency licenses and attributions are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+Sora's original source code is licensed under GPL-3.0-only; see [LICENSE](LICENSE). Third-party components and assets retain their own licenses and notices.

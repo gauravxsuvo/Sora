@@ -21,7 +21,8 @@ public sealed class HidDevice : IDisplayTransport
 
     public static IReadOnlyList<DeviceInfo> FindLogitech() => EnumerateMatching(path => path.Contains("vid_046d", StringComparison.OrdinalIgnoreCase));
 
-    internal static IReadOnlyList<DeviceInfo> EnumerateMatching(Func<string, bool> matches)
+    internal static IReadOnlyList<DeviceInfo> EnumerateMatching(Func<string, bool> matches, bool includeDeviceStrings = true,
+        bool throwOnMatchedDeviceFailure = false)
     {
         Native.HidD_GetHidGuid(out var guid);
         var set = Native.SetupDiGetClassDevs(ref guid, null, IntPtr.Zero, 0x12);
@@ -47,10 +48,24 @@ public sealed class HidDevice : IDisplayTransport
                     var path = Marshal.PtrToStringUni(detail + 4)!;
                     if (!matches(path)) continue;
                     using var handle = Native.CreateFile(path, 0, 3, IntPtr.Zero, 3, 0, IntPtr.Zero);
-                    if (handle.IsInvalid) continue;
+                    if (handle.IsInvalid)
+                    {
+                        if (throwOnMatchedDeviceFailure) throw new Win32Exception(Marshal.GetLastWin32Error());
+                        continue;
+                    }
                     var attributes = new Native.HidAttributes { Size = Marshal.SizeOf<Native.HidAttributes>() };
-                    if (!Native.HidD_GetAttributes(handle, ref attributes)) continue;
+                    if (!Native.HidD_GetAttributes(handle, ref attributes))
+                    {
+                        if (throwOnMatchedDeviceFailure) throw new Win32Exception(Marshal.GetLastWin32Error());
+                        continue;
+                    }
                     var caps = GetCaps(handle);
+                    if (!includeDeviceStrings)
+                    {
+                        results.Add(new DeviceInfo(path, "", caps.UsagePage, caps.Usage, caps.OutputReportByteLength,
+                            caps.FeatureReportByteLength, attributes.VendorId, attributes.ProductId));
+                        continue;
+                    }
                     var serialBuffer = Marshal.AllocHGlobal(512);
                     string serial;
                     try { serial = Native.HidD_GetSerialNumberString(handle, serialBuffer, 512) ? Marshal.PtrToStringUni(serialBuffer) ?? "" : ""; }

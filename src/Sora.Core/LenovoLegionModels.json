@@ -1,0 +1,200 @@
+{
+  "source": "LenovoLegionToolkit-Team/LenovoLegionToolkit",
+  "revision": "d0c57bfc7ecc26d4ccf15bb3835fed7ac28a259f",
+  "path": "LenovoLegionToolkit.Lib/Utils/Compatibility.cs",
+  "qualification": "source-reference",
+  "models": [
+    {
+      "machineType": "83F0",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83F1",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83M0",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83NX",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83N2",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83LY",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83DG",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83EW",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83EG",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83JJ",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "82RC",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "82RB",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "82TB",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83EF",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "82RE",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "82RD",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83Q7",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83Q6",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83RW",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83VK",
+      "series": "Legion_5"
+    },
+    {
+      "machineType": "83DH",
+      "series": "Legion_Slim_5"
+    },
+    {
+      "machineType": "83EX",
+      "series": "Legion_Slim_5"
+    },
+    {
+      "machineType": "82Y5",
+      "series": "Legion_Slim_5"
+    },
+    {
+      "machineType": "82Y9",
+      "series": "Legion_Slim_5"
+    },
+    {
+      "machineType": "82YA",
+      "series": "Legion_Slim_5"
+    },
+    {
+      "machineType": "83D6",
+      "series": "Legion_Slim_5"
+    },
+    {
+      "machineType": "83LT",
+      "series": "Legion_Pro_5"
+    },
+    {
+      "machineType": "83F3",
+      "series": "Legion_Pro_5"
+    },
+    {
+      "machineType": "83DF",
+      "series": "Legion_Pro_5"
+    },
+    {
+      "machineType": "83F2",
+      "series": "Legion_Pro_5"
+    },
+    {
+      "machineType": "83LU",
+      "series": "Legion_Pro_5"
+    },
+    {
+      "machineType": "82WM",
+      "series": "Legion_Pro_5"
+    },
+    {
+      "machineType": "83NN",
+      "series": "Legion_Pro_5"
+    },
+    {
+      "machineType": "82WK",
+      "series": "Legion_Pro_5"
+    },
+    {
+      "machineType": "82JQ",
+      "series": "Legion_Pro_5"
+    },
+    {
+      "machineType": "83KY",
+      "series": "Legion_7"
+    },
+    {
+      "machineType": "83FD",
+      "series": "Legion_7"
+    },
+    {
+      "machineType": "82UH",
+      "series": "Legion_7"
+    },
+    {
+      "machineType": "82TD",
+      "series": "Legion_7"
+    },
+    {
+      "machineType": "82N6",
+      "series": "Legion_7"
+    },
+    {
+      "machineType": "83RU",
+      "series": "Legion_Pro_7"
+    },
+    {
+      "machineType": "83F5",
+      "series": "Legion_Pro_7"
+    },
+    {
+      "machineType": "83DE",
+      "series": "Legion_Pro_7"
+    },
+    {
+      "machineType": "82WR",
+      "series": "Legion_Pro_7"
+    },
+    {
+      "machineType": "82WQ",
+      "series": "Legion_Pro_7"
+    },
+    {
+      "machineType": "82WS",
+      "series": "Legion_Pro_7"
+    },
+    {
+      "machineType": "83G0",
+      "series": "Legion_9"
+    },
+    {
+      "machineType": "83EY",
+      "series": "Legion_9"
+    }
+  ]
+}

@@ -3,6 +3,18 @@ using LibreHardwareMonitor.Hardware;
 using System.Text.Json;
 using Sora.Core;
 
+if (args.Contains("--lenovo-legion-diagnose"))
+{
+    if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
+    var report = LenovoLegionProbe.Capture();
+    Console.WriteLine(JsonSerializer.Serialize(report, new JsonSerializerOptions
+    {
+        WriteIndented = true,
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+    }));
+    return report.Completed ? 0 : 1;
+}
+
 if (args.Contains("--hardware-detection"))
 {
     if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
@@ -770,6 +782,9 @@ await Check("Gigabyte updates: exact board, GCC driver matching, safe links", ()
 await Check("Hardware maintenance: exact firmware advisory identity and reviewed support routes", () => { HardwareMaintenanceChecks.Run(Require); return Task.CompletedTask; });
 
 await Check("Hardware discovery and Logitech model/capability isolation", () => { HardwareDiscoveryChecks.Run(Require); return Task.CompletedTask; });
+await Check("Legion identity, metadata-only diagnostics, privacy and control isolation", () => { LenovoLegionChecks.Run(Require); return Task.CompletedTask; });
+await Check("Legion source-reference RGB packets, power values, charging transitions and fan-table serialization", () => { LenovoLegionProtocolChecks.Run(Require); return Task.CompletedTask; });
+await Check("Legion transactions: independent discovery, backup-before-write, readback, partial recovery, conflict/AC gates and shutdown", () => LenovoLegionControllerChecks.Run(Require));
 await Check("Logitech HID++ correlation, captured DPI/lighting, onboard CRC and preset validation", () => { LogitechChecks.Run(Require); return Task.CompletedTask; });
 await Check("Logitech DPI Shift release, stage buttons, G-Shift layers and macro cancellation", LogitechRuntimeChecks.Run);
 await Check("Logitech standard buttons stay native, remaps do not double-inject and held routing changes are refused", LogitechButtonRoutingChecks.Run);
