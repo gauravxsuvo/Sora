@@ -149,6 +149,12 @@ try {
     Check 'Installed app maintenance UI runs successfully' ((Run $exe @('--maintenance-ui-check','--output',('"' + $uiFile + '"'))) -eq 0)
     $ui = Get-Content $uiFile -Raw | ConvertFrom-Json
     Check 'Installed maintenance UI scenarios pass without configuration writes' ($ui.passed -and $ui.configurationWrites -eq 0)
+    if ([version]($Version -split '-')[0] -ge [version]'0.13.0') {
+        $legionUiFile = Join-Path $root 'legion-ui.json'
+        Check 'Installed Legion button interaction check runs successfully' ((Run $exe @('--legion-ui-check','--output',('"' + $legionUiFile + '"'))) -eq 0)
+        $legionUi = Get-Content $legionUiFile -Raw | ConvertFrom-Json
+        Check 'Installed Legion interaction scenarios pass with zero physical configuration writes' ($legionUi.passed -and $legionUi.synthetic -and $legionUi.configurationWrites -eq 0)
+    }
     for ($cycle = 1; $cycle -le 3; $cycle++) {
         $image = Join-Path $root "hardware-ui-$cycle.png"
         Check "Installed read-only hardware UI cycle $cycle exits successfully" ((Run $exe @('--screenshot',('"' + $image + '"'),'--settings','--isolated-ui-check','--hardware-ui-check')) -eq 0)
