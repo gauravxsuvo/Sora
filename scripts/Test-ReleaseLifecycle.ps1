@@ -143,6 +143,15 @@ try {
     Check 'Installed app maintenance UI runs successfully' ((Run $exe @('--maintenance-ui-check','--output',('"' + $uiFile + '"'))) -eq 0)
     $ui = Get-Content $uiFile -Raw | ConvertFrom-Json
     Check 'Installed maintenance UI scenarios pass without configuration writes' ($ui.passed -and $ui.configurationWrites -eq 0)
+    for ($cycle = 1; $cycle -le 3; $cycle++) {
+        $image = Join-Path $root "hardware-ui-$cycle.png"
+        Check "Installed read-only hardware UI cycle $cycle exits successfully" ((Run $exe @('--screenshot',('"' + $image + '"'),'--settings','--isolated-ui-check','--hardware-ui-check')) -eq 0)
+        $hardwareUi = Get-Content ($image + '.hardware-checks.json') -Raw | ConvertFrom-Json
+        $shutdown = Get-Content ($image + '.shutdown-checks.json') -Raw | ConvertFrom-Json
+        Check "Installed hardware availability cycle $cycle passes" ($hardwareUi.passed)
+        Check "Shutdown cycle $cycle joins an in-flight scan without configuration writes" ($shutdown.passed -and $shutdown.configurationWrites -eq 0)
+        Check "Read-only hardware UI cycle $cycle leaves no Sora process" (-not (Get-Process Sora -ErrorAction SilentlyContinue))
+    }
     $fixture = Join-Path $root 'fixture'
     [IO.Directory]::CreateDirectory($fixture) | Out-Null
     [IO.File]::WriteAllText((Join-Path $fixture 'Fixture.csproj'), '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><AssemblyName>Sora</AssemblyName></PropertyGroup></Project>')

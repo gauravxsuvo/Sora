@@ -8,6 +8,7 @@ public static class LogitechDeviceSettings
 {
     public static async Task<LogitechHardwareSettings> ReadSettingsAsync(this LogitechDevice device, LogitechSnapshot snapshot)
     {
+        if (!LogitechModels.HasG502Preferences(snapshot)) throw new NotSupportedException("Device preferences are unavailable for this model.");
         var indicator = snapshot.Features.Single(f => f.Id == 0x1300).Index; var light = snapshot.Features.Single(f => f.Id == 0x8070).Index;
         var nv = await device.RequestAsync(indicator, 6, [0]); var state = await device.RequestAsync(indicator, 4, [0]);
         var boot = await device.RequestAsync(light, 4, [0, 1]);

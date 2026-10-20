@@ -74,7 +74,7 @@ Native Windows open/save dialogs, system tray menus, UAC and early startup/singl
 The opt-in component preview is hosted in the actual application, without a new sidebar entry:
 
 ```powershell
-dotnet src/Sora.App/bin/Debug/net8.0-windows/Sora.dll --screenshot E:\Sora\artifacts\components.png --components --component-ui-check --size 1320x860
+dotnet src/Sora.App/bin/Debug/net8.0-windows/Sora.dll --screenshot artifacts/components.png --components --component-ui-check --size 1320x860
 ```
 
 Components is explicitly labelled as a development preview and clears all production navigation selections. Choosing a production page removes the gallery and selects the correct page; in that preview process the page is read-only, with a banner explaining how to open normal Sora. No developer item is added to normal navigation.
@@ -107,5 +107,3 @@ Check Cooler, Settings and connected/disconnected Keyboard at 1304 × 852 visibl
 - Colour pickers publish their actual hexadecimal value through UI Automation Value changes. Disabled pickers reject automation edits. Notices coalesce same-turn changes and suppress repeated identical live announcements; meaningful status text persists.
 
 Verification flags: `--interaction-check` exercises real shared controls in an owned, local fixture window; `--interaction-audit` records production accessible names and text-token contrast; `--desktop-check` resizes the actual window through both acceptance sizes, checks scroll reach, and verifies sidebar selection surfaces. `--interaction-focus-preview` focuses the selected tab or an available dropdown without changing the selected page. These flags invoke no hardware actions or production preference writes.
-
-Phase 5 captures, checks, preference hashes and verification limitations are recorded in `artifacts/phase5-20261019/README.md`.

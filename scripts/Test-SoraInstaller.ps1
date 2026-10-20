@@ -26,7 +26,8 @@ $dataRoot = $priorData.dataRoot
 $taskBefore = Export-ScheduledTask -TaskName Sora -TaskPath '\'
 [IO.File]::WriteAllText((Join-Path $root 'startup-task-before.xml'), $taskBefore)
 $servicesBefore = @(Get-CimInstance Win32_Service | Where-Object PathName -match '\\DeepCool\\' | Select-Object Name,State,StartMode | Sort-Object Name)
-$stableBefore = @((Get-Item 'E:\Sora\dist\Sora-current').Target)
+$stablePath = Join-Path (Split-Path $PSScriptRoot -Parent) 'dist\Sora-current'
+$stableBefore = @(if (Test-Path -LiteralPath $stablePath) { (Get-Item -LiteralPath $stablePath).Target })
 $result = [ordered]@{ startedAt = [DateTimeOffset]::Now.ToString('o'); passed = $false; error = $null; checks = @(); probes = @(); cleanupError = $null; normalStartupTested = $false; hardwareConfigurationWrites = 0 }
 function Save-NewJson([string]$Path, $Value) {
     $bytes = [Text.UTF8Encoding]::new($false).GetBytes(($Value | ConvertTo-Json -Depth 18))
@@ -153,7 +154,7 @@ finally {
         $taskAfter = Export-ScheduledTask -TaskName Sora -TaskPath '\'
         [IO.File]::WriteAllText((Join-Path $root 'startup-task-after.xml'), $taskAfter)
         Check 'Existing startup task XML unchanged' ($taskAfter -ceq $taskBefore)
-        Check 'Existing stable deployment junction unchanged' ((@((Get-Item 'E:\Sora\dist\Sora-current').Target) | ConvertTo-Json -Compress) -ceq ($stableBefore | ConvertTo-Json -Compress))
+        Check 'Existing stable deployment junction unchanged' ((@(if (Test-Path -LiteralPath $stablePath) { (Get-Item -LiteralPath $stablePath).Target }) | ConvertTo-Json -Compress) -ceq ($stableBefore | ConvertTo-Json -Compress))
         $result.services = @(Get-CimInstance Win32_Service | Where-Object PathName -match '\\DeepCool\\' | Select-Object Name,State,StartMode | Sort-Object Name)
         Check 'Original DeepCool service states and start modes unchanged' (($result.services | ConvertTo-Json -Compress) -ceq ($servicesBefore | ConvertTo-Json -Compress))
         Check 'No Sora process remains' (@(Get-CimInstance Win32_Process -Filter "Name='Sora.exe'").Count -eq 0)

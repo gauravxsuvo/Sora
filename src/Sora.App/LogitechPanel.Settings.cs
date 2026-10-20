@@ -13,7 +13,13 @@ public partial class LogitechPanel
     private bool HardwareSettingsDirty => hardwareSettings != null && (DpiAlwaysOnCheck.IsChecked != hardwareSettings.DpiAlwaysOn || StartupEffectCheck.IsChecked != hardwareSettings.StartupEffect);
     private async Task ReadHardwareSettingsAsync()
     {
-        if (snapshot == null) return;
+        hardwareSettings = null;
+        var supported = LogitechModels.HasG502Preferences(snapshot);
+        DevicePreferencesCard.Visibility = supported ? Visibility.Visible : Visibility.Collapsed;
+        DeviceCoverageCard.Visibility = LogitechModels.HasG502Controls(snapshot) ? Visibility.Visible : Visibility.Collapsed;
+        DpiAlwaysOnCheck.Visibility = StartupEffectCheck.Visibility = ApplyDeviceSettingsButton.Visibility = supported ? Visibility.Visible : Visibility.Collapsed;
+        FirmwareText.Text = "";
+        if (snapshot == null || !supported) return;
         hardwareSettings = await WithDeviceAsync(d => d.ReadSettingsAsync(snapshot));
         FirmwareText.Text = "Firmware: " + hardwareSettings.Firmware;
         DpiAlwaysOnCheck.IsChecked = hardwareSettings.DpiAlwaysOn; StartupEffectCheck.IsChecked = hardwareSettings.StartupEffect;

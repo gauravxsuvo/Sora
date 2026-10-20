@@ -22,3 +22,4 @@ web/sora-downloads/node_modules/
 .env
 .env.*
 !.env.example
+/recheck-*.md

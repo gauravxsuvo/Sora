@@ -10,6 +10,7 @@ internal static class Program
 {
     private static int Main(string[] args)
     {
+        if (args is ["--detect-hardware", var detectionOutput]) return DetectHardware(detectionOutput);
         if (args is ["--uninstall-cleanup"]) return UninstallCleanup.Run(purge: false);
         if (args is ["--uninstall-cleanup", "--purge-data"]) return UninstallCleanup.Run(purge: true);
         if (args is ["--refresh-shortcuts"]) return UninstallCleanup.RepairShortcuts();
@@ -95,6 +96,21 @@ internal static class Program
             return 1;
         }
         finally { parent?.Dispose(); gate?.Dispose(); }
+    }
+
+    private static int DetectHardware(string output)
+    {
+        try
+        {
+            var scan = Task.Run(Sora.Core.HardwareDiscovery.Capture);
+            var inventory = scan.Wait(TimeSpan.FromSeconds(10)) ? scan.Result : Sora.Core.HardwareInventory.Unknown;
+            var lines = new[] { "[hardware]", "schema=1" }.Concat(inventory.Modules.Select(m => $"{m.Module}={m.Presence}"));
+            using var file = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            using var writer = new StreamWriter(file, new System.Text.UTF8Encoding(false));
+            foreach (var line in lines) writer.WriteLine(line);
+            return 0;
+        }
+        catch (Exception error) when (error is not OutOfMemoryException) { return 1; }
     }
 
     private static byte[] ReadEnvelope(string stage)

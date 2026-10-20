@@ -71,7 +71,7 @@ internal sealed class LogitechService
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { host.Log("Logitech control state: " + e.Message); }
         if (Profile != null && !profiles.Any(p => SameProfileName(p.Name, Profile.Name))) profiles.Add(Profile);
     }
-    public async Task<T> UseDeviceAsync<T>(Func<LogitechDevice, Task<T>> action)
+    public async Task<T> UseDeviceAsync<T>(Func<LogitechDevice, Task<T>> action, DeviceInfo? selected = null)
     {
         await gate.WaitAsync();
         try
@@ -79,8 +79,8 @@ internal sealed class LogitechService
             await inputGate.WaitAsync();
             try
             {
-                if (Running && device != null) return await action(device);
-                var info = LogitechDevice.Enumerate().Single();
+                if (Running && device != null && (selected == null || device.Matches(selected))) return await action(device);
+                var info = selected ?? LogitechDevice.EnumerateG502().Single();
                 await using var connection = new LogitechDevice(info);
                 return await action(connection);
             }
@@ -119,7 +119,7 @@ internal sealed class LogitechService
         {
             if (LogitechDevice.IsGHubRunning()) throw new InvalidOperationException("Exit G HUB from its tray menu before applying. Sora will take software control without changing onboard profiles.");
             await StopCoreAsync();
-            var infos = LogitechDevice.Enumerate();
+            var infos = LogitechDevice.EnumerateG502();
             if (infos.Length != 1) throw new IOException("Connect exactly one G502 HERO to apply its software profile.");
             device = new LogitechDevice(infos[0]);
             var fresh = await device.ReadAsync(); profile.Validate(fresh);
@@ -361,7 +361,7 @@ internal sealed class LogitechService
                 retryAt = DateTime.UtcNow.AddSeconds(5); await gate.WaitAsync();
                 try
                 {
-                    var info = LogitechDevice.Enumerate().Single(); device = new LogitechDevice(info); await RestoreInterruptedAsync(await device.ReadAsync()); Status = "Original mouse controls restored"; Publish();
+                    var info = LogitechDevice.EnumerateG502().Single(); device = new LogitechDevice(info); await RestoreInterruptedAsync(await device.ReadAsync()); Status = "Original mouse controls restored"; Publish();
                 }
                 catch (Exception error) when (error is not OutOfMemoryException) { SetFailure("Restoration pending: " + error.Message); }
                 finally { if (device != null) { await device.DisposeAsync(); device = null; } gate.Release(); }

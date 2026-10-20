@@ -6,7 +6,7 @@ internal static class StartupRoutingChecks
     internal static void Run(Action<bool, string> require)
     {
         const string installed = @"C:\Program Files\Sora\Sora.exe";
-        const string development = @"E:\Sora\dist\Sora-current\Sora.exe";
+        const string development = @"C:\Development\Sora\dist\Sora-current\Sora.exe";
         var checks = 0;
         // Inspect has no mutation callback or scheduler dependency. Both directions preserve
         // registration, including disabled/absent and older-description tasks.
@@ -35,7 +35,7 @@ internal static class StartupRoutingChecks
             checks++;
         }
         var stable = new StartupRegistration(development, "older task layout", true);
-        require(StartupRouting.Inspect(() => stable, @"E:\Sora\dist\Sora-0.10.7\Sora.exe", (_, _) => true).Message.StartsWith("Starts this copy"), "resolved stable junction is current without rewriting legacy task");
+        require(StartupRouting.Inspect(() => stable, @"C:\Development\Sora\dist\Sora-0.10.7\Sora.exe", (_, _) => true).Message.StartsWith("Starts this copy"), "resolved stable junction is current without rewriting legacy task");
         checks++;
         require(StartupRouting.ParseExplicitAction("on") && !StartupRouting.ParseExplicitAction("off"), "only explicit on/off accepted");
         checks++;

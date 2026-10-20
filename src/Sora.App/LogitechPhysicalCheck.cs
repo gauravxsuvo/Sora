@@ -33,7 +33,7 @@ internal static class LogitechPhysicalCheck
         try
         {
             if (LogitechDevice.IsGHubRunning()) throw new IOException("Exit G HUB before the physical test.");
-            var info = LogitechDevice.Enumerate().Single();
+            var info = LogitechDevice.EnumerateG502().Single();
             await using (var device = new LogitechDevice(info))
             {
                 before = await device.ReadAsync(deadline.Token);
@@ -91,7 +91,7 @@ internal static class LogitechPhysicalCheck
                 await host.Logitech.DisableAsync();
                 if (before != null)
                 {
-                    await using var device = new LogitechDevice(LogitechDevice.Enumerate().Single());
+                    await using var device = new LogitechDevice(LogitechDevice.EnumerateG502().Single());
                     after = await device.ReadAsync();
                     afterMap = await device.ReadButtonMapAsync(after);
                     afterSettings = await device.ReadSettingsAsync(after);

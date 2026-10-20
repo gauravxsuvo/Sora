@@ -391,7 +391,9 @@ public partial class App : Application
     [
         new("Open Sora", () => ShowWindow()),
         new(ApplicationUpdates?.Available == true ? "Sora update available…" : "Check for Sora updates…", () => { page = "updates"; ShowWindow(); window?.OpenUpdates(); }, !updatePrepared),
-        host!.Requested ? new("Stop display", () => _ = host.SetRequestedAsync(false), !updatePrepared) : new("Start display", () => _ = host.SetRequestedAsync(true), !updatePrepared),
+        host!.Hardware.Available(HardwareModule.Cooler) || host.Requested
+            ? host.Requested ? new("Stop display", () => _ = host.SetRequestedAsync(false), !updatePrepared) : new("Start display", () => _ = host.SetRequestedAsync(true), !updatePrepared)
+            : null,
         null,
         new("Exit Sora", () => _ = ExitAsync()),
     ];
@@ -399,7 +401,7 @@ public partial class App : Application
     private void UpdateTray()
     {
         if (tray == null || host == null) return;
-        tray.SetTooltip(host.Status.Sending && host.Fresh is { } sample ? $"Sora · {host.FormatTemperature(sample, "0")}{host.Unit} on LD360" : host.Requested ? "Sora · waiting for the LD360" : "Sora · display off");
+        tray.SetTooltip(!host.Hardware.Available(HardwareModule.Cooler) && !host.Requested ? "Sora · hardware controls" : host.Status.Sending && host.Fresh is { } sample ? $"Sora · {host.FormatTemperature(sample, "0")}{host.Unit} on LD360" : host.Requested ? "Sora · waiting for the LD360" : "Sora · display off");
     }
 
     // Give the released window's memory back to Windows.

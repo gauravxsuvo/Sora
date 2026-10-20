@@ -71,6 +71,8 @@ Name: "{commondesktop}\Sora"; Filename: "{app}\Sora.exe"; WorkingDir: "{app}"; I
 [Code]
 var
   PurgeData: Boolean;
+  HardwarePage: TOutputMsgWizardPage;
+  HardwareResult: String;
 
 procedure RefreshShell(EventID: LongWord; Flags: LongWord; Item1: LongWord; Item2: LongWord);
   external 'SHChangeNotify@shell32.dll stdcall';
@@ -141,6 +143,53 @@ begin
             if Result then Exit;
           end;
       end;
+end;
+
+procedure DiscoverHardware;
+var
+  ExitCode, I: Integer;
+  Modules, Labels: TArrayOfString;
+  Summary, State: String;
+begin
+  HardwareResult := ExpandConstant('{tmp}\sora-hardware.ini');
+  Summary := '';
+  if HasRuntime('Microsoft.NETCore.App') and HasRuntime('Microsoft.WindowsDesktop.App') then begin
+    try
+      ExtractTemporaryFiles('{tmp}\Sora.UpdateRunner.*');
+      DeleteFile(HardwareResult);
+      if Exec(ExpandConstant('{tmp}\Sora.UpdateRunner.exe'), '--detect-hardware "' + HardwareResult + '"',
+        ExpandConstant('{tmp}'), SW_HIDE, ewWaitUntilTerminated, ExitCode) and (ExitCode = 0) and
+        (GetIniString('hardware', 'schema', '', HardwareResult) = '1') then begin
+        Modules := ['Cooler', 'Keyboard', 'Lighting', 'MotherboardFans', 'GpuFans', 'Storage', 'Wifi', 'Logitech'];
+        Labels := ['Cooler display', 'Keyboard', 'Lighting', 'Motherboard fans', 'GPU fans', 'Storage health', 'Wi-Fi tools', 'Logitech devices'];
+        for I := 0 to GetArrayLength(Modules) - 1 do begin
+          State := GetIniString('hardware', Modules[I], 'Unknown', HardwareResult);
+          if State = 'Present' then Summary := Summary + #13#10 + '  ' + Labels[I]
+          else if State <> 'Absent' then begin
+            HardwarePage.MsgLabel.Caption := 'Windows could not complete hardware detection. Sora will check again when opened; unavailable controls stay hidden.';
+            Exit;
+          end;
+        end;
+      end;
+    except
+      Summary := '';
+    end;
+  end;
+  if Summary = '' then
+    HardwarePage.MsgLabel.Caption := 'No supported hardware was detected, or detection is unavailable. Sora will check again when opened. Only available device settings will appear. Setup does not install hardware drivers.'
+  else
+    HardwarePage.MsgLabel.Caption := 'Detected hardware pages:' + #13#10 + Summary + #13#10 + #13#10 +
+      'Sora enables settings for connected hardware only. Other device settings stay hidden. New devices are detected automatically after installation. Setup does not change device settings or install hardware drivers.';
+end;
+
+procedure InitializeWizard;
+begin
+  HardwarePage := CreateOutputMsgPage(wpSelectTasks, 'Your hardware', 'Settings matched to this computer', '');
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if CurPageID = HardwarePage.ID then DiscoverHardware;
 end;
 
 function DirectoryError: String;

@@ -16,7 +16,7 @@ internal static class LogitechRuntimeCheck
         string? error = null; var settingsVerified = false; var screenVerified = false; var audioVerified = false; string? audioUnavailable = null;
         try
         {
-            var info = LogitechDevice.Enumerate().Single();
+            var info = LogitechDevice.EnumerateG502().Single();
             await using (var device = new LogitechDevice(info)) { before = await device.ReadAsync(); beforeMap = await device.ReadButtonMapAsync(before); }
             var profile = LogitechControlProfile.Create(1600, 500); await host.Logitech.ApplyAsync(profile);
             await using (var device = new LogitechDevice(info)) { applied = await device.ReadAsync(); }
@@ -54,7 +54,7 @@ internal static class LogitechRuntimeCheck
         finally
         {
             await host.LogitechLighting.StopAsync(); await host.Logitech.DisableAsync();
-            try { await using var device = new LogitechDevice(LogitechDevice.Enumerate().Single()); after = await device.ReadAsync(); afterMap = await device.ReadButtonMapAsync(after); }
+            try { await using var device = new LogitechDevice(LogitechDevice.EnumerateG502().Single()); after = await device.ReadAsync(); afterMap = await device.ReadButtonMapAsync(after); }
             catch (Exception e) { error = (error ?? "") + "\nRestoration audit: " + e; }
         }
         var passed = error == null && settingsVerified && screenVerified && (audioVerified || audioUnavailable != null) && before != null && after != null && applied?.OnboardMode == 2 && applied.Sensors[0].Dpi == 1600 && applied.ReportRate == 500 && before.OnboardMode == after.OnboardMode && before.Sensors[0].Dpi == after.Sensors[0].Dpi && before.ReportRate == after.ReportRate && beforeMap!.SequenceEqual(afterMap!) && before.Lighting!.All(z => after.Lighting!.Single(a => a.Index == z.Index).State.SequenceEqual(z.State));

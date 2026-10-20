@@ -4,7 +4,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Sora.Core;
 
-public sealed record DeviceInfo(string Path, string SerialNumber, ushort UsagePage, ushort Usage, ushort OutputReportLength, ushort FeatureReportLength = 0, ushort VendorId = 0, ushort ProductId = 0);
+public sealed record DeviceInfo(string Path, string SerialNumber, ushort UsagePage, ushort Usage, ushort OutputReportLength, ushort FeatureReportLength = 0, ushort VendorId = 0, ushort ProductId = 0, string ProductName = "");
 
 public interface IDisplayTransport : IAsyncDisposable
 {
@@ -55,7 +55,11 @@ public sealed class HidDevice : IDisplayTransport
                     string serial;
                     try { serial = Native.HidD_GetSerialNumberString(handle, serialBuffer, 512) ? Marshal.PtrToStringUni(serialBuffer) ?? "" : ""; }
                     finally { Marshal.FreeHGlobal(serialBuffer); }
-                    results.Add(new DeviceInfo(path, serial, caps.UsagePage, caps.Usage, caps.OutputReportByteLength, caps.FeatureReportByteLength, attributes.VendorId, attributes.ProductId));
+                    var productBuffer = Marshal.AllocHGlobal(512);
+                    string product;
+                    try { product = Native.HidD_GetProductString(handle, productBuffer, 512) ? Marshal.PtrToStringUni(productBuffer) ?? "" : ""; }
+                    finally { Marshal.FreeHGlobal(productBuffer); }
+                    results.Add(new DeviceInfo(path, serial, caps.UsagePage, caps.Usage, caps.OutputReportByteLength, caps.FeatureReportByteLength, attributes.VendorId, attributes.ProductId, product));
                 }
                 finally { Marshal.FreeHGlobal(detail); }
             }
@@ -122,6 +126,7 @@ public sealed class HidDevice : IDisplayTransport
         [DllImport("hid.dll")] [return: MarshalAs(UnmanagedType.U1)] internal static extern bool HidD_FreePreparsedData(IntPtr data);
         [DllImport("hid.dll")] internal static extern int HidP_GetCaps(IntPtr data, out HidCaps caps);
         [DllImport("hid.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.U1)] internal static extern bool HidD_GetSerialNumberString(SafeFileHandle handle, IntPtr buffer, int length);
+        [DllImport("hid.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.U1)] internal static extern bool HidD_GetProductString(SafeFileHandle handle, IntPtr buffer, int length);
         [DllImport("hid.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.U1)] internal static extern bool HidD_SetNumInputBuffers(SafeFileHandle handle, int count);
         [DllImport("hid.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.U1)] internal static extern bool HidD_SetFeature(SafeFileHandle handle, byte[] report, int length);
         [DllImport("hid.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.U1)] internal static extern bool HidD_GetFeature(SafeFileHandle handle, [In, Out] byte[] report, int length);

@@ -83,7 +83,7 @@ internal sealed class LogitechReactiveLighting
         try
         {
             await StopCoreAsync();
-            await using var device = new LogitechDevice(LogitechDevice.Enumerate().Single()); var fresh = await device.ReadAsync();
+            await using var device = new LogitechDevice(LogitechDevice.EnumerateG502().Single()); var fresh = await device.ReadAsync();
             await device.SetLightingAsync(fresh, new System.Collections.Generic.Dictionary<byte, byte[]> { [zone] = state });
             var states = firmware?.Identity == fresh.Identity ? new System.Collections.Generic.Dictionary<byte, byte[]>(firmware.States) : new();
             states[zone] = state.ToArray();
@@ -108,7 +108,7 @@ internal sealed class LogitechReactiveLighting
         LogitechDevice? device = null; LogitechSnapshot? original = null; using var meter = new LogitechOutputMeter();
         try
         {
-            device = new LogitechDevice(LogitechDevice.Enumerate().Single()); original = await device.ReadAsync(token);
+            device = new LogitechDevice(LogitechDevice.EnumerateG502().Single()); original = await device.ReadAsync(token);
             var ownership = new Ownership(original.Identity, selected.ToDictionary(z => z.Zone, z => original.Lighting!.Single(o => o.Index == z.Zone).State));
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(OwnershipPath + ".tmp", JsonSerializer.Serialize(ownership)); File.Move(OwnershipPath + ".tmp", OwnershipPath, true);
@@ -161,7 +161,7 @@ internal sealed class LogitechReactiveLighting
         if (LogitechDevice.IsGHubRunning()) { File.Delete(OwnershipPath); return; }
         if (new FileInfo(OwnershipPath).Length > 8192) throw new InvalidDataException("Invalid lighting ownership backup.");
         var backup = JsonSerializer.Deserialize<Ownership>(File.ReadAllText(OwnershipPath)) ?? throw new InvalidDataException("Invalid lighting ownership backup.");
-        await using var device = new LogitechDevice(LogitechDevice.Enumerate().Single()); var fresh = await device.ReadAsync();
+        await using var device = new LogitechDevice(LogitechDevice.EnumerateG502().Single()); var fresh = await device.ReadAsync();
         if (fresh.Identity != backup.Identity || backup.States.Count is < 1 or > 2 || backup.States.Any(z => z.Key > 1 || z.Value.Length != 11)) throw new InvalidDataException("Lighting backup does not match this mouse.");
         await device.SetLightingAsync(fresh, backup.States); File.Delete(OwnershipPath);
     }
@@ -177,7 +177,7 @@ internal sealed class LogitechReactiveLighting
                 await RestoreOwnershipAsync();
                 if (firmware != null && !firmwareApplied)
                 {
-                    await using var device = new LogitechDevice(LogitechDevice.Enumerate().Single());
+                    await using var device = new LogitechDevice(LogitechDevice.EnumerateG502().Single());
                     var fresh = await device.ReadAsync();
                     if (fresh.Identity != firmware.Identity) throw new InvalidDataException("Saved lighting belongs to a different mouse.");
                     await device.SetLightingAsync(fresh, firmware.States);

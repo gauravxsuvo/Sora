@@ -26,28 +26,31 @@ public partial class LogitechPanel
     private bool ControlsDirty => controlDraft != null && JsonSerializer.Serialize(controlDraft) != controlBaseline;
     private async Task PollLiveAsync()
     {
-        if (pollingLive || IsBusy || snapshot == null || selectedDevice < 0) return;
+        if (pollingLive || IsBusy || snapshot == null || selectedDevice < 0 || snapshot.Sensors.Length != 1) return;
         pollingLive = true;
         try
         {
-            if (controls?.Running == true) { await controls.RefreshLiveDpiAsync(); RuntimeUpdated(); return; }
+            if (controls?.Running == true && controls.Snapshot?.Identity == snapshot.Identity) { await controls.RefreshLiveDpiAsync(); RuntimeUpdated(); return; }
             var old = snapshot;
             var live = await WithDeviceAsync(async device =>
             {
-                var mode = await device.RequestAsync(old.Features.Single(f => f.Id == 0x8100).Index, 2);
-                var dpi = await device.RequestAsync(old.Features.Single(f => f.Id == 0x2201).Index, 2, [0]);
-                return (mode: (int)mode[0], dpi: dpi[1] << 8 | dpi[2]);
+                var modeFeature = old.Features.SingleOrDefault(f => f.Id == 0x8100);
+                var mode = modeFeature == null ? null : await device.RequestAsync(modeFeature.Index, 2);
+                var dpi = await device.RequestAsync(old.Features.Single(f => f.Id == 0x2201).Index, 2, [old.Sensors[0].Index]);
+                return (mode: mode == null ? (int?)null : mode[0], dpi: dpi[1] << 8 | dpi[2]);
             });
-            if (IsBusy || snapshot == null) return;
+            if (IsBusy || snapshot == null || snapshot.Identity != old.Identity || snapshot.ProductId != old.ProductId) return;
             snapshot = snapshot with { OnboardMode = live.mode, Sensors = snapshot.Sensors.Select(s => s with { Dpi = live.dpi }).ToArray() };
             ModeText.Text = live.mode == 2 ? (ghubRunning ? "G HUB software control" : "Software mode · Sora controls inactive") : "Firmware control";
-            LiveDpiText.Text = $"Live mouse DPI: {live.dpi:N0}"; StatusChanged?.Invoke($"G502 HERO · {live.dpi:N0} DPI");
+            LiveDpiText.Text = $"Live mouse DPI: {live.dpi:N0}"; StatusChanged?.Invoke($"{snapshot.Name} · {live.dpi:N0} DPI");
+            DetectedMouseReading.Text = $"Live DPI: {live.dpi:N0}";
             DpiScale.LiveDpi = live.dpi; DpiScale.LiveShiftHeld = false; DpiScale.InvalidateVisual();
         }
         catch (Exception error) when (error is IOException or InvalidDataException or System.ComponentModel.Win32Exception or InvalidOperationException)
         {
             ConnectionText.Text = "Mouse read unavailable · reconnecting";
             LiveDpiText.Text = "Live mouse DPI: unavailable";
+            DetectedMouseReading.Text = "Live DPI: unavailable";
             DpiScale.LiveDpi = null; DpiScale.InvalidateVisual();
         }
         finally { pollingLive = false; }
@@ -86,7 +89,7 @@ public partial class LogitechPanel
     private void RuntimeUpdated()
     {
         if (!Dispatcher.CheckAccess()) { _ = Dispatcher.BeginInvoke(RuntimeUpdated); return; }
-        if (controls == null) return;
+        if (controls == null || snapshot == null || controls.Snapshot?.Identity != snapshot.Identity) return;
         if (controls.Running && controls.CurrentDpi.HasValue)
         {
             LiveDpiText.Text = $"Live mouse DPI: {controls.CurrentDpi:N0}" + (controls.DpiShiftHeld ? " · DPI Shift held" : "");
@@ -108,6 +111,7 @@ public partial class LogitechPanel
     }
     private void LoadControlEditor()
     {
+        if (!LogitechModels.HasG502Controls(snapshot)) { controlDraft = null; controlBaseline = ""; baselineDpi = draftDpi; baselineRate = draftRate; return; }
         if (snapshot == null) return;
         dpiSelectionPending = false;
         controlDraft = controls?.Profile is { } saved ? Clone(saved) : LogitechControlProfile.Create(draftDpi, draftRate);

@@ -93,6 +93,12 @@ New-Item -ItemType Directory -Path $output -ErrorAction Stop | Out-Null
 $payload = Join-Path $output 'payload'
 New-Item -ItemType Directory -Path $payload -ErrorAction Stop | Out-Null
 $entries = [Collections.Generic.List[string]]::new()
+# The existing update helper also hosts bounded, read-only setup discovery.
+# Extract its minimal runtime before the main payload, without starting Sora.
+foreach ($name in @('Sora.UpdateRunner.exe','Sora.UpdateRunner.dll','Sora.UpdateRunner.deps.json','Sora.UpdateRunner.runtimeconfig.json')) {
+    $probeFile = Join-Path $payload ('UpdateRunner\' + $name)
+    $entries.Add(('Source: "{0}"; DestDir: "{{tmp}}"; Flags: dontcopy' -f $probeFile))
+}
 foreach ($file in $files | Sort-Object relative) {
     $destination = Join-Path $payload $file.relative
     [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($destination)) | Out-Null
@@ -105,7 +111,7 @@ foreach ($file in $files | Sort-Object relative) {
 }
 $manifest = [ordered]@{
     product = 'Sora'; appId = 'C29647D7-C220-477C-83B6-4118690E9CF8'; version = $version
-    createdAt = [DateTimeOffset]::Now.ToString('o'); sourceDirectory = $release
+    createdAt = [DateTimeOffset]::Now.ToString('o')
     frameworkDependent = $true; architecture = 'x64'; files = @($files | Sort-Object relative)
 }
 $manifestPath = Join-Path $payload 'sora-package.json'

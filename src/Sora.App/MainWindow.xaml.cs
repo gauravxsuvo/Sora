@@ -37,7 +37,7 @@ public partial class MainWindow : Window
         {
             if (System.Windows.Input.Keyboard.Modifiers != ModifierKeys.Control) return;
             var target = e.Key switch { Key.D1 or Key.NumPad1 => NavDisplay, Key.D2 or Key.NumPad2 => NavKeyboard, Key.D3 or Key.NumPad3 => NavLighting, Key.D4 or Key.NumPad4 => NavFans, Key.D5 or Key.NumPad5 => NavGpu, Key.D6 or Key.NumPad6 => NavStorage, Key.D7 or Key.NumPad7 => NavWifi, Key.D8 or Key.NumPad8 => NavUpdates, Key.D9 or Key.NumPad9 => NavLogitech, Key.D0 or Key.NumPad0 => NavSettings, _ => null };
-            if (target != null) { target.IsChecked = true; e.Handled = true; }
+            if (target != null && RouteAvailable(target)) { target.IsChecked = true; e.Handled = true; }
         };
         Lighting.Attach(host.Lighting);
         Fans.Attach(host.Fans);
@@ -62,6 +62,7 @@ public partial class MainWindow : Window
         Closing += OnClosing;
         Closed += (_, _) => { host.Updated -= Render; host.Watched = false; Wifi.Dispose(); };
         StateChanged += (_, _) => { if (WindowState == WindowState.Minimized && host.Settings.MinimizeToTray && screenshotPath == null) ((App)Application.Current).CloseWindowToTray(); };
+        ApplyHardwareAvailability();
         Render();
     }
 
@@ -84,7 +85,12 @@ public partial class MainWindow : Window
         if (NavGpu.IsChecked == true) await GpuFans.ReadAsync();
         if (NavStorage.IsChecked == true) await Storage.ReadAsync();
         if (NavWifi.IsChecked == true) await Wifi.ReadAsync();
-        if (NavLogitech.IsChecked == true) await Logitech.ReadAsync();
+        if (NavLogitech.IsChecked == true)
+        {
+            var args = Environment.GetCommandLineArgs(); var productIndex = Array.IndexOf(args, "--logitech-product");
+            var product = productIndex >= 0 && productIndex + 1 < args.Length && ushort.TryParse(args[productIndex + 1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var id) ? id : (ushort?)null;
+            await Logitech.ReadAsync(product);
+        }
         // Read lighting state when its page is opened.
         if (!Lighting.HasState && NavLighting.IsChecked == true) await Lighting.ReadAsync();
         if (screenshotPath == null) return;
@@ -98,6 +104,8 @@ public partial class MainWindow : Window
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(screenshotPath))!);
         File.WriteAllText(screenshotPath + ".fonts.json", JsonSerializer.Serialize(fontFiles, new JsonSerializerOptions { WriteIndented = true }));
         var arguments = Environment.GetCommandLineArgs();
+        if (arguments.Contains("--hardware-ui-check"))
+            File.WriteAllText(screenshotPath + ".hardware-checks.json", JsonSerializer.Serialize(RunHardwareAvailabilityChecks(), new JsonSerializerOptions { WriteIndented = true }));
         if (Array.IndexOf(arguments, "--settings-navigation-check") >= 0)
             File.WriteAllText(screenshotPath + ".persisted-navigation.json", JsonSerializer.Serialize(await RunActualSettingsNavigationChecksAsync(), new JsonSerializerOptions { WriteIndented = true }));
         if (Array.IndexOf(arguments, "--settings-preference-check") >= 0)
@@ -220,6 +228,8 @@ public partial class MainWindow : Window
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(screenshotPath))!);
         using (var file = File.Create(screenshotPath)) encoder.Save(file);
+        if (arguments.Contains("--hardware-ui-check"))
+            File.WriteAllText(screenshotPath + ".shutdown-checks.json", JsonSerializer.Serialize(new { passed = await host.CheckStopDuringScanAsync(), configurationWrites = 0 }));
         await ((App)Application.Current).ExitAsync();
     }
 
@@ -257,6 +267,7 @@ public partial class MainWindow : Window
 
     private void Render()
     {
+        ApplyHardwareAvailability();
         var sample = host.Fresh;
         var unit = host.Unit;
         var sensors = host.Sensors;
@@ -308,7 +319,7 @@ public partial class MainWindow : Window
         StartButton.Content = requested ? "Stop display" : "Start display";
         DisplayDot.Fill = (Brush)FindResource(outputTone);
         DeviceLabel.Text = status.Sending ? "Sending to LD360" : requested ? status.Title : "Display off";
-        StartupHint.Visibility = StartupCheck.IsChecked == true && AutoDisplayCheck.IsChecked != true ? Visibility.Visible : Visibility.Collapsed;
+        StartupHint.Visibility = host.Hardware.Available(HardwareModule.Cooler) && StartupCheck.IsChecked == true && AutoDisplayCheck.IsChecked != true ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void SetRow(TextBlock value, System.Windows.Shapes.Ellipse dot, TextBlock detail, string text, string tone, string description)
@@ -345,7 +356,7 @@ public partial class MainWindow : Window
         (NavStorage, "ssd tool storage drive health smart "),
         (NavWifi, "wi-fi wifi antenna wireless "),
         (NavUpdates, "updates bios drivers "),
-        (NavLogitech, "logitech mouse g502 "),
+        (NavLogitech, "logitech mouse g102 g203 g502 "),
         (NavSettings, "settings app startup tray windows task scheduler")
     };
 
@@ -356,7 +367,7 @@ public partial class MainWindow : Window
         var matches = 0;
         foreach (var entry in NavigationEntries())
         {
-            var visible = query.Length == 0 || entry.Terms.Contains(query, StringComparison.CurrentCultureIgnoreCase);
+            var visible = RouteAvailable(entry.Button) && (query.Length == 0 || entry.Terms.Contains(query, StringComparison.CurrentCultureIgnoreCase));
             entry.Button.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
             if (visible) matches++;
         }
@@ -393,6 +404,7 @@ public partial class MainWindow : Window
     private async void NavChanged(object sender, RoutedEventArgs e)
     {
         if (DisplayPage == null || SettingsPage == null || Keyboard == null || Lighting == null || Fans == null || GpuFans == null || Storage == null || Wifi == null || Updates == null || Logitech == null) return;
+        if (initialized && sender is RadioButton route && !RouteAvailable(route)) { NavSettings.IsChecked = true; return; }
         if (componentGallery != null)
         {
             ((Panel)componentGallery.Parent).Children.Remove(componentGallery);

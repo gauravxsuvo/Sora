@@ -40,7 +40,8 @@ $after = @(Get-ChildItem -LiteralPath $build -Recurse -File | Get-FileHash | Sel
 Check 'Existing installer evidence unchanged after refusal' (($before | ConvertTo-Json -Compress) -eq ($after | ConvertTo-Json -Compress))
 Refuses 'Output inside source refused' $release (Join-Path $release 'nested-setup') 'inside the source'
 Check 'No nested output created' (-not (Test-Path -LiteralPath (Join-Path $release 'nested-setup')))
-foreach ($name in @('Sora.dll','Sora.Core.dll','Sora.runtimeconfig.json','licenses\LibreHardwareMonitor-MPL-2.0.txt','runtimes\win-x64\lib\net8.0\LibreHardwareMonitorLib.dll','BlackSharp.Core.dll')) {
+$monitorLibrary = if (Test-Path -LiteralPath (Join-Path $release 'LibreHardwareMonitorLib.dll')) { 'LibreHardwareMonitorLib.dll' } else { 'runtimes\win-x64\lib\net8.0\LibreHardwareMonitorLib.dll' }
+foreach ($name in @('Sora.dll','Sora.Core.dll','Sora.runtimeconfig.json','licenses\LibreHardwareMonitor-MPL-2.0.txt',$monitorLibrary,'BlackSharp.Core.dll')) {
     $fixture = Fixture ('missing-' + [IO.Path]::GetFileName($name))
     # Delete only this copied fixture file, after verifying its resolved parent stays inside the fixture.
     $target = [IO.Path]::GetFullPath((Join-Path $fixture $name))
@@ -62,7 +63,8 @@ $linkedSource = Join-Path $root 'linked-source'
 New-Item -ItemType Junction -Path $linkedSource -Target $release | Out-Null
 Refuses 'Linked release source refused' $linkedSource (Join-Path $root 'out-source-link') 'Reparse point'
 $fixture = Fixture 'nested-link'
-New-Item -ItemType Junction -Path (Join-Path $fixture 'linked-runtime') -Target (Join-Path $release 'runtimes') | Out-Null
+$nestedLinkTarget = if (Test-Path -LiteralPath (Join-Path $release 'runtimes')) { Join-Path $release 'runtimes' } else { Join-Path $release 'licenses' }
+New-Item -ItemType Junction -Path (Join-Path $fixture 'linked-runtime') -Target $nestedLinkTarget | Out-Null
 Refuses 'Nested payload junction refused before traversal' $fixture (Join-Path $root 'out-nested-link') 'reparse point'
 $realOutput = Join-Path $root 'real-output'
 New-Item -ItemType Directory -Path $realOutput | Out-Null
@@ -79,5 +81,5 @@ $result = [ordered]@{
 $bytes = [Text.UTF8Encoding]::new($false).GetBytes(($result | ConvertTo-Json -Depth 8))
 $stream = [IO.FileStream]::new((Join-Path $root 'result.json'), [IO.FileMode]::CreateNew, [IO.FileAccess]::Write)
 try { $stream.Write($bytes,0,$bytes.Length); $stream.Flush($true) } finally { $stream.Dispose() }
-$result | Select-Object passed,count | ConvertTo-Json
+[pscustomobject]@{ passed = $result.passed; count = $checks.Count } | ConvertTo-Json
 if (-not $result.passed) { throw 'Installer package guard checks failed.' }

@@ -1,4 +1,4 @@
-# Third-party components in Sora 0.3.1
+# Third-party components in Sora
 
 Logitech device artwork: Sora can import the G502 HERO PNG and zone metadata from the user's installed G HUB into `data/logitech/artwork`. These locally cached graphics belong to Logitech and are not embedded in the executable or source repository. Rendering uses the original PNG and metadata; Sora does not require the G HUB service to display the cached image.
 
@@ -8,7 +8,7 @@ https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/tree/v0.9.6
 
 Pinned source revision: `3d331e3370efb858411f19511373eff65a218701`.
 
-The full MPL-2.0 license is included in `licenses/LibreHardwareMonitor-MPL-2.0.txt`. A local source checkout is retained at `E:\Sora\vendor\LibreHardwareMonitor`.
+The full MPL-2.0 license is included in `licenses/LibreHardwareMonitor-MPL-2.0.txt`.
 
 The WPF interface uses **MahApps.Metro.IconPacks.Lucide 6.2.1** (MIT) to render consistent Lucide vector icons. Lucide icons are licensed under ISC, with icons derived from Feather retaining their MIT attribution. See https://github.com/MahApps/MahApps.Metro.IconPacks and https://lucide.dev/license.
 
@@ -16,8 +16,8 @@ The interface embeds unmodified static **Inter 4.1** font files, copyright the I
 
 NuGet dependency versions, license metadata, project links, and available packaged license/notice texts are included in `licenses/dependencies.md` and its sibling directories. Exact package hashes and versions are recorded in the project's `packages.lock.json` files.
 
-PawnIO is an independently installed driver on this PC. Sora does not bundle, install, uninstall, or modify that driver. PawnIO project information: https://pawnio.eu/
+PawnIO is an independently installed driver. Sora does not bundle, install, uninstall, or modify that driver. PawnIO project information: https://pawnio.eu/
 
 Microsoft .NET and the Windows Desktop Runtime are installed separately. No DeepCool executables, HWiNFO SDK binaries, or DeepCool sensor configuration files are included in this release.
 
-Kreo support was implemented using static inspection of the locally installed Kreo KB Hub and device readback. The release includes independently implemented HID handling and factual model definitions (USB identifiers, key positions, and effect identifiers). It does not include Kreo executables, DLLs, artwork, skins, or firmware. REA (MIT licensed) is an analysis tool in the development workspace, not a runtime dependency or part of the release.
+Kreo support includes independently implemented HID handling and factual model definitions. No Kreo executable, DLL, artwork, skin, or firmware is bundled.

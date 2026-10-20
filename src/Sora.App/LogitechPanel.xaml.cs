@@ -43,27 +43,34 @@ public partial class LogitechPanel : UserControl
         }
         LightPreview.ZoneSelected += SelectPreviewZone; MousePreview.ZoneSelected += SelectPreviewZone;
         var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-        timer.Tick += async (_, _) => { if (!IsVisible) return; CheckConflict(); await PollLiveAsync(); SetEnabled(); };
+        timer.Tick += async (_, _) => { if (!IsVisible) return; CheckConflict(); await RefreshConnectionsAsync(); await PollLiveAsync(); SetEnabled(); };
         IsVisibleChanged += (_, _) => { if (IsVisible) { CheckConflict(); timer.Start(); } else timer.Stop(); };
         Unloaded += (_, _) => timer.Stop();
         SetEnabled();
     }
 
-    public async Task ReadAsync()
+    public async Task ReadAsync(ushort? preferredProductId = null)
     {
         if (IsBusy) return;
         if (HasPendingEdits) { ShowError("Apply or discard your pending edits before refreshing."); return; }
         await RunAsync(async () =>
         {
+            var previousPath = devices.ElementAtOrDefault(selectedDevice)?.Path;
             devices = await Task.Run(LogitechDevice.Enumerate);
-            rendering = true; DevicePicker.ItemsSource = devices.Select(d => "G502 HERO · " + (string.IsNullOrWhiteSpace(d.SerialNumber) ? $"Mouse {Array.IndexOf(devices, d) + 1}" : d.SerialNumber[^Math.Min(4, d.SerialNumber.Length)..])).ToArray();
-            selectedDevice = devices.Length > 0 ? 0 : -1; DevicePicker.SelectedIndex = selectedDevice; rendering = false;
+            rendering = true; DevicePicker.ItemsSource = devices.Select(d => LogitechModels.Name(d) + " · " + (Array.IndexOf(devices, d) + 1)).ToArray();
+            selectedDevice = Array.FindIndex(devices, d => d.Path.Equals(previousPath, StringComparison.OrdinalIgnoreCase));
+            if (preferredProductId.HasValue) selectedDevice = Array.FindIndex(devices, d => d.ProductId == preferredProductId.Value);
+            if (selectedDevice < 0 && devices.Length > 0) selectedDevice = 0;
+            DevicePicker.SelectedIndex = selectedDevice; rendering = false;
             if (selectedDevice < 0)
             {
                 snapshot = null; lightDrafts.Clear(); ConnectionText.Text = "No supported Logitech mouse found";
-                DeviceTitle.Text = "Connect your mouse"; DeviceSubtitle.Text = "G502 HERO · wired USB"; ModeText.Text = "Disconnected";
-                DpiValue.Text = "—"; ConflictText.Visibility = Visibility.Collapsed; DetailsText.Text = "Connect a wired G502 HERO and refresh. Other Logitech models and wireless receivers are not yet supported.";
-                EditStatus.Text = "Connect a G502 HERO over USB, then refresh."; StatusChanged?.Invoke("Mouse · Not connected");
+                hardwareSettings = null; controlDraft = null; controlBaseline = "";
+                SensitivityTab.Visibility = AssignmentsTab.Visibility = MacrosTab.Visibility = LightingTab.Visibility = MemoryTab.Visibility = Visibility.Collapsed;
+                DevicePreferencesCard.Visibility = DeviceCoverageCard.Visibility = Visibility.Collapsed; Sections.SelectedItem = DetailsTab;
+                DeviceTitle.Text = "Connect your mouse"; DeviceSubtitle.Text = "Wired Logitech gaming mouse"; ModeText.Text = "Disconnected";
+                DpiValue.Text = "—"; ConflictText.Visibility = Visibility.Collapsed; DetailsText.Text = "Connect a G102, G203 or G502 HERO over USB, then refresh. Wireless receivers are not supported.";
+                EditStatus.Text = "Connect your mouse over USB, then refresh."; StatusChanged?.Invoke("Mouse · Not connected");
                 MousePreview.Connected = LightPreview.Connected = false; MousePreview.InvalidateVisual(); LightPreview.InvalidateVisual();
                 MemorySlots.Children.Clear(); return;
             }
@@ -71,15 +78,38 @@ public partial class LogitechPanel : UserControl
         }, "Reading Logitech mouse…");
     }
 
+    private bool checkingConnections;
+    private async Task RefreshConnectionsAsync()
+    {
+        if (checkingConnections || IsBusy || pollingLive) return;
+        checkingConnections = true;
+        try
+        {
+            var connected = await Task.Run(LogitechDevice.Enumerate);
+            if (connected.Select(d => d.Path).SequenceEqual(devices.Select(d => d.Path), StringComparer.OrdinalIgnoreCase)) return;
+            if (HasPendingEdits)
+            {
+                ConnectionText.Text = "Mouse connections changed · apply or discard edits before refreshing";
+                return;
+            }
+            await ReadAsync();
+        }
+        catch (Exception error) when (error is IOException or System.ComponentModel.Win32Exception or UnauthorizedAccessException)
+        {
+            ConnectionText.Text = "Windows could not check mouse connections. Refresh to retry.";
+        }
+        finally { checkingConnections = false; }
+    }
+
     private async Task LoadSelectedAsync()
     {
         snapshot = null; lightDrafts.Clear(); invalidLight = false;
         ConnectionText.Text = "Reading mouse…"; DpiValue.Text = "—"; ModeText.Text = "Checking";
-        snapshot = await WithDeviceAsync(d => d.ReadAsync());
+        snapshot = await WithDeviceAsync(async d => { using var timeout = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(15)); return await d.ReadAsync(timeout.Token); });
         draftDpi = snapshot.Sensors.SingleOrDefault()?.Dpi ?? 0; draftRate = snapshot.ReportRate ?? 0;
         lightDrafts.Clear(); foreach (var zone in snapshot.Lighting ?? []) lightDrafts[zone.Index] = zone.State.ToArray();
         rendering = true;
-        DeviceTitle.Text = snapshot.Name; DeviceSubtitle.Text = "Wired · USB 046D:C08B · HID++ " + snapshot.Protocol;
+        DeviceTitle.Text = snapshot.Name; DeviceSubtitle.Text = $"Wired · USB 046D:{snapshot.ProductId:X4} · HID++ " + snapshot.Protocol;
         ConnectionText.Text = "Connected directly over USB"; ModeText.Text = snapshot.OnboardMode == 1 ? "Firmware control" : "Software control";
         ConflictText.Text = string.Join("\n", snapshot.Warnings); ConflictText.Visibility = snapshot.Warnings.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         var sensor = snapshot.Sensors.SingleOrDefault();
@@ -97,21 +127,32 @@ public partial class LogitechPanel : UserControl
             button.Click += (_, _) => DpiSlider.Value = (int)button.Tag; DpiStops.Children.Add(button);
         }
         ZonePicker.ItemsSource = snapshot.Lighting?.Select(z => z.Index == 0 ? "DPI LEDs" : z.Index == 1 ? "Logo" : z.Name).ToArray(); ZonePicker.SelectedIndex = snapshot.Lighting?.Length > 1 ? 1 : snapshot.Lighting?.Length > 0 ? 0 : -1;
-        DetailsText.Text = $"{snapshot.Name}\nUSB 046D:{snapshot.ProductId:X4} · HID++ {snapshot.Protocol}\nDevice identity: {snapshot.Identity}\n{snapshot.Features.Length} discovered features\n\n" + string.Join("\n", snapshot.Features.Select(f => $"0x{f.Id:X4} · index {f.Index} · version {f.Version}"));
+        DetailsText.Text = $"{snapshot.Name}\nUSB 046D:{snapshot.ProductId:X4} · HID++ {snapshot.Protocol}\n" +
+            (sensor == null ? "DPI reading unavailable\n" : $"Current DPI: {sensor.Dpi:N0}\nSupported DPI: {sensor.Minimum:N0} – {sensor.Maximum:N0}\n") +
+            (snapshot.ReportRate is { } rate ? $"Report rate: {rate:N0} Hz\n" : "") +
+            (LogitechModels.HasG502Controls(snapshot) ? "" : "\nDevice detected. Advanced controls for this model are not yet qualified.\n") +
+            $"\n{snapshot.Features.Length} discovered features\n" + string.Join("\n", snapshot.Features.Select(f => $"0x{f.Id:X4} · index {f.Index} · version {f.Version}"));
         MemorySlots.Children.Clear(); MemoryStatus.Text = "Read the five onboard slots to inspect saved assignments. Software-mode G HUB assignments are separate from onboard memory.";
+        DetectedMouseReading.Text = sensor == null ? "DPI reading unavailable" : $"Live DPI: {sensor.Dpi:N0}";
         rendering = false; PopulateZone(); LoadPresets(); UpdatePreview();
+        var hasControls = LogitechModels.HasG502Controls(snapshot);
+        SensitivityTab.Visibility = AssignmentsTab.Visibility = MacrosTab.Visibility = hasControls ? Visibility.Visible : Visibility.Collapsed;
+        MemoryTab.Visibility = hasControls ? Visibility.Visible : Visibility.Collapsed;
+        LightingTab.Visibility = hasControls && snapshot.Lighting?.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        MemoryReadButton.Visibility = hasControls ? Visibility.Visible : Visibility.Collapsed;
+        if (!hasControls) Sections.SelectedItem = DetailsTab;
         LoadControlEditor();
         LoadReactiveEditor();
         CheckConflict();
         await ReadHardwareSettingsAsync();
-        StatusChanged?.Invoke($"G502 HERO · {draftDpi:N0} DPI");
+        StatusChanged?.Invoke($"{snapshot.Name} · {draftDpi:N0} DPI");
         EditStatus.Text = "Settings read from your mouse."; ErrorText.Visibility = Visibility.Collapsed;
     }
 
     private async Task<T> WithDeviceAsync<T>(Func<LogitechDevice, Task<T>> action)
     {
         var info = devices.ElementAtOrDefault(selectedDevice) ?? throw new IOException("No Logitech mouse is selected.");
-        if (controls != null) return await controls.UseDeviceAsync(action);
+        if (controls != null && info.ProductId == 0xc08b) return await controls.UseDeviceAsync(action, info);
         return await Task.Run(async () => { await using var device = new LogitechDevice(info); return await action(device); });
     }
 
@@ -142,7 +183,7 @@ public partial class LogitechPanel : UserControl
         MacroPicker.IsEnabled = !IsBusy && MacroPicker.HasItems;
         ControlState.SetPlaceholder(MacroPicker, MacroPicker.HasItems ? "Choose a saved macro" : "No saved macros");
         ZonePicker.IsEnabled = !IsBusy && LinkZonesCheck.IsChecked != true;
-        ApplyDeviceSettingsButton.IsEnabled = !IsBusy && snapshot != null && hardwareSettings != null && !ghubRunning;
+        ApplyDeviceSettingsButton.IsEnabled = !IsBusy && LogitechModels.HasG502Preferences(snapshot) && hardwareSettings != null && !ghubRunning;
         DpiAlwaysOnCheck.IsEnabled = StartupEffectCheck.IsEnabled = !IsBusy && snapshot != null && hardwareSettings != null;
         OriginalButton.IsEnabled = !IsBusy && OriginalPath is { } original && File.Exists(original);
         Sections.IsEnabled = !IsBusy; SensitivityEditor.IsEnabled = snapshot?.Sensors.Length == 1; LightEditor.IsEnabled = snapshot?.Lighting?.Length > 0;
@@ -152,10 +193,10 @@ public partial class LogitechPanel : UserControl
         var profileSection = SensitivityTab.IsSelected || AssignmentsTab.IsSelected || MacrosTab.IsSelected;
         var editorVisible = lighting || profileSection ? Visibility.Visible : Visibility.Collapsed;
         ApplyButton.Visibility = OriginalButton.Visibility = editorVisible;
-        DiscardButton.Visibility = editorVisible == Visibility.Visible || DetailsTab.IsSelected ? Visibility.Visible : Visibility.Collapsed;
+        DiscardButton.Visibility = LogitechModels.HasG502Controls(snapshot) && (editorVisible == Visibility.Visible || DetailsTab.IsSelected) ? Visibility.Visible : Visibility.Collapsed;
         var dirty = lighting ? zone != null && LightingDirty(zone.Index) : SensitivityDirty || controls?.Running != true;
         var valid = lighting ? zone != null && TryLightState(out _) : ValidSensitivity();
-        ApplyButton.IsEnabled = !IsBusy && dirty && valid && (lighting || profileSection) && !ghubRunning;
+        ApplyButton.IsEnabled = !IsBusy && dirty && valid && LogitechModels.HasG502Controls(snapshot) && (lighting || profileSection) && !ghubRunning;
         DiscardButton.IsEnabled = !IsBusy && (HasPendingEdits || ErrorText.Tag is true);
         ApplyButton.Content = IsBusy ? "Working…" : lighting ? "Apply lighting" : "Apply profile";
         ApplyButton.ToolTip = ghubRunning ? "Exit G HUB from its tray menu before applying." : snapshot?.OnboardMode == 1 && !lighting ? "Sora takes software control on Apply. Your saved onboard slots are preserved." : "Apply and verify by device readback.";
@@ -177,7 +218,7 @@ public partial class LogitechPanel : UserControl
         if (snapshot == null) return;
         var otherWarnings = snapshot.Warnings.Where(w => !w.StartsWith("G HUB agent")).ToList();
         if (ghubRunning) otherWarnings.Insert(0, "G HUB is running. Exit it from its tray menu to apply Sora settings.");
-        else if (snapshot.OnboardMode == 1 && controls?.Running != true) otherWarnings.Insert(0, "The mouse is using firmware control. Apply profile lets Sora take software control; saved onboard slots stay unchanged.");
+        else if (LogitechModels.HasG502Controls(snapshot) && snapshot.OnboardMode == 1 && controls?.Running != true) otherWarnings.Insert(0, "The mouse is using firmware control. Apply profile lets Sora take software control; saved onboard slots stay unchanged.");
         ConflictText.Text = string.Join("\n", otherWarnings); ConflictText.Visibility = otherWarnings.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 

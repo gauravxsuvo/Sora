@@ -24,12 +24,15 @@ public sealed class LogitechDevice : IAsyncDisposable
     private readonly Channel<ushort> buttons = Channel.CreateBounded<ushort>(new BoundedChannelOptions(256) { FullMode = BoundedChannelFullMode.Wait, SingleReader = true, SingleWriter = false });
     private byte spyFeature;
     public ChannelReader<ushort> ButtonReports => buttons.Reader;
+    public bool Matches(DeviceInfo other) => device.ProductId == other.ProductId &&
+        LogitechModels.PhysicalIdentity(device.Path).Equals(LogitechModels.PhysicalIdentity(other.Path), StringComparison.OrdinalIgnoreCase);
 
-    public static DeviceInfo[] Enumerate() => HidDevice.FindLogitech().Where(d => d.UsagePage == 0xff00 && d.Usage == 2 && d.OutputReportLength == 20 && d.ProductId == 0xc08b).ToArray();
+    public static DeviceInfo[] Enumerate() => LogitechModels.ConfigurationInterfaces(HidDevice.FindLogitech());
+    public static DeviceInfo[] EnumerateG502() => Enumerate().Where(d => d.ProductId == 0xc08b).ToArray();
 
     public LogitechDevice(DeviceInfo device)
     {
-        if (device.VendorId != 0x046d || device.ProductId != 0xc08b || device.OutputReportLength != 20) throw new NotSupportedException("Independent controls currently support the wired G502 HERO (046D:C08B).");
+        if (!LogitechModels.IsConfigurationInterface(device)) throw new NotSupportedException("This device does not expose a supported wired Logitech configuration interface.");
         this.device = device;
         var peer = HidDevice.FindLogitech().SingleOrDefault(d => d.ProductId == device.ProductId && d.SerialNumber == device.SerialNumber && d.UsagePage == 0xff00 && d.Usage == 1 && d.OutputReportLength == 7 && PhysicalPath(d.Path) == PhysicalPath(device.Path))
             ?? throw new IOException("The mouse's short HID++ interface is unavailable.");
@@ -172,7 +175,7 @@ public sealed class LogitechDevice : IAsyncDisposable
             catch (IOException error) { warnings.Add("Lighting read unavailable: " + error.Message); }
         }
         if (IsGHubRunning()) warnings.Add("G HUB agent is running. Exit G HUB before applying Sora settings to avoid competing changes.");
-        return new("G502 HERO", string.IsNullOrWhiteSpace(device.SerialNumber) ? device.Path : device.SerialNumber, device.ProductId,
+        return new(LogitechModels.Name(device), string.IsNullOrWhiteSpace(device.SerialNumber) ? device.Path : device.SerialNumber, device.ProductId,
             $"{version[0]}.{version[1]}", features.ToArray(), sensors.ToArray(), rate, rates, mode, warnings.ToArray(), zones.ToArray());
     }
 
@@ -192,6 +195,7 @@ public sealed class LogitechDevice : IAsyncDisposable
 
     public async Task<byte[]> ReadButtonMapAsync(LogitechSnapshot snapshot, CancellationToken token = default)
     {
+        if (!LogitechModels.HasG502Controls(snapshot)) throw new NotSupportedException("Button controls are unavailable for this model.");
         var index = snapshot.Features.Single(f => f.Id == 0x8110).Index;
         var count = await RequestAsync(index, 0, token: token);
         if (count[0] != 11) throw new NotSupportedException("This device's button layout is not the G502 HERO layout.");
@@ -200,6 +204,7 @@ public sealed class LogitechDevice : IAsyncDisposable
     }
     public async Task WriteButtonMapAsync(LogitechSnapshot snapshot, byte[] map, CancellationToken token = default)
     {
+        if (!LogitechModels.HasG502Controls(snapshot)) throw new NotSupportedException("Button controls are unavailable for this model.");
         if (map.Length != 16 || map[0] != 1 || map.Any(b => b > 16)) throw new InvalidDataException("Invalid G502 button forwarding map; native primary click must be preserved.");
         var index = snapshot.Features.Single(f => f.Id == 0x8110).Index;
         await RequestAsync(index, 4, map, token);
@@ -294,6 +299,7 @@ public sealed class LogitechDevice : IAsyncDisposable
 
     public async Task<LogitechOnboardSlot[]> ReadOnboardAsync(LogitechSnapshot snapshot, CancellationToken token = default)
     {
+        if (snapshot.ProductId != 0xc08b) throw new NotSupportedException("Onboard profile inspection is unavailable for this model.");
         var feature = snapshot.Features.Single(f => f.Id == 0x8100).Index;
         var info = await RequestAsync(feature, 0, token: token);
         var size = info[7] << 8 | info[8]; var count = info[3]; var buttons = info[5];

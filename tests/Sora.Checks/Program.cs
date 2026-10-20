@@ -3,6 +3,23 @@ using LibreHardwareMonitor.Hardware;
 using System.Text.Json;
 using Sora.Core;
 
+if (args.Contains("--hardware-detection"))
+{
+    if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
+    Console.WriteLine(JsonSerializer.Serialize(HardwareDiscovery.Capture()));
+    var devices = HidDevice.FindLogitech();
+    foreach (var info in LogitechModels.ConfigurationInterfaces(devices))
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        await using var device = new LogitechDevice(info);
+        var snapshot = await device.ReadAsync(timeout.Token);
+        Console.WriteLine(JsonSerializer.Serialize(new { snapshot.Name, snapshot.ProductId, snapshot.Protocol, snapshot.Sensors, snapshot.ReportRate,
+            Features = snapshot.Features.Select(f => f.Id), SoftwareControls = LogitechModels.HasG502Controls(snapshot), ConfigurationWrites = 0 }));
+    }
+    if (devices.Count == 0) Console.WriteLine("No Logitech HID interfaces found.");
+    return 0;
+}
+
 if (args.Contains("--app-update-checks"))
 {
     await ApplicationUpdateChecks.Run((condition, message) => { if (!condition) throw new Exception(message); });
@@ -752,6 +769,7 @@ await Check("Wi-Fi channels, signal freshness, antenna comparisons and CSV expor
 await Check("Gigabyte updates: exact board, GCC driver matching, safe links", () => { UpdateChecks.Run(Require); return Task.CompletedTask; });
 await Check("Hardware maintenance: exact firmware advisory identity and reviewed support routes", () => { HardwareMaintenanceChecks.Run(Require); return Task.CompletedTask; });
 
+await Check("Hardware discovery and Logitech model/capability isolation", () => { HardwareDiscoveryChecks.Run(Require); return Task.CompletedTask; });
 await Check("Logitech HID++ correlation, captured DPI/lighting, onboard CRC and preset validation", () => { LogitechChecks.Run(Require); return Task.CompletedTask; });
 await Check("Logitech DPI Shift release, stage buttons, G-Shift layers and macro cancellation", LogitechRuntimeChecks.Run);
 await Check("Logitech standard buttons stay native, remaps do not double-inject and held routing changes are refused", LogitechButtonRoutingChecks.Run);
