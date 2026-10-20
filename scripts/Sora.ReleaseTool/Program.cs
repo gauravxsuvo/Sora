@@ -38,7 +38,7 @@ try
         if (parsedVersion.Channel != policy.Channel) throw new IOException("Release version does not match the requested signing channel.");
         var fileVersion = FileVersionInfo.GetVersionInfo(installer);
         if (fileVersion.ProductName?.Trim() != "Sora" || new Version(fileVersion.FileMajorPart, fileVersion.FileMinorPart, fileVersion.FileBuildPart) != parsedVersion.Number ||
-            ReleaseVersion.Parse((fileVersion.ProductVersion ?? "").Split('+')[0]) != parsedVersion)
+            ReleaseVersion.Parse((fileVersion.ProductVersion ?? "").Trim().Split('+')[0]) != parsedVersion)
             throw new IOException("The installer product/version does not match this release.");
         using var key = ECDsa.Create(); key.ImportFromPem(File.ReadAllText(signingKeyPath));
         var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());

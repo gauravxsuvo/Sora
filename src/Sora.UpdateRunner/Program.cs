@@ -126,7 +126,7 @@ internal static class Program
     {
         UpdatePaths.RejectLinks(UpdatePaths.InstallDirectory);
         var version = FileVersionInfo.GetVersionInfo(UpdatePaths.InstalledExe);
-        var product = ReleaseVersion.Parse((version.ProductVersion ?? "").Split('+')[0]);
+        var product = ReleaseVersion.Parse((version.ProductVersion ?? "").Trim().Split('+')[0]);
         if (product.Number != new Version(version.FileMajorPart, version.FileMinorPart, version.FileBuildPart)) throw new IOException("Installed Sora version metadata is inconsistent.");
         return product;
     }
