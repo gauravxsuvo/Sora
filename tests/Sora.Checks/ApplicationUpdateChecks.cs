@@ -31,6 +31,21 @@ internal static class ApplicationUpdateChecks
         require(Verify(release) == release, "A valid signed release is accepted");
         require(ReleaseFeed.ParseVersion("0.12.0") > ReleaseFeed.ParseVersion("0.9.10"), "Numeric versions compare correctly");
         foreach (var invalid in new[] { "v0.12.0", "0.12", "0.12.0-beta", "0.012.0", "0.12.0.0", "70000.1.1" }) Reject(() => ReleaseFeed.ParseVersion(invalid), "Malformed version rejected: " + invalid);
+        var betaPolicy = policy.ForChannel("beta");
+        require(betaPolicy.FeedUrl == "https://sora.portways.app/channels/beta.json" && betaPolicy.PublicKeys == policy.PublicKeys, "Channels use the same pinned trust keys and independent feed paths");
+        Reject(() => policy.ForChannel("preview/../../stable"), "Unknown channels are rejected");
+        require(ReleaseVersion.Parse("0.13.0-beta.10").CompareTo(ReleaseVersion.Parse("0.13.0-beta.2")) > 0, "Beta counters compare numerically");
+        require(ReleaseVersion.Parse("0.13.0").CompareTo(ReleaseVersion.Parse("0.13.0-beta.99")) > 0, "Stable follows every beta with the same numeric version");
+        require(ReleaseVersion.Parse("0.14.0-beta.1").CompareTo(ReleaseVersion.Parse("0.13.9")) > 0, "Higher numeric versions precede suffix ordering");
+        require(ReleaseVersion.Parse("0.13.0-beta.3") == ReleaseVersion.Parse("0.13.0-beta.3"), "Version identity retains the beta counter for post-install verification");
+        foreach (var invalid in new[] { "0.13.0-beta.0", "0.13.0-beta.01", "0.13.0-beta.65536", "0.13.0-beta.2.1", "0.13.0-rc.1", "0.13.0-beta.3+hash", "0.013.0-beta.1", "" }) Reject(() => ReleaseVersion.Parse(invalid), "Malformed prerelease rejected: " + invalid);
+        var beta = release with { Channel = "beta", Sequence = 1, Version = "0.13.0-beta.3", MinimumUpdaterVersion = "1.1.0",
+            InstallerUrl = "https://sora.portways.app/releases/0.13.0-beta.3/win-x64/Sora-Setup-0.13.0-beta.3-x64.exe" };
+        require(ReleaseFeed.Verify(Sign(beta), betaPolicy, now, 0) == beta, "A signed beta feed is accepted only with beta policy");
+        Reject(() => ReleaseFeed.Verify(Sign(beta), policy, now, 0), "Beta metadata cannot enter the stable channel");
+        Reject(() => ReleaseFeed.Verify(Sign(release), betaPolicy, now, 0), "Stable metadata cannot enter the beta channel");
+        Reject(() => ReleaseFeed.Verify(Sign(beta), betaPolicy, now, 2), "Beta replay protection remains enforced");
+        Reject(() => ReleaseFeed.Verify(Sign(beta with { Version = "0.13.0" }), betaPolicy, now, 0), "Numeric versions cannot masquerade as beta releases");
         Reject(() => ReleaseFeed.Verify(Sign(release, "unknown"), policy, now, 0), "Unknown key rejected");
         Reject(() => ReleaseFeed.Verify(Sign(release, algorithm: "none"), policy, now, 0), "Unknown algorithm rejected");
         var envelope = JsonSerializer.Deserialize<ReleaseEnvelope>(Sign(release), UpdatePolicy.Json)!;
@@ -79,6 +94,21 @@ internal static class ApplicationUpdateChecks
             try { await ReleaseDownload.DownloadAsync(http, policy, release, badPath, null, cancellation.Token); require(false, "Cancellation observed"); } catch (OperationCanceledException) { }
             var statePath = Path.Combine(root, "state.json");
             var state = new UpdateState(false, 12, now, "0.12.0", "0.12.0"); state.Save(statePath);
+            var channels = new UpdateChannelSettings(root);
+            require(channels.ReadChannel("0.13.0-beta.3") == "beta" && channels.ReadChannel("0.13.0") == "stable", "Build type determines the first-run channel");
+            state.Save(channels.StatePath("stable"));
+            var initialBeta = channels.Load("beta");
+            require(!initialBeta.AutomaticChecks && initialBeta.HighestSequence == 0 && initialBeta.LastChecked == null && initialBeta.SkippedVersion == null, "Beta inherits automatic-check opt-out without inheriting stable replay/skip state");
+            var betaState = new UpdateState(true, 2, now, "0.13.0-beta.3", null);
+            betaState.Save(channels.StatePath("beta")); channels.SaveChannel("beta");
+            require(channels.ReadChannel("0.13.0") == "beta" && channels.Load("beta") == betaState && channels.Load("stable") == state, "Channel preference and independent state survive restart");
+            channels.SaveChannel("stable");
+            require(channels.Load("stable") == state && channels.Load("beta") == betaState, "Switching channels does not reset either replay counter");
+            File.WriteAllText(Path.Combine(root, "app-update-channel.json"), "\"unknown\"");
+            Reject(() => channels.ReadChannel("0.13.0-beta.3"), "Corrupt channel preferences fail closed");
+            var betaPath = Path.Combine(root, "beta.exe");
+            await ReleaseDownload.DownloadAsync(http, betaPolicy, beta, betaPath, null, default);
+            ReleaseDownload.VerifyFile(betaPath, beta);
             require(UpdateState.Load(statePath) == state, "Updater preferences and replay state survive restart");
             File.WriteAllText(statePath, "broken");
             Reject(() => UpdateState.Load(statePath), "Corrupt replay state is not silently reset");

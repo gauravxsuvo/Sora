@@ -16,6 +16,20 @@ public partial class App : Application
     private Mutex? instance;
     protected override async void OnStartup(StartupEventArgs e)
     {
+        if (e.Args.Contains("--application-update-ui-check"))
+        {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            var index = Array.IndexOf(e.Args, "--output");
+            if (index < 0 || index + 1 >= e.Args.Length) { Shutdown(2); return; }
+            try { Shutdown(await ApplicationUpdateUiCheck.RunAsync(e.Args[index + 1]) ? 0 : 1); }
+            catch (Exception error)
+            {
+                var output = e.Args[index + 1];
+                if (!File.Exists(output)) File.WriteAllText(output, JsonSerializer.Serialize(new { passed = false, error = error.ToString() }));
+                Shutdown(1);
+            }
+            return;
+        }
         if (e.Args.Contains("--legion-ui-check"))
         {
             ShutdownMode = ShutdownMode.OnExplicitShutdown;

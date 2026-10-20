@@ -2,12 +2,19 @@ name: Build Sora release candidate
 on:
   workflow_dispatch:
     inputs:
+      channel:
+        description: 'Signed update channel (beta never promotes stable)'
+        type: choice
+        options:
+          - stable
+          - beta
+        default: stable
       sequence:
         description: 'Increasing feed sequence (leave blank to build without signing)'
         required: false
         type: string
       promote:
-        description: 'Upload and promote this already-qualified release to stable'
+        description: 'Upload and promote this already-qualified release to the selected channel'
         type: boolean
         default: false
 permissions:
@@ -58,15 +65,35 @@ jobs:
         env:
           SORA_RELEASE_PRIVATE_KEY: ${{ secrets.SORA_RELEASE_PRIVATE_KEY }}
           SORA_FEED_SEQUENCE: ${{ inputs.sequence }}
+          SORA_RELEASE_CHANNEL: ${{ inputs.channel }}
         run: |
           if (-not $env:SORA_RELEASE_PRIVATE_KEY) { throw 'Set the release-signing secret, or build without a feed sequence.' }
           $version = ([xml](Get-Content src/Sora.App/Sora.App.csproj)).Project.PropertyGroup.Version | Where-Object { $_ }
           $keyFile = Join-Path $env:RUNNER_TEMP 'sora-release-key.pem'
           try {
             [IO.File]::WriteAllText($keyFile, $env:SORA_RELEASE_PRIVATE_KEY)
-            dotnet run --project scripts/Sora.ReleaseTool -- prepare "artifacts/release/setup/Sora-Setup-$version-x64.exe" $version $env:SORA_FEED_SEQUENCE "docs/Sora-$version.md" release/update-policy.json $keyFile artifacts/release/metadata
+            $prepareCommand = if ($env:SORA_RELEASE_CHANNEL -eq 'beta') { 'prepare-beta' } elseif ($env:SORA_RELEASE_CHANNEL -eq 'stable') { 'prepare' } else { throw 'Unknown release channel' }
+            dotnet run --project scripts/Sora.ReleaseTool -- $prepareCommand "artifacts/release/setup/Sora-Setup-$version-x64.exe" $version $env:SORA_FEED_SEQUENCE "docs/Sora-$version.md" release/update-policy.json $keyFile artifacts/release/metadata
             if ($LASTEXITCODE -ne 0) { throw 'Release metadata signing failed' }
           } finally { if (Test-Path -LiteralPath $keyFile) { Remove-Item -LiteralPath $keyFile -Force } }
+      - name: Qualify these exact installer bytes before promotion
+        if: inputs.promote
+        shell: pwsh
+        run: |
+          $index = Invoke-RestMethod https://builds.dotnet.microsoft.com/dotnet/release-metadata/8.0/releases.json
+          $runtime = $index.releases[0].windowsdesktop.files | Where-Object { $_.rid -eq 'win-x64' -and $_.name -like '*.exe' }
+          if (@($runtime).Count -ne 1) { throw 'Expected one official x64 Windows Desktop installer' }
+          $runtimeFile = Join-Path $env:RUNNER_TEMP 'windowsdesktop-runtime.exe'
+          Invoke-WebRequest $runtime.url -OutFile $runtimeFile
+          if ((Get-FileHash $runtimeFile -Algorithm SHA512).Hash -ne $runtime.hash) { throw 'Microsoft runtime hash mismatch' }
+          $signature = Get-AuthenticodeSignature $runtimeFile
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') { throw 'Invalid Microsoft runtime signature' }
+          $process = Start-Process $runtimeFile -ArgumentList '/install /quiet /norestart' -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -notin @(0,3010)) { throw 'Runtime install failed' }
+          $version = ([xml](Get-Content src/Sora.App/Sora.App.csproj)).Project.PropertyGroup.Version | Where-Object { $_ }
+          $installer = "artifacts/release/setup/Sora-Setup-$version-x64.exe"
+          $sha256 = (Get-FileHash $installer -Algorithm SHA256).Hash
+          ./scripts/Test-ReleaseLifecycle.ps1 -Version $version -Sha256 $sha256 -CandidateInstaller $installer -ArtifactDirectory artifacts/installed-lifecycle
       - name: Upload and promote
         if: inputs.promote
         shell: pwsh
@@ -77,12 +104,15 @@ jobs:
           S3_SECRET_ACCESS_KEY: ${{ secrets.SORA_RELEASE_S3_SECRET_ACCESS_KEY }}
           S3_REGION: auto
           S3_FORCE_PATH_STYLE: 'true'
+          SORA_RELEASE_CHANNEL: ${{ inputs.channel }}
         run: |
-          if (-not (Test-Path artifacts/release/metadata/stable.json)) { throw 'A signed feed sequence is required for promotion.' }
+          if ($env:SORA_RELEASE_CHANNEL -notin @('stable','beta')) { throw 'Unknown release channel' }
+          $feedPath = "artifacts/release/metadata/$env:SORA_RELEASE_CHANNEL.json"
+          if (-not (Test-Path $feedPath)) { throw 'A signed feed sequence is required for promotion.' }
           $version = ([xml](Get-Content src/Sora.App/Sora.App.csproj)).Project.PropertyGroup.Version | Where-Object { $_ }
-          node web/sora-downloads/publish-release.mjs upload "artifacts/release/setup/Sora-Setup-$version-x64.exe" artifacts/release/metadata/stable.json
+          node web/sora-downloads/publish-release.mjs upload "artifacts/release/setup/Sora-Setup-$version-x64.exe" $feedPath $env:SORA_RELEASE_CHANNEL
           if ($LASTEXITCODE -ne 0) { throw 'Upload verification failed; feed was not promoted.' }
-          node web/sora-downloads/publish-release.mjs promote "artifacts/release/setup/Sora-Setup-$version-x64.exe" artifacts/release/metadata/stable.json
+          node web/sora-downloads/publish-release.mjs promote "artifacts/release/setup/Sora-Setup-$version-x64.exe" $feedPath $env:SORA_RELEASE_CHANNEL
           if ($LASTEXITCODE -ne 0) { throw 'Inspect current feed/cache before retrying promotion.' }
       - uses: actions/upload-artifact@v4
         if: always()
@@ -92,4 +122,5 @@ jobs:
             artifacts/release/setup/Sora-Setup-*-x64.exe
             artifacts/release/setup/build-audit.json
             artifacts/release/metadata/
+            artifacts/installed-lifecycle/
           if-no-files-found: warn

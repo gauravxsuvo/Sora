@@ -9,7 +9,13 @@ public sealed record UpdatePolicy(string FeedUrl, string[] AllowedHosts, Diction
 {
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow };
     [JsonIgnore]
-    public bool Configured => PublicKeys.Count > 0 && AllowedHosts.Length > 0 && Channel == "stable";
+    public bool Configured => PublicKeys.Count > 0 && AllowedHosts.Length > 0 && Channel is "stable" or "beta";
+    public UpdatePolicy ForChannel(string channel)
+    {
+        UpdateChannelSettings.Validate(channel);
+        var origin = ValidateUrl(FeedUrl).GetLeftPart(UriPartial.Authority);
+        return this with { FeedUrl = origin + "/channels/" + channel + ".json", Channel = channel };
+    }
     public Uri ValidateUrl(string value)
     {
         if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != "https" || !uri.IsDefaultPort ||
@@ -27,7 +33,7 @@ public sealed record SoraRelease(int SchemaVersion, string Product, long Sequenc
 public static class ReleaseFeed
 {
     public const int MaximumEnvelopeBytes = 128 * 1024;
-    public const string UpdaterVersion = "1.0.0";
+    public const string UpdaterVersion = "1.1.0";
 
     public static Version ParseVersion(string value)
     {
@@ -56,7 +62,7 @@ public static class ReleaseFeed
             release.Sequence < 1 || release.Sequence < highestSequence || release.PublishedAt > now.AddMinutes(5) ||
             release.ExpiresAt <= now || release.ExpiresAt <= release.PublishedAt || release.ExpiresAt - release.PublishedAt > TimeSpan.FromDays(45))
             throw new InvalidDataException("The release is incompatible, expired or older than a previously accepted feed.");
-        _ = ParseVersion(release.Version);
+        if (ReleaseVersion.Parse(release.Version).Channel != policy.Channel) throw new InvalidDataException("Release version does not match its update channel.");
         if (ParseVersion(release.MinimumUpdaterVersion) > ParseVersion(UpdaterVersion)) throw new InvalidDataException("Install a newer Sora installer from the website to update.");
         if (!Version.TryParse(release.MinimumWindowsVersion, out var minimumWindows) || (windowsVersion != null && windowsVersion < minimumWindows))
             throw new InvalidDataException("This release requires a newer Windows version.");

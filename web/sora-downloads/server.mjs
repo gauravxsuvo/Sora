@@ -40,8 +40,8 @@ export function makeServer({ storage = null, logger = console, betaLookup = crea
         res.writeHead(200, { 'Content-Type': staticFile[1], 'Content-Length': bytes.length, 'Cache-Control': 'no-cache' });
         res.end(req.method === 'HEAD' ? undefined : bytes); return;
       }
-      const feed = path === '/channels/stable.json';
-      const installer = /^\/releases\/(\d{1,5}\.\d{1,5}\.\d{1,5})\/win-x64\/Sora-Setup-\1-x64\.exe$/.exec(path);
+      const feed = path === '/channels/stable.json' || path === '/channels/beta.json';
+      const installer = /^\/releases\/(\d{1,5}\.\d{1,5}\.\d{1,5}(?:-beta\.[1-9]\d{0,4})?)\/win-x64\/Sora-Setup-\1-x64\.exe$/.exec(path);
       if (!feed && !installer) { res.writeHead(404); res.end('Not found'); return; }
       if (!storage) { res.writeHead(503, { 'Retry-After': '300', 'Cache-Control': 'no-store' }); res.end('Release storage is not connected yet.'); return; }
       const range = !feed ? req.headers.range : undefined;

@@ -13,30 +13,43 @@ namespace Sora.App;
 
 internal sealed class ApplicationUpdateService : IDisposable
 {
-    private readonly System.Net.Http.HttpClient http = UpdatesPanel.CreateHttp();
+    private readonly System.Net.Http.HttpClient http;
     private readonly CancellationTokenSource lifetime = new();
     private CancellationTokenSource? operation;
-    private readonly string statePath = Path.Combine(SoraData.DirectoryPath, "app-updates.json");
+    private readonly UpdateChannelSettings channelSettings;
+    private readonly Func<string, bool, string> stagePath;
+    private string StatePath => channelSettings.StatePath(Policy.Channel);
     private byte[]? envelope;
     private string? transaction;
     private bool disposed;
-    public UpdatePolicy Policy { get; } = BundledUpdatePolicy.Load();
+    public UpdatePolicy Policy { get; private set; }
     public UpdateState State { get; private set; } = new();
     public SoraRelease? Release { get; private set; }
-    public Version InstalledVersion { get; } = Assembly.GetExecutingAssembly().GetName().Version is { } v ? new(v.Major, v.Minor, v.Build) : new(0, 0, 0);
+    public string InstalledVersion { get; }
     public string Status { get; private set; } = "Check for a new Sora release.";
     public double Progress { get; private set; }
     public bool Busy { get; private set; }
     public bool Installing { get; private set; }
     public bool CanCheck { get; private set; } = true;
     public bool Downloaded => transaction != null;
-    public bool Available => Release != null && ReleaseFeed.ParseVersion(Release.Version) > InstalledVersion;
+    public bool Available => Release != null && ReleaseVersion.Parse(Release.Version).CompareTo(ReleaseVersion.Parse(InstalledVersion)) > 0;
     public event Action? Changed;
     public event Action? UpdateAvailable;
 
-    public ApplicationUpdateService()
+    public ApplicationUpdateService(string? installedVersion = null, string? dataDirectory = null,
+        System.Net.Http.HttpClient? httpClient = null, UpdatePolicy? updatePolicy = null, Func<string, bool, string>? stageDirectory = null)
     {
-        try { State = UpdateState.Load(statePath); }
+        InstalledVersion = installedVersion ?? Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "0.0.0";
+        channelSettings = new(dataDirectory ?? SoraData.DirectoryPath);
+        http = httpClient ?? UpdatesPanel.CreateHttp();
+        Policy = updatePolicy ?? BundledUpdatePolicy.Load();
+        stagePath = stageDirectory ?? ((id, create) => UpdatePaths.Stage(id, create));
+        try
+        {
+            Policy = Policy.ForChannel(channelSettings.ReadChannel(InstalledVersion));
+            State = channelSettings.Load(Policy.Channel);
+            Status = "Check for new Sora " + Policy.Channel + " releases.";
+        }
         catch (Exception e) when (e is not OutOfMemoryException) { CanCheck = false; State = new(AutomaticChecks: false); Status = "Updater settings could not be read; checks are disabled until the file is repaired: " + e.Message; }
         if (!Policy.Configured) Status = "Release signing is not configured in this build.";
     }
@@ -58,6 +71,17 @@ internal sealed class ApplicationUpdateService : IDisposable
     }
 
     public void SetAutomatic(bool enabled) => SaveState(State with { AutomaticChecks = enabled });
+    public void SetChannel(string channel)
+    {
+        if (Busy || Installing || disposed) throw new InvalidOperationException("Wait for the current update operation to finish before changing channels.");
+        var policy = Policy.ForChannel(channel);
+        if (CanCheck && policy.Channel == Policy.Channel) return;
+        var nextState = channelSettings.Load(channel, State.AutomaticChecks);
+        channelSettings.SaveChannel(channel); // Persist only after the target state was validated.
+        Policy = policy; State = nextState; CanCheck = true;
+        Release = null; envelope = null; transaction = null; Progress = 0;
+        SetStatus("Using the " + channel + " channel. Check now for a newer release. Switching channels never downgrades an installed version.");
+    }
     public void SkipVersion()
     {
         if (Release != null) { SaveState(State with { SkippedVersion = Release.Version }); SetStatus("Sora " + Release.Version + " skipped. You can still download it here."); }
@@ -67,7 +91,7 @@ internal sealed class ApplicationUpdateService : IDisposable
     public async Task CheckAsync(bool notify = false)
     {
         if (Busy || disposed || !Policy.Configured || !CanCheck) return;
-        Busy = true; SetStatus("Checking for Sora updates…");
+        Busy = true; SetStatus("Checking for Sora " + Policy.Channel + " updates…");
         using var timeout = operation = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
         timeout.CancelAfter(TimeSpan.FromSeconds(30));
         try
@@ -78,7 +102,7 @@ internal sealed class ApplicationUpdateService : IDisposable
             SaveState(State with { HighestSequence = release.Sequence, LastChecked = DateTimeOffset.UtcNow });
             if (Release?.Sha256 != release.Sha256) transaction = null;
             Release = release; envelope = bytes;
-            SetStatus(Available ? "Sora " + release.Version + " is available." : "Sora is up to date.");
+            SetStatus(Available ? "Sora " + release.Version + " is available." : "No newer Sora release is available on the " + Policy.Channel + " channel.");
             if (notify && Available && State.SkippedVersion != release.Version && State.NotifiedVersion != release.Version)
             {
                 SaveState(State with { NotifiedVersion = release.Version });
@@ -99,12 +123,13 @@ internal sealed class ApplicationUpdateService : IDisposable
         {
             var release = ReleaseFeed.Verify(envelope, Policy, DateTimeOffset.UtcNow, State.HighestSequence, Environment.OSVersion.Version);
             var id = Guid.NewGuid().ToString("N");
-            var stage = UpdatePaths.Stage(id, create: true);
+            var stage = stagePath(id, true);
             var free = new DriveInfo(Path.GetPathRoot(stage)!).AvailableFreeSpace;
             if (free < release.Size * 3 + 256L * 1024 * 1024) throw new IOException("Free more disk space before downloading this update.");
             await ReleaseDownload.DownloadAsync(http, Policy, release, Path.Combine(stage, "installer.exe"),
                 new Progress<double>(value => { Progress = value; Changed?.Invoke(); }), timeout.Token);
             File.WriteAllBytes(Path.Combine(stage, "release.json"), envelope);
+            File.WriteAllText(Path.Combine(stage, "channel.txt"), Policy.Channel);
             File.WriteAllText(Path.Combine(stage, "sequence.txt"), State.HighestSequence.ToString(CultureInfo.InvariantCulture));
             transaction = id;
             SetStatus("Download verified. Ready to install and restart.");
@@ -125,7 +150,7 @@ internal sealed class ApplicationUpdateService : IDisposable
         try
         {
             var id = transaction;
-            var stage = UpdatePaths.Stage(id);
+            var stage = stagePath(id, false);
             var release = ReleaseFeed.Verify(File.ReadAllBytes(Path.Combine(stage, "release.json")), Policy, DateTimeOffset.UtcNow, State.HighestSequence, Environment.OSVersion.Version);
             // Recheck promotion/withdrawal before stopping any hardware, including after a long wait to install.
             using var checkTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
@@ -134,6 +159,7 @@ internal sealed class ApplicationUpdateService : IDisposable
             SaveState(State with { HighestSequence = promoted.Sequence, LastChecked = DateTimeOffset.UtcNow });
             if (promoted.Version != release.Version || promoted.Sha256 != release.Sha256) throw new IOException("The promoted release has changed. Check for updates and download the current release.");
             File.WriteAllBytes(Path.Combine(stage, "release.json"), currentEnvelope);
+            File.WriteAllText(Path.Combine(stage, "channel.txt"), Policy.Channel);
             File.WriteAllText(Path.Combine(stage, "sequence.txt"), promoted.Sequence.ToString(CultureInfo.InvariantCulture));
             ReleaseDownload.VerifyFile(Path.Combine(stage, "installer.exe"), release);
             var source = Path.Combine(UpdatePaths.InstallDirectory, "UpdateRunner"); UpdatePaths.RejectLinks(source);
@@ -165,7 +191,7 @@ internal sealed class ApplicationUpdateService : IDisposable
         finally { Busy = false; Installing = false; Changed?.Invoke(); }
     }
 
-    private void SaveState(UpdateState value) { value.Save(statePath); State = value; Changed?.Invoke(); }
+    private void SaveState(UpdateState value) { value.Save(StatePath); State = value; Changed?.Invoke(); }
     private void SetStatus(string value) { Status = value; Changed?.Invoke(); }
     public void Dispose() { if (disposed) return; disposed = true; lifetime.Cancel(); http.Dispose(); lifetime.Dispose(); }
 }

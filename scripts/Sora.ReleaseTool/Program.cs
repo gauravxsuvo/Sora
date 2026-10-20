@@ -28,14 +28,17 @@ try
         Console.WriteLine("Release key created with a private Windows ACL. Only its public key was added to the policy. Back up the private key securely before distributing Sora.");
         return 0;
     }
-    if (args is ["prepare", var installer, var version, var sequenceText, var notesFile, var policyPath, var signingKeyPath, var outputDirectory])
+    if (args is [var prepareCommand, var installer, var version, var sequenceText, var notesFile, var policyPath, var signingKeyPath, var outputDirectory] && prepareCommand is "prepare" or "prepare-beta")
     {
-        _ = ReleaseFeed.ParseVersion(version);
+        var parsedVersion = ReleaseVersion.Parse(version);
         var sequence = long.Parse(sequenceText, System.Globalization.CultureInfo.InvariantCulture);
         if (Directory.Exists(outputDirectory)) throw new IOException("Choose a new output directory; preserve prior release metadata.");
         var policy = JsonSerializer.Deserialize<UpdatePolicy>(File.ReadAllBytes(policyPath), UpdatePolicy.Json) ?? throw new IOException("Invalid update policy.");
+        policy = policy.ForChannel(prepareCommand == "prepare-beta" ? "beta" : "stable");
+        if (parsedVersion.Channel != policy.Channel) throw new IOException("Release version does not match the requested signing channel.");
         var fileVersion = FileVersionInfo.GetVersionInfo(installer);
-        if (fileVersion.ProductName?.Trim() != "Sora" || new Version(fileVersion.FileMajorPart, fileVersion.FileMinorPart, fileVersion.FileBuildPart) != ReleaseFeed.ParseVersion(version))
+        if (fileVersion.ProductName?.Trim() != "Sora" || new Version(fileVersion.FileMajorPart, fileVersion.FileMinorPart, fileVersion.FileBuildPart) != parsedVersion.Number ||
+            ReleaseVersion.Parse((fileVersion.ProductVersion ?? "").Split('+')[0]) != parsedVersion)
             throw new IOException("The installer product/version does not match this release.");
         using var key = ECDsa.Create(); key.ImportFromPem(File.ReadAllText(signingKeyPath));
         var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
@@ -43,7 +46,7 @@ try
         using var input = File.OpenRead(installer);
         var now = DateTimeOffset.UtcNow;
         var origin = policy.ValidateUrl(policy.FeedUrl).GetLeftPart(UriPartial.Authority);
-        var release = new SoraRelease(1, "Sora", sequence, policy.Channel, version, now, now.AddDays(30), "win-x64", "10.0.19041", "1.0.0",
+        var release = new SoraRelease(1, "Sora", sequence, policy.Channel, version, now, now.AddDays(30), "win-x64", "10.0.19041", policy.Channel == "beta" ? "1.1.0" : "1.0.0",
             File.ReadAllText(notesFile), $"{origin}/releases/{version}/win-x64/Sora-Setup-{version}-x64.exe", input.Length, Convert.ToHexString(SHA256.HashData(input)));
         var payload = JsonSerializer.SerializeToUtf8Bytes(release, UpdatePolicy.Json);
         var envelope = new ReleaseEnvelope(trustedKeyId, "ECDSA-P256-SHA256-P1363", Convert.ToBase64String(payload),
@@ -51,20 +54,21 @@ try
         var bytes = JsonSerializer.SerializeToUtf8Bytes(envelope, UpdatePolicy.Json);
         _ = ReleaseFeed.Verify(bytes, policy, now, 0);
         Directory.CreateDirectory(outputDirectory);
-        File.WriteAllBytes(Path.Combine(outputDirectory, "stable.json"), bytes);
+        File.WriteAllBytes(Path.Combine(outputDirectory, policy.Channel + ".json"), bytes);
         File.WriteAllBytes(Path.Combine(outputDirectory, "release-payload.json"), JsonSerializer.SerializeToUtf8Bytes(release, new JsonSerializerOptions(UpdatePolicy.Json) { WriteIndented = true }));
-        Console.WriteLine($"Signed release {version}, sequence {sequence}; feed expires {release.ExpiresAt:O}. Upload artifacts, verify public bytes, then promote stable.json.");
+        Console.WriteLine($"Signed {policy.Channel} release {version}, sequence {sequence}; feed expires {release.ExpiresAt:O}. Upload artifacts, verify public bytes, then promote {policy.Channel}.json.");
         return 0;
     }
-    if (args is ["verify", var envelopePath, var verificationPolicy, var artifact])
+    if (args is [var verifyCommand, var envelopePath, var verificationPolicy, var artifact] && verifyCommand is "verify" or "verify-beta")
     {
         var policy = JsonSerializer.Deserialize<UpdatePolicy>(File.ReadAllBytes(verificationPolicy), UpdatePolicy.Json)!;
+        policy = policy.ForChannel(verifyCommand == "verify-beta" ? "beta" : "stable");
         var release = ReleaseFeed.Verify(File.ReadAllBytes(envelopePath), policy, DateTimeOffset.UtcNow, 0);
         ReleaseDownload.VerifyFile(artifact, release);
         Console.WriteLine($"Verified Sora {release.Version}, feed sequence {release.Sequence}, SHA-256 {release.Sha256}.");
         return 0;
     }
-    Console.Error.WriteLine("Usage:\n  init-key PRIVATE_KEY_PATH POLICY_PATH KEY_ID\n  prepare INSTALLER VERSION SEQUENCE NOTES_FILE POLICY_PATH PRIVATE_KEY_PATH NEW_OUTPUT_DIRECTORY\n  verify SIGNED_FEED POLICY_PATH INSTALLER");
+    Console.Error.WriteLine("Usage:\n  init-key PRIVATE_KEY_PATH POLICY_PATH KEY_ID\n  prepare|prepare-beta INSTALLER VERSION SEQUENCE NOTES_FILE POLICY_PATH PRIVATE_KEY_PATH NEW_OUTPUT_DIRECTORY\n  verify|verify-beta SIGNED_FEED POLICY_PATH INSTALLER");
     return 2;
 }
 catch (Exception error) { Console.Error.WriteLine(error.Message); return 1; }
