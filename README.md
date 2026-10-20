@@ -4,7 +4,7 @@
 
 A native Windows hardware hub for supported cooler displays, keyboards, mice, lighting, fans, storage health, and Wi-Fi measurements.
 
-[Download for Windows](https://sora.portways.app/#download) · [Download beta](https://github.com/gauravxsuvo/Sora/releases/tag/v0.13.0-beta.1) · [User guide](docs/user-guide.md) · [Beta release notes](docs/Sora-0.13.0-beta.1.md)
+[Download for Windows](https://sora.portways.app/#download) · [Download beta](https://github.com/gauravxsuvo/Sora/releases/tag/v0.13.0-beta.2) · [User guide](docs/user-guide.md) · [Beta release notes](docs/Sora-0.13.0-beta.2.md)
 
 ## Installation
 

@@ -16,6 +16,7 @@
         <ComboBox x:Name="PowerPicker" DisplayMemberPath="Label" AutomationProperties.Name="Legion performance mode"/>
         <TextBlock Text="Quiet reduces noise. Balanced adjusts to your workload. Performance requires AC power." Style="{StaticResource CaptionText}" Margin="0,8,0,12"/>
         <WrapPanel><Button x:Name="ApplyPower" Content="Apply mode" Click="ApplyPowerClick" Style="{StaticResource PrimaryButton}" IsEnabled="False" Margin="0,0,8,0"/><Button x:Name="RestorePower" Content="Restore original mode" Click="RestorePowerClick" Style="{StaticResource QuietButton}" IsEnabled="False"/></WrapPanel>
+        <TextBlock x:Name="PowerFeedback" TextWrapping="Wrap" Style="{StaticResource CaptionText}" Margin="0,10,0,0" AutomationProperties.LiveSetting="Polite"/>
       </StackPanel></Border>
       <Border Style="{StaticResource Card}" Margin="0,0,0,16"><StackPanel>
         <TextBlock Text="Battery charging" FontSize="19"/>
@@ -23,6 +24,7 @@
         <ComboBox x:Name="ChargePicker" DisplayMemberPath="Label" AutomationProperties.Name="Legion charging mode"/>
         <TextBlock Text="Conservation limits charging according to your laptop's firmware. Rapid charge prioritizes charging speed." Style="{StaticResource CaptionText}" Margin="0,8,0,12"/>
         <WrapPanel><Button x:Name="ApplyCharge" Content="Apply charging mode" Click="ApplyChargeClick" Style="{StaticResource PrimaryButton}" IsEnabled="False" Margin="0,0,8,0"/><Button x:Name="RestoreCharge" Content="Restore original charging" Click="RestoreChargeClick" Style="{StaticResource QuietButton}" IsEnabled="False"/></WrapPanel>
+        <TextBlock x:Name="ChargeFeedback" TextWrapping="Wrap" Style="{StaticResource CaptionText}" Margin="0,10,0,0" AutomationProperties.LiveSetting="Polite"/>
       </StackPanel></Border>
       <Border Style="{StaticResource Card}" Margin="0,0,0,16"><StackPanel>
         <TextBlock Text="Graphics mode" FontSize="19"/>
@@ -30,6 +32,7 @@
         <ComboBox x:Name="GpuPicker" DisplayMemberPath="Label" AutomationProperties.Name="Legion graphics mode"/>
         <TextBlock Text="Changes the laptop's firmware graphics setting. A restart may be needed to change active display routing. External displays and running GPU applications can affect switching." Style="{StaticResource CaptionText}" Margin="0,8,0,12"/>
         <WrapPanel><Button x:Name="ApplyGpu" Content="Apply graphics mode" Click="ApplyGpuClick" Style="{StaticResource PrimaryButton}" IsEnabled="False" Margin="0,0,8,0"/><Button x:Name="RestoreGpu" Content="Restore original graphics mode" Click="RestoreGpuClick" Style="{StaticResource QuietButton}" IsEnabled="False"/></WrapPanel>
+        <TextBlock x:Name="GpuFeedback" TextWrapping="Wrap" Style="{StaticResource CaptionText}" Margin="0,10,0,0" AutomationProperties.LiveSetting="Polite"/>
       </StackPanel></Border>
       <Border Style="{StaticResource Card}" Margin="0,0,0,16"><StackPanel>
         <TextBlock Text="Four-zone keyboard lighting" FontSize="19"/>
@@ -48,6 +51,7 @@
         </UniformGrid>
         <TextBlock Text="Enter colors as #RRGGBB. Zone colors apply to Static and Breathing. Original keyboard colors cannot be read back." Style="{StaticResource CaptionText}" Margin="0,8,0,12"/>
         <WrapPanel><Button x:Name="ApplyLighting" Content="Apply lighting" Click="ApplyLightingClick" Style="{StaticResource PrimaryButton}" IsEnabled="False" Margin="0,0,8,0"/><Button x:Name="OffLighting" Content="Turn lighting off" Click="OffLightingClick" Style="{StaticResource QuietButton}" IsEnabled="False"/></WrapPanel>
+        <TextBlock x:Name="LightingFeedback" TextWrapping="Wrap" Style="{StaticResource CaptionText}" Margin="0,10,0,0" AutomationProperties.LiveSetting="Polite"/>
       </StackPanel></Border>
       <Border Style="{StaticResource Card}" Margin="0,0,0,16"><StackPanel>
         <TextBlock Text="Spectrum keyboard profiles" FontSize="19"/>
@@ -59,6 +63,7 @@
         </Grid>
         <TextBlock Text="Selects a profile stored on the keyboard. Profile effects are preserved. Per-key effect editing is not available yet." Style="{StaticResource CaptionText}" Margin="0,8,0,12"/>
         <WrapPanel><Button x:Name="ApplySpectrum" Content="Apply Spectrum settings" Click="ApplySpectrumClick" Style="{StaticResource PrimaryButton}" IsEnabled="False" Margin="0,0,8,0"/><Button x:Name="RestoreSpectrum" Content="Restore original settings" Click="RestoreSpectrumClick" Style="{StaticResource QuietButton}" IsEnabled="False"/></WrapPanel>
+        <TextBlock x:Name="SpectrumFeedback" TextWrapping="Wrap" Style="{StaticResource CaptionText}" Margin="0,10,0,0" AutomationProperties.LiveSetting="Polite"/>
       </StackPanel></Border>
       <TextBlock x:Name="ProblemsText" Style="{StaticResource CaptionText}" TextWrapping="Wrap"/>
     </StackPanel>
