@@ -4,13 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { join, resolve } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { storageConfig, createStorage } from './storage.mjs';
-import { createBetaLookup } from './beta-release.mjs';
 
 const publicDirectory = fileURLToPath(new URL('./public/', import.meta.url));
 const staticFiles = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']], ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/app.mjs', ['app.mjs', 'text/javascript; charset=utf-8']], ['/release-verification.mjs', ['release-verification.mjs', 'text/javascript; charset=utf-8']],
-  ['/beta-download.mjs', ['beta-download.mjs', 'text/javascript; charset=utf-8']],
   ['/sora-mark.svg', ['sora-mark.svg', 'image/svg+xml']], ['/sora-updates.png', ['sora-updates.png', 'image/png']],
   ['/sora-mark.png', ['sora-mark.png', 'image/png']], ['/apple-touch-icon.png', ['apple-touch-icon.png', 'image/png']],
   ['/favicon.ico', ['favicon.ico', 'image/x-icon']],
@@ -18,7 +16,7 @@ const staticFiles = new Map([
   ['/sitemap.xml', ['sitemap.xml', 'application/xml']]
 ]);
 
-export function makeServer({ storage = null, logger = console, betaLookup = createBetaLookup() } = {}) {
+export function makeServer({ storage = null, logger = console } = {}) {
   return createServer(async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -27,13 +25,6 @@ export function makeServer({ storage = null, logger = console, betaLookup = crea
     try {
       const path = new URL(req.url, 'http://localhost').pathname;
       if (path === '/healthz') { res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end(req.method === 'HEAD' ? undefined : 'ok'); return; }
-      if (path === '/api/beta-release') {
-        const beta = await betaLookup();
-        const body = JSON.stringify(beta);
-        res.writeHead(beta.unavailable ? 503 : 200, { 'Content-Type': 'application/json; charset=utf-8',
-          'Cache-Control': 'no-store', 'Content-Length': Buffer.byteLength(body), ...(beta.unavailable ? { 'Retry-After': '60' } : {}) });
-        res.end(req.method === 'HEAD' ? undefined : body); return;
-      }
       const staticFile = staticFiles.get(path);
       if (staticFile) {
         const bytes = await readFile(join(publicDirectory, staticFile[0]));

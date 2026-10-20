@@ -29,13 +29,9 @@ The server defaults to port 3000 locally. `npm test` covers public routes, HTTP 
 
 The service also exposes `/channels/beta.json` and immutable `-beta.N` installer paths from the same storage. Beta publishing requires the explicit final `beta` argument to `publish-release.mjs`; omitting it retains Stable. Both channels verify signed metadata before upload or promotion and maintain independent monotonic feed sequences. See the operating guide for signing commands. The website's stable download continues to verify only Stable metadata.
 
-### Beta download button
+### Public download
 
-The separate **Download beta** button discovers published GitHub prereleases in `gauravxsuvo/Sora`. Publish a prerelease with a tag such as `v0.13.0-beta.1` and attach `Sora-Setup-0.13.0-beta.1-x64.exe` (installer) or `Sora-0.13.0-beta.1-win-x64.zip` (portable). The optional `v` prefix and the `alpha`, `beta`, and `rc` prerelease labels are supported. The newest published matching release wins; installers are preferred when both formats exist. Draft releases and releases without a matching uploaded Windows asset never enable the button.
-
-The server checks GitHub's public releases API, caches successful checks for five minutes, and retries failed checks after one minute. No GitHub token or new environment configuration is needed. If GitHub is unreachable or rate limited, the button stays disabled and offers retry plus a GitHub releases link. This download path does not modify the signed stable feed or desktop updater. Deploy the website changes to Portways for the button to appear on the live site.
-
-To build the beta installer on Windows, run `./scripts/Build-Beta.ps1 -OutputDirectory artifacts/beta -Compiler tools/inno-setup-6.7.3/ISCC.exe` from the repository root with an official signed Inno Setup compiler. Publish the resulting setup EXE and `SHA256SUMS.txt` as GitHub prerelease assets after qualification. Beta setup upgrades the existing Program Files installation and preserves settings; it does not promote the stable update feed.
+The website offers only the signed stable release for this PC's setup. There is no beta download section or GitHub prerelease discovery. The legacy beta feed and immutable files remain available for compatibility with already-installed desktop updaters.
 
 See [the operating guide](../../docs/sora-updater-operations.md). With publisher access-key values loaded into this shell's environment (never command arguments or tracked files):
 

@@ -4,7 +4,7 @@
 
 A native Windows hardware hub for this PC's DeepCool cooler display, Kreo keyboard, Logitech mouse, Gigabyte lighting and fans, NVIDIA GPU fans, storage health, and Wi-Fi measurements.
 
-[Download for Windows](https://sora.portways.app/#download) · [Download beta](https://github.com/gauravxsuvo/Sora/releases/tag/v0.13.0-beta.3) · [User guide](docs/user-guide.md) · [Beta release notes](docs/Sora-0.13.0-beta.3.md)
+[Download for Windows](https://sora.portways.app/#download) · [User guide](docs/user-guide.md)
 
 ## Installation
 
