@@ -1,5 +1,7 @@
 # Third-party components in Sora
 
+Lenovo Legion protocol research references LenovoLegionToolkit-Team/LenovoLegionToolkit (GPL-3.0), johnfanv2/LenovoLegionLinux (including GPL-2.0-or-later kernel source), and 4JX/L5P-Keyboard-RGB (GPL-3.0). The inspected revisions and license-file hashes are recorded in `docs/lenovo-legion-sources.json`; implementation notes are in `docs/Lenovo-Legion-protocol-map.md`. Sora's Legion backend uses those documented protocol facts and source-derived model identifiers. No upstream executable, Lenovo driver, Lenovo artwork, or vendor utility is bundled. Local source checkouts used for research are excluded from the repository and release package.
+
 Logitech device artwork: Sora can import the G502 HERO PNG and zone metadata from the user's installed G HUB into `data/logitech/artwork`. These locally cached graphics belong to Logitech and are not embedded in the executable or source repository. Rendering uses the original PNG and metadata; Sora does not require the G HUB service to display the cached image.
 
 Sora uses **LibreHardwareMonitorLib 0.9.6**, by the LibreHardwareMonitor contributors, under the **Mozilla Public License 2.0**. Its binaries and signed PawnIO modules are unmodified. The full corresponding source is available at:

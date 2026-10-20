@@ -62,6 +62,8 @@ internal sealed class SoraHost
     public GpuFanService GpuFans { get; }
     public LogitechService Logitech { get; }
     public LogitechReactiveLighting LogitechLighting { get; }
+    public LenovoLegionController Legion { get; }
+    public bool HardwareChangesAllowed => hardwareOutputEnabled && !suspended && !stopping;
     public event Action? Updated;
 
     public SoraHost(string? dataDirectoryOverride = null)
@@ -91,6 +93,7 @@ internal sealed class SoraHost
         GpuFans = new GpuFanService(this);
         Logitech = new LogitechService(this);
         LogitechLighting = new LogitechReactiveLighting(this);
+        Legion = new LenovoLegionController(new LenovoLegionWindows(), new LegionFileRecoveryStore(Path.Combine(dataDirectory, "lenovo-legion", "recovery")));
     }
 
     // Screenshot/measurement sessions read sensors but never start hardware output or saved profiles.
@@ -285,7 +288,9 @@ internal sealed class SoraHost
         SystemEvents.PowerModeChanged -= PowerModeChanged;
         timer.Stop();
         Requested = false;
+        var legionStop = Legion.StopAsync();
         var failures = await CleanupSequence.RunAsync(
+            ("Lenovo Legion", () => legionStop),
             ("Cancel runtime", () => { lifetime.Cancel(); return Task.CompletedTask; }),
             ("Cancel recovery", () => { recovery?.Cancel(); return Task.CompletedTask; }),
             ("Hardware polling", async () => { await tickGate.WaitAsync(); tickGate.Release(); }),

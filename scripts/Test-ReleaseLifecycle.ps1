@@ -1,7 +1,8 @@
 param(
-    [Parameter(Mandatory)][ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version,
+    [Parameter(Mandatory)][ValidatePattern('^\d+\.\d+\.\d+(-beta\.\d+)?$')][string]$Version,
     [Parameter(Mandatory)][ValidatePattern('^[A-Fa-f0-9]{64}$')][string]$Sha256,
-    [Parameter(Mandatory)][string]$ArtifactDirectory
+    [Parameter(Mandatory)][string]$ArtifactDirectory,
+    [string]$CandidateInstaller
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -110,7 +111,11 @@ function WaitUninstalled {
 $fixtureProcess = $null
 try {
     $candidate = Join-Path $root "Sora-Setup-$Version-x64.exe"
-    Invoke-WebRequest "https://sora.portways.app/releases/$Version/win-x64/Sora-Setup-$Version-x64.exe" -OutFile $candidate
+    if ($CandidateInstaller) {
+        Copy-Item -LiteralPath (Resolve-Path -LiteralPath $CandidateInstaller).Path -Destination $candidate
+    } else {
+        Invoke-WebRequest "https://sora.portways.app/releases/$Version/win-x64/Sora-Setup-$Version-x64.exe" -OutFile $candidate
+    }
     Check 'Public candidate bytes match the expected release hash' ((Get-FileHash $candidate).Hash -eq $Sha256)
     $previous = Join-Path $root 'Sora-Setup-0.12.1-x64.exe'
     Invoke-WebRequest 'https://sora.portways.app/releases/0.12.1/win-x64/Sora-Setup-0.12.1-x64.exe' -OutFile $previous
@@ -132,7 +137,8 @@ try {
     Payload 'Upgraded payload matches every manifest hash'
     Check 'Upgrade retains all saved data across registered profiles' (DataPreserved)
     Check 'Upgrade preserves startup task definition' ((Export-ScheduledTask -TaskName Sora) -ceq $taskBefore)
-    $icon = Join-Path $install "Assets\sora-brand-$Version.ico"
+    $numericVersion = ($Version -split '-')[0]
+    $icon = Join-Path $install "Assets\sora-brand-$numericVersion.ico"
     foreach ($linkPath in @($commonLink,$ownedLink,$ownedMenuLink)) { Check "Versioned icon on $linkPath" ($shell.CreateShortcut($linkPath).IconLocation -eq ($icon + ',0')) }
     Check 'Foreign shortcut is unchanged' ((Get-FileHash $foreignLink).Hash -eq $foreignHash)
     Check 'Same-version repair succeeds' ((Setup $candidate 'repair') -eq 0)

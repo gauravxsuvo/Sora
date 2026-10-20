@@ -11,6 +11,7 @@ public partial class MainWindow
     {
         // Explicit development previews retain all routes for visual and navigation qualification.
         if (SoraData.IsDevelopmentPreview || (screenshotPath != null && !System.Environment.GetCommandLineArgs().Contains("--hardware-ui-check"))) return true;
+        if (button == NavLegion) return host.Hardware.LenovoSystem?.IsLegionLaptop == true;
         var module = button == NavDisplay ? HardwareModule.Cooler
             : button == NavKeyboard ? HardwareModule.Keyboard
             : button == NavLighting ? HardwareModule.Lighting
@@ -30,10 +31,10 @@ public partial class MainWindow
                 ? Visibility.Visible : Visibility.Collapsed;
         NavEmptyState.Visibility = NavigationEntries().Any(e => e.Button.Visibility == Visibility.Visible) ? Visibility.Collapsed : Visibility.Visible;
         if (NavigationEntries().Any(e => e.Button.IsChecked == true && !RouteAvailable(e.Button)))
-            (NavigationEntries().FirstOrDefault(e => e.Button != NavUpdates && e.Button != NavSettings && RouteAvailable(e.Button)).Button ?? NavSettings).IsChecked = true;
+            (RouteAvailable(NavLegion) ? NavLegion : NavigationEntries().FirstOrDefault(e => e.Button != NavUpdates && e.Button != NavSettings && RouteAvailable(e.Button)).Button ?? NavSettings).IsChecked = true;
         HardwareStatusText.Text = host.Hardware.Modules.Any(m => m.Presence == HardwarePresence.DetectionFailed)
             ? "Windows could not complete hardware detection. Sora will retry automatically."
-            : host.Hardware.Modules.All(m => !m.Available)
+            : host.Hardware.Modules.All(m => !m.Available) && host.Hardware.LenovoSystem?.IsLegionLaptop != true
                 ? "No supported hardware found. Connect a device; Sora checks automatically."
                 : "Connected hardware determines which pages and settings appear. New devices are detected automatically.";
     }

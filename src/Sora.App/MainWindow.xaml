@@ -64,6 +64,12 @@
             </Grid>
           </RadioButton>
           <TextBlock Text="System" Style="{StaticResource SidebarSectionText}"/>
+          <RadioButton x:Name="NavLegion" Style="{StaticResource NavItem}" GroupName="Nav" Checked="NavChanged" AutomationProperties.Name="Lenovo Legion" ToolTip="Lenovo Legion">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="{StaticResource NavigationIconColumnWidth}"/><ColumnDefinition Width="{StaticResource NavigationIconLabelGap}"/><ColumnDefinition/></Grid.ColumnDefinitions>
+              <ContentControl Grid.Column="0" Style="{StaticResource NavigationIconBox}"><iconPacks:PackIconLucide Kind="Laptop" Style="{StaticResource NavIcon}"/></ContentControl>
+              <TextBlock Grid.Column="2" Text="Lenovo Legion" Style="{StaticResource SidebarLabel}"/>
+            </Grid>
+          </RadioButton>
           <RadioButton x:Name="NavStorage" Style="{StaticResource NavItem}" GroupName="Nav" Checked="NavChanged" AutomationProperties.Name="SSD tool" ToolTip="SSD tool  (Ctrl+6)">
             <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="{StaticResource NavigationIconColumnWidth}"/><ColumnDefinition Width="{StaticResource NavigationIconLabelGap}"/><ColumnDefinition/></Grid.ColumnDefinitions>
               <ContentControl Grid.Column="0" Style="{StaticResource NavigationIconBox}"><iconPacks:PackIconLucide Kind="HardDrive" Style="{StaticResource NavIcon}"/></ContentControl>
@@ -228,6 +234,7 @@
       <local:WifiPanel x:Name="Wifi" Visibility="Collapsed"/>
       <local:UpdatesPanel x:Name="Updates" Visibility="Collapsed"/>
       <local:LogitechPanel x:Name="Logitech" Visibility="Collapsed"/>
+      <local:LegionPanel x:Name="Legion" Visibility="Collapsed"/>
     </Grid>
   </Grid>
 </Window>

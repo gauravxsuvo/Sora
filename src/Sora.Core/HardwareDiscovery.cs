@@ -14,6 +14,8 @@ public sealed record HardwareAvailability(HardwareModule Module, HardwarePresenc
 }
 public sealed record HardwareInventory(HardwareAvailability[] Modules)
 {
+    // Identity evidence only: it never adds a writable module or exposes a hardware-control page.
+    public LenovoSystemIdentity? LenovoSystem { get; init; }
     public HardwarePresence Presence(HardwareModule module) => Modules.SingleOrDefault(m => m.Module == module)?.Presence ?? HardwarePresence.Unknown;
     public bool Available(HardwareModule module) => Presence(module) == HardwarePresence.Present;
     public static HardwareInventory Unknown { get; } = new(Enum.GetValues<HardwareModule>().Select(m => new HardwareAvailability(m, HardwarePresence.Unknown)).ToArray());
@@ -49,23 +51,24 @@ public static class HardwareDiscovery
     [SupportedOSPlatform("windows")]
     public static HardwareInventory Capture()
     {
+        var system = LenovoSystemIdentity.Capture();
         try
         {
             var devices = ReadPresentDevices();
             try
             {
                 using var bios = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS");
-                if (bios == null) return WithoutBoardIdentity(devices);
-                return Classify(devices, bios.GetValue("BaseBoardManufacturer") as string ?? "", bios.GetValue("BaseBoardProduct") as string ?? "");
+                if (bios == null) return WithoutBoardIdentity(devices) with { LenovoSystem = system };
+                return Classify(devices, bios.GetValue("BaseBoardManufacturer") as string ?? "", bios.GetValue("BaseBoardProduct") as string ?? "") with { LenovoSystem = system };
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
             {
-                return WithoutBoardIdentity(devices);
+                return WithoutBoardIdentity(devices) with { LenovoSystem = system };
             }
         }
         catch (Exception error) when (error is Win32Exception or IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            return new(Enum.GetValues<HardwareModule>().Select(m => new HardwareAvailability(m, HardwarePresence.DetectionFailed)).ToArray());
+            return new HardwareInventory(Enum.GetValues<HardwareModule>().Select(m => new HardwareAvailability(m, HardwarePresence.DetectionFailed)).ToArray()) { LenovoSystem = system };
         }
     }
 

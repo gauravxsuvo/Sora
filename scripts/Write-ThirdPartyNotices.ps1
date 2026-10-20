@@ -13,7 +13,7 @@ foreach ($ProjectName in @('Sora.Core', 'Sora.App')) {
     $Lock = Get-Content -LiteralPath (Join-Path $TaskRoot "src\$ProjectName\packages.lock.json") -Raw | ConvertFrom-Json
     foreach ($Framework in $Lock.dependencies.PSObject.Properties) {
         foreach ($Package in $Framework.Value.PSObject.Properties) {
-            if ($Package.Value.resolved) { $Packages[$Package.Name + '/' + $Package.Value.resolved] = $Package }
+            if ($Package.Value.PSObject.Properties['resolved']) { $Packages[$Package.Name + '/' + $Package.Value.resolved] = $Package }
         }
     }
 }
