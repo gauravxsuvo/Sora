@@ -18,10 +18,6 @@ $publish = Join-Path $output 'publish'
 dotnet publish $project -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -p:DebugType=embedded -p:UseSharedCompilation=false -o $publish
 if ($LASTEXITCODE -ne 0) { throw 'Beta publish failed.' }
 & (Join-Path $PSScriptRoot 'Write-ThirdPartyNotices.ps1') -ReleaseDirectory $publish
-foreach ($name in @('Lenovo-Legion-diagnostics.md','Lenovo-Legion-protocol-map.md','lenovo-legion-sources.json')) {
-    Copy-Item -LiteralPath (Join-Path $root "docs/$name") -Destination $publish
-}
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Collect-LenovoLegion.ps1') -Destination $publish
 $instructions = @"
 Sora $version - experimental Windows x64 beta
 
@@ -29,11 +25,10 @@ Requires .NET 8 Windows Desktop Runtime (x64). Exit other Sora instances
 before installing. Setup upgrades the existing Program Files installation
 and retains saved settings. Back up settings before trying the beta.
 
-No physical Legion laptop has been tested. Read ReleaseNotes.md and
-Lenovo-Legion.md before changing settings. Beta updates are manual.
+This build targets the supported hardware in your PC. Read ReleaseNotes.md
+before changing settings.
 Keep all DLLs and the UpdateRunner directory beside Sora.exe.
 
-Read-only diagnostics: Sora.exe --lenovo-legion-diagnose --output legion-report.json
 Redact personal information before sharing reports.
 "@
 [IO.File]::WriteAllText((Join-Path $publish 'BETA-README.txt'), $instructions, [Text.UTF8Encoding]::new($false))

@@ -9,7 +9,7 @@ export function selectBeta(releases, now = Date.now()) {
   const candidates = [];
   for (const release of releases) {
     if (release?.draft !== false || release.prerelease !== true) continue;
-    const match = /^v?(\d{1,5}\.\d{1,5}\.\d{1,5}-(?:beta|alpha|rc|legion)\.\d{1,5})$/.exec(release.tag_name ?? '');
+    const match = /^v?(\d{1,5}\.\d{1,5}\.\d{1,5}-(?:beta|alpha|rc)\.\d{1,5})$/.exec(release.tag_name ?? '');
     const published = Date.parse(release.published_at);
     if (!match || !Number.isFinite(published) || published > now + 300000 || !Array.isArray(release.assets)) continue;
     const version = match[1];

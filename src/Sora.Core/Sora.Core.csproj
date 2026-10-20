@@ -2,7 +2,6 @@
   <PropertyGroup><TargetFramework>net8.0</TargetFramework></PropertyGroup>
   <ItemGroup><PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" /></ItemGroup>
   <ItemGroup><EmbeddedResource Include="KreoModels.json" /></ItemGroup>
-  <ItemGroup><EmbeddedResource Include="LenovoLegionModels.json" LogicalName="Sora.LenovoLegionModels" /></ItemGroup>
   <ItemGroup><EmbeddedResource Include="GigabyteFan.mof" /></ItemGroup>
   <ItemGroup><EmbeddedResource Include="../../release/update-policy.json" LogicalName="Sora.UpdatePolicy" /></ItemGroup>
 </Project>

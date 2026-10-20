@@ -8,8 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../Sora.Core/HardwareDiscovery.cs" Link="HardwareDiscovery.cs" />
-    <Compile Include="../Sora.Core/LenovoLegion.cs" Link="LenovoLegion.cs" />
-    <EmbeddedResource Include="../Sora.Core/LenovoLegionModels.json" LogicalName="Sora.LenovoLegionModels" />
     <Compile Include="../Sora.Core/Updates/*.cs" Link="Updates/%(Filename)%(Extension)" />
     <Compile Include="../Sora.Update.Windows/*.cs" Link="Windows/%(Filename)%(Extension)" />
     <EmbeddedResource Include="../../release/update-policy.json" LogicalName="Sora.UpdatePolicy" />

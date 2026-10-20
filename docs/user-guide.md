@@ -10,7 +10,6 @@ Sora saves original settings before taking control where restoration is supporte
 
 - [Cooler and keyboard](Kreo-keyboard.md)
 - [Logitech](Logitech-GHUB.md)
-- [Lenovo Legion preview](Lenovo-Legion.md)
 - [Motherboard fans](Gigabyte-fan-control.md)
 - [GPU fans](Gigabyte-gpu-fan-control.md)
 - [Storage health](Gigabyte-ssd-tool.md)
@@ -30,6 +29,3 @@ New devices are detected automatically. Saved data remains local when a device i
 Application updates require an explicit install-and-restart action. Hardware downloads are separate and are not installed by Sora. Data is stored under the Windows user's local application-data folder. Uninstall can retain or remove that data.
 
 For setup and permissions, see [installation](program-files-installation.md).
-## Lenovo Legion preview
-
-Detected Legion laptops have a **Lenovo Legion** page for experimental power, charging, graphics-mode and keyboard controls. Features depend on the available firmware/driver/controller interfaces. See [Legion coverage and limitations](Lenovo-Legion.md).

@@ -11,7 +11,7 @@ async function withServer(storage, run, betaLookup = async () => ({ available: f
   finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 }
 test('static website, method restrictions and honest unconfigured feed', () => withServer(null, async base => {
-  const home = await fetch(base); assert.equal(home.status, 200); const html = await home.text(); assert.match(html, /Your setup/); assert.doesNotMatch(html, /\u2014/);
+  const home = await fetch(base); assert.equal(home.status, 200); const html = await home.text(); assert.match(html, /One setup/); assert.doesNotMatch(html, /\u2014/);
   assert.match(home.headers.get('content-security-policy'), /object-src 'none'/);
   assert.match(html, /id="beta-download-button"[^>]*aria-disabled="true"/);
   assert.equal((await fetch(base + '/beta-download.mjs')).status, 200);

@@ -8,4 +8,4 @@ Both channels verify the publisher's signed metadata, installer size and SHA-256
 
 Automatic checks provide notifications; installation remains an explicit action. Sora releases hardware ownership before Setup and reopens afterward. BIOS, drivers and peripheral firmware are not updated by this flow.
 
-Requires Windows x64 and the .NET 8 Windows Desktop Runtime (x64). Legion firmware compatibility remains experimental and has not been tested on physical Legion hardware. The EXE is not Authenticode signed; see the included download warning guidance.
+Requires Windows x64 and the .NET 8 Windows Desktop Runtime (x64). The EXE is not Authenticode signed; see the included download warning guidance.

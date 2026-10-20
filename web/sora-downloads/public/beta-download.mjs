@@ -13,7 +13,7 @@ export async function loadBeta({ document: page = document, fetchImpl = fetch } 
     const beta = await response.json();
     if (beta.available !== true) { status.textContent = 'No beta download has been published yet.'; return; }
     const version = beta.version;
-    if (typeof version !== 'string' || !/^\d{1,5}\.\d{1,5}\.\d{1,5}-(?:beta|alpha|rc|legion)\.\d{1,5}$/.test(version) ||
+    if (typeof version !== 'string' || !/^\d{1,5}\.\d{1,5}\.\d{1,5}-(?:beta|alpha|rc)\.\d{1,5}$/.test(version) ||
         !['installer', 'portable'].includes(beta.kind) || !Number.isSafeInteger(beta.size) || beta.size < 1 || beta.size > 2 * 1024 ** 3) throw new Error('Invalid beta');
     const assetName = beta.kind === 'installer' ? `Sora-Setup-${version}-x64.exe` : `Sora-${version}-win-x64.zip`;
     if (![version, `v${version}`].some(tag => beta.downloadUrl === `https://github.com/gauravxsuvo/Sora/releases/download/${tag}/${assetName}`

@@ -31,7 +31,7 @@ The service also exposes `/channels/beta.json` and immutable `-beta.N` installer
 
 ### Beta download button
 
-The separate **Download beta** button discovers published GitHub prereleases in `gauravxsuvo/Sora`. Publish a prerelease with a tag such as `v0.13.0-beta.1` and attach `Sora-Setup-0.13.0-beta.1-x64.exe` (installer) or `Sora-0.13.0-beta.1-win-x64.zip` (portable). The optional `v` prefix and the `alpha`, `beta`, `rc`, and `legion` prerelease labels are supported. The newest published matching release wins; installers are preferred when both formats exist. Draft releases and releases without a matching uploaded Windows asset never enable the button.
+The separate **Download beta** button discovers published GitHub prereleases in `gauravxsuvo/Sora`. Publish a prerelease with a tag such as `v0.13.0-beta.1` and attach `Sora-Setup-0.13.0-beta.1-x64.exe` (installer) or `Sora-0.13.0-beta.1-win-x64.zip` (portable). The optional `v` prefix and the `alpha`, `beta`, and `rc` prerelease labels are supported. The newest published matching release wins; installers are preferred when both formats exist. Draft releases and releases without a matching uploaded Windows asset never enable the button.
 
 The server checks GitHub's public releases API, caches successful checks for five minutes, and retries failed checks after one minute. No GitHub token or new environment configuration is needed. If GitHub is unreachable or rate limited, the button stays disabled and offers retry plus a GitHub releases link. This download path does not modify the signed stable feed or desktop updater. Deploy the website changes to Portways for the button to appear on the live site.
 

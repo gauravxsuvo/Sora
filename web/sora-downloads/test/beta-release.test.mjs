@@ -4,7 +4,7 @@ import { selectBeta, createBetaLookup } from '../beta-release.mjs';
 import { loadBeta } from '../public/beta-download.mjs';
 
 const github = 'https://github.com/gauravxsuvo/Sora';
-function release(version = '0.13.0-legion.1', published = '2026-10-19T00:00:00Z') {
+function release(version = '0.13.0-beta.2', published = '2026-10-19T00:00:00Z') {
   const tag = `v${version}`;
   return { draft: false, prerelease: true, tag_name: tag, published_at: published,
     assets: [`Sora-${version}-win-x64.zip`, `Sora-Setup-${version}-x64.exe`].map(name => ({
@@ -20,8 +20,8 @@ test('selects newest published prerelease with a Windows asset and prefers insta
   latest.assets.pop();
   const beta = selectBeta([latest, older], now);
   assert.equal(beta.kind, 'portable');
-  assert.equal(beta.version, '0.13.0-legion.1');
-  assert.equal(beta.releaseUrl, `${github}/releases/tag/v0.13.0-legion.1`);
+  assert.equal(beta.version, '0.13.0-beta.2');
+  assert.equal(beta.releaseUrl, `${github}/releases/tag/v0.13.0-beta.2`);
 });
 
 test('rejects drafts, stable releases, missing assets and untrusted download links', () => {
@@ -32,6 +32,13 @@ test('rejects drafts, stable releases, missing assets and untrusted download lin
     { assets: release().assets.map(asset => ({ ...asset, state: 'new' })) },
     { assets: release().assets.map(asset => ({ ...asset, size: 0 })) }
   ]) assert.deepEqual(selectBeta([{ ...release(), ...change }], now), { available: false });
+});
+
+test('retired Legion releases cannot replace a supported beta download', () => {
+  const retired = release('0.13.0-legion.1', '2026-10-19T12:00:00Z');
+  const supported = release('0.13.0-beta.2', '2026-10-18T00:00:00Z');
+  assert.equal(selectBeta([retired, supported], now).version, supported.tag_name.slice(1));
+  assert.deepEqual(selectBeta([retired], now), { available: false });
 });
 
 test('lookup shares concurrent requests, caches results, and clears links on refresh failure', async () => {
@@ -94,4 +101,16 @@ test('beta UI offers retry and stays disabled for failures and unsafe links', as
     assert.equal(document.querySelector('#beta-download-button').href, undefined);
     assert.equal(document.querySelector('#beta-retry').hidden, false);
   }
+});
+
+test('beta UI rejects a cached retired Legion download even with a valid GitHub URL', async () => {
+  const document = pageFixture();
+  const retired = release('0.13.0-legion.1');
+  const asset = retired.assets[1];
+  await loadBeta({ document, fetchImpl: async () => Response.json({
+    available: true, version: '0.13.0-legion.1', kind: 'installer', size: asset.size,
+    downloadUrl: asset.browser_download_url, releaseUrl: `${github}/releases/tag/${retired.tag_name}`
+  }) });
+  assert.equal(document.querySelector('#beta-download-button').href, undefined);
+  assert.equal(document.querySelector('#beta-download-button').getAttribute('aria-disabled'), 'true');
 });

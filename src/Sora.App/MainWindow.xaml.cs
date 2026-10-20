@@ -45,10 +45,9 @@ public partial class MainWindow : Window
         Storage.Attach(host);
         Wifi.Attach(host);
         Logitech.Attach(host.Logitech, host.LogitechLighting);
-        Legion.Attach(host.Legion, () => host.HardwareChangesAllowed);
         var componentPreview = screenshotPath != null && Array.IndexOf(Environment.GetCommandLineArgs(), "--components") >= 0;
         if (componentPreview) ShowComponentPreview();
-        else (page switch { "keyboard" => NavKeyboard, "lighting" => NavLighting, "fans" => NavFans, "gpu" => NavGpu, "ssd" => NavStorage, "wifi" => NavWifi, "updates" => NavUpdates, "logitech" => NavLogitech, "legion" => NavLegion, "settings" => NavSettings, _ => NavDisplay }).IsChecked = true;
+        else (page switch { "keyboard" => NavKeyboard, "lighting" => NavLighting, "fans" => NavFans, "gpu" => NavGpu, "ssd" => NavStorage, "wifi" => NavWifi, "updates" => NavUpdates, "logitech" => NavLogitech, "settings" => NavSettings, _ => NavDisplay }).IsChecked = true;
         if (screenshotPath != null) { WindowStartupLocation = WindowStartupLocation.Manual; Left = -12000; ShowInTaskbar = false; }
         var settings = host.Settings;
         FahrenheitCheck.IsChecked = settings.Fahrenheit;
@@ -86,7 +85,6 @@ public partial class MainWindow : Window
         if (NavGpu.IsChecked == true) await GpuFans.ReadAsync();
         if (NavStorage.IsChecked == true) await Storage.ReadAsync();
         if (NavWifi.IsChecked == true) await Wifi.ReadAsync();
-        if (NavLegion.IsChecked == true) await Legion.ReadAsync();
         if (NavLogitech.IsChecked == true)
         {
             var args = Environment.GetCommandLineArgs(); var productIndex = Array.IndexOf(args, "--logitech-product");
@@ -128,7 +126,7 @@ public partial class MainWindow : Window
                         && ((FrameworkElement)entry.Button.Template.FindName("SelectionMarker", entry.Button)).Visibility == Visibility.Collapsed
                         && !entry.Button.IsKeyboardFocused;
                 }
-                var routes = new[] { (NavDisplay, (UIElement)DisplayPage), (NavKeyboard, (UIElement)Keyboard), (NavLighting, (UIElement)Lighting), (NavFans, (UIElement)Fans), (NavGpu, (UIElement)GpuFans), (NavStorage, (UIElement)Storage), (NavWifi, (UIElement)Wifi), (NavUpdates, (UIElement)Updates), (NavLogitech, (UIElement)Logitech), (NavLegion, (UIElement)Legion), (NavSettings, (UIElement)SettingsPage) };
+                var routes = new[] { (NavDisplay, (UIElement)DisplayPage), (NavKeyboard, (UIElement)Keyboard), (NavLighting, (UIElement)Lighting), (NavFans, (UIElement)Fans), (NavGpu, (UIElement)GpuFans), (NavStorage, (UIElement)Storage), (NavWifi, (UIElement)Wifi), (NavUpdates, (UIElement)Updates), (NavLogitech, (UIElement)Logitech), (NavSettings, (UIElement)SettingsPage) };
                 var routeResults = new System.Collections.Generic.List<object>();
                 var productionNavigation = true;
                 foreach (var (button, page) in routes)
@@ -213,7 +211,7 @@ public partial class MainWindow : Window
         await Task.Delay(3500);
         await host.TickAsync();
         UpdateLayout();
-        var navigation = new[] { NavDisplay, NavFans, NavGpu, NavKeyboard, NavLighting, NavLogitech, NavLegion, NavStorage, NavWifi, NavUpdates, NavSettings };
+        var navigation = new[] { NavDisplay, NavFans, NavGpu, NavKeyboard, NavLighting, NavLogitech, NavStorage, NavWifi, NavUpdates, NavSettings };
         var geometry = new System.Collections.Generic.List<object>();
         foreach (var row in navigation)
         {
@@ -359,7 +357,6 @@ public partial class MainWindow : Window
         (NavWifi, "wi-fi wifi antenna wireless "),
         (NavUpdates, "updates bios drivers "),
         (NavLogitech, "logitech mouse g102 g203 g502 "),
-        (NavLegion, "lenovo legion laptop power battery charging rgb keyboard "),
         (NavSettings, "settings app startup tray windows task scheduler")
     };
 
@@ -406,7 +403,7 @@ public partial class MainWindow : Window
 
     private async void NavChanged(object sender, RoutedEventArgs e)
     {
-        if (DisplayPage == null || SettingsPage == null || Keyboard == null || Lighting == null || Fans == null || GpuFans == null || Storage == null || Wifi == null || Updates == null || Logitech == null || Legion == null) return;
+        if (DisplayPage == null || SettingsPage == null || Keyboard == null || Lighting == null || Fans == null || GpuFans == null || Storage == null || Wifi == null || Updates == null || Logitech == null) return;
         if (initialized && sender is RadioButton route && !RouteAvailable(route)) { NavSettings.IsChecked = true; return; }
         if (componentGallery != null)
         {
@@ -424,7 +421,6 @@ public partial class MainWindow : Window
         Wifi.Visibility = NavWifi.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         Updates.Visibility = NavUpdates.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         Logitech.Visibility = NavLogitech.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
-        Legion.Visibility = NavLegion.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         foreach (var page in ((Grid)DisplayPage.Parent).Children.OfType<FrameworkElement>())
             if (page.IsVisible) InteractionMotion.RevealNow(page);
         if (SoraData.IsDevelopmentPreview) { ShowReadOnlyDevelopmentPage(); return; }
@@ -433,7 +429,6 @@ public partial class MainWindow : Window
         if (IsLoaded && NavStorage.IsChecked == true) await Storage.ReadAsync();
         if (IsLoaded && NavWifi.IsChecked == true) await Wifi.ReadAsync();
         if (IsLoaded && NavLogitech.IsChecked == true) await Logitech.ReadAsync();
-        if (IsLoaded && NavLegion.IsChecked == true) await Legion.ReadAsync();
         if (IsLoaded && NavKeyboard.IsChecked == true && !Keyboard.HasSnapshot && !Keyboard.IsBusy) await Keyboard.ReadAsync();
         if (IsLoaded && NavLighting.IsChecked == true && !Lighting.HasState) await Lighting.ReadAsync();
     }

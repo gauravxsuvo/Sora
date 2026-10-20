@@ -149,12 +149,6 @@ try {
     Check 'Installed app maintenance UI runs successfully' ((Run $exe @('--maintenance-ui-check','--output',('"' + $uiFile + '"'))) -eq 0)
     $ui = Get-Content $uiFile -Raw | ConvertFrom-Json
     Check 'Installed maintenance UI scenarios pass without configuration writes' ($ui.passed -and $ui.configurationWrites -eq 0)
-    if ([version]($Version -split '-')[0] -ge [version]'0.13.0') {
-        $legionUiFile = Join-Path $root 'legion-ui.json'
-        Check 'Installed Legion button interaction check runs successfully' ((Run $exe @('--legion-ui-check','--output',('"' + $legionUiFile + '"'))) -eq 0)
-        $legionUi = Get-Content $legionUiFile -Raw | ConvertFrom-Json
-        Check 'Installed Legion interaction scenarios pass with zero physical configuration writes' ($legionUi.passed -and $legionUi.synthetic -and $legionUi.configurationWrites -eq 0)
-    }
     $numericCandidate = [version]($Version -split '-')[0]
     if ($numericCandidate -gt [version]'0.13.0' -or ($numericCandidate -eq [version]'0.13.0' -and ($Version -notmatch '-beta\.' -or [int]($Version -split '-beta\.')[1] -ge 3))) {
         $updateUiFile = Join-Path $root 'application-update-ui.json'

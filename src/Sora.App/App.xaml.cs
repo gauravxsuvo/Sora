@@ -30,30 +30,6 @@ public partial class App : Application
             }
             return;
         }
-        if (e.Args.Contains("--legion-ui-check"))
-        {
-            ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            var index = Array.IndexOf(e.Args, "--output");
-            if (index < 0 || index + 1 >= e.Args.Length) { Shutdown(2); return; }
-            try { Shutdown(await LegionUiCheck.RunAsync(e.Args[index + 1]) ? 0 : 1); }
-            catch (Exception error)
-            {
-                System.Diagnostics.Trace.WriteLine(error);
-                var output = e.Args[index + 1];
-                if (!File.Exists(output)) File.WriteAllText(output, JsonSerializer.Serialize(new { passed = false, error = error.ToString() }));
-                Shutdown(1);
-            }
-            return;
-        }
-        if (e.Args.Contains("--lenovo-legion-diagnose"))
-        {
-            var outputIndex = Array.IndexOf(e.Args, "--output");
-            if (outputIndex < 0 || outputIndex + 1 >= e.Args.Length) { Shutdown(2); return; }
-            try { Shutdown(await LenovoLegionReadOnlyProbe.RunAsync(e.Args[outputIndex + 1]) ? 0 : 1); }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
-            { Shutdown(1); }
-            return;
-        }
         if (e.Args.Contains("--maintenance-ui-check"))
         {
             var outputIndex = Array.IndexOf(e.Args, "--output");

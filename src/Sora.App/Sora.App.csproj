@@ -25,7 +25,6 @@
     <Resource Include="../../assets/fonts/Inter/*.ttf" Link="Assets/Fonts/Inter/%(Filename)%(Extension)" />
     <None Include="../../assets/fonts/Inter/LICENSE.txt" Link="licenses/Inter-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <None Include="../../docs/Lenovo-Legion.md" Link="Lenovo-Legion.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup><None Include="../../docs/Kreo-keyboard.md" Link="Kreo-keyboard.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/Gigabyte-fan-control.md" Link="Gigabyte-fan-control.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
