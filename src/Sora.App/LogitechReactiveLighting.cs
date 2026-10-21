@@ -34,6 +34,7 @@ internal sealed class LogitechReactiveLighting
     }
     private sealed record FirmwareLighting(string Identity, System.Collections.Generic.Dictionary<byte, byte[]> States);
     private FirmwareLighting? firmware;
+    internal byte[]? SavedFirmwareState(string identity, byte zone) => firmware?.Identity == identity && !Zones.Any(z => z.Zone == zone) && firmware.States.TryGetValue(zone, out var state) ? state.ToArray() : null;
     private bool firmwareApplied;
     private sealed record Ownership(string Identity, System.Collections.Generic.Dictionary<byte, byte[]> States);
     private CancellationTokenSource? lifetime;
@@ -84,8 +85,12 @@ internal sealed class LogitechReactiveLighting
         try
         {
             await StopCoreAsync();
-            await using var device = new LogitechDevice(LogitechDevice.EnumerateG502().Single()); var fresh = await device.ReadAsync();
-            await device.SetLightingAsync(fresh, new System.Collections.Generic.Dictionary<byte, byte[]> { [zone] = state });
+            var fresh = await host.Logitech.UseDeviceAsync(async device =>
+            {
+                var current = await device.ReadAsync();
+                await device.SetLightingAsync(current, new System.Collections.Generic.Dictionary<byte, byte[]> { [zone] = state });
+                return current;
+            });
             var states = firmware?.Identity == fresh.Identity ? new System.Collections.Generic.Dictionary<byte, byte[]>(firmware.States) : new();
             states[zone] = state.ToArray();
             var saved = new FirmwareLighting(fresh.Identity, states);
@@ -195,10 +200,12 @@ internal sealed class LogitechReactiveLighting
                 await RestoreOwnershipAsync();
                 if (firmware != null && !firmwareApplied)
                 {
-                    await using var device = new LogitechDevice(LogitechDevice.EnumerateG502().Single());
-                    var fresh = await device.ReadAsync();
-                    if (fresh.Identity != firmware.Identity) throw new InvalidDataException("Saved lighting belongs to a different mouse.");
-                    await device.SetLightingAsync(fresh, firmware.States);
+                    await host.Logitech.UseDeviceAsync(async device =>
+                    {
+                        var fresh = await device.ReadAsync();
+                        if (fresh.Identity != firmware.Identity) throw new InvalidDataException("Saved lighting belongs to a different mouse.");
+                        await device.SetLightingAsync(fresh, firmware.States); return true;
+                    });
                     firmwareApplied = true;
                     host.Log("Mouse lighting: saved firmware effects restored.");
                 }

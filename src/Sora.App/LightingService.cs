@@ -61,7 +61,7 @@ public sealed record SyncLighting(SyncEffect Effect = SyncEffect.Rainbow, string
 /// KeepOnBoard: the motherboard keeps the applied lighting through a shutdown (GCC's CC 47 01); see <see cref="LightingService.KeepOnBoardAsync"/>.
 /// </summary>
 public sealed record ModuleLighting(int Slot, string Name, ushort ChipId, MemoryLighting Lighting);
-public sealed record LightingSettings(MemoryLighting? Memory = null, IReadOnlyList<BoardZoneLighting>? BoardZones = null, bool ApplyAtStartup = true, bool Sync = false, SyncLighting? SyncLighting = null, bool RainbowOnExit = false, bool MemorySync = true, IReadOnlyList<ModuleLighting>? MemoryModules = null, bool KeepOnBoard = false);
+public sealed record LightingSettings(MemoryLighting? Memory = null, IReadOnlyList<BoardZoneLighting>? BoardZones = null, bool ApplyAtStartup = true, bool Sync = false, SyncLighting? SyncLighting = null, bool RainbowOnExit = false, bool MemorySync = true, IReadOnlyList<ModuleLighting>? MemoryModules = null, bool KeepOnBoard = false, int RetentionVersion = 1);
 
 /// <summary>Registers of one DIMM as they were before Sora first changed them.</summary>
 public sealed record DimmBackup(int Slot, string Name, ushort ChipId, string Control, string Colors, int? Brightness = null);
@@ -100,7 +100,20 @@ internal sealed class LightingService(SoraHost host)
 
     public void Load()
     {
-        try { if (File.Exists(SettingsPath)) Settings = JsonSerializer.Deserialize<LightingSettings>(File.ReadAllText(SettingsPath)) ?? new(); }
+        try
+        {
+            if (!File.Exists(SettingsPath)) return;
+            var text = File.ReadAllText(SettingsPath);
+            Settings = JsonSerializer.Deserialize<LightingSettings>(text) ?? new();
+            using var document = JsonDocument.Parse(text);
+            if (!document.RootElement.TryGetProperty(nameof(LightingSettings.RetentionVersion), out _) &&
+                (Settings.Memory != null || Settings.BoardZones != null || Settings.MemoryModules != null || Settings.SyncLighting != null))
+            {
+                if (!File.Exists(SettingsPath + ".before-retention-v1")) File.Copy(SettingsPath, SettingsPath + ".before-retention-v1");
+                Save(Settings with { ApplyAtStartup = true, RainbowOnExit = false, RetentionVersion = 1 });
+                host.Log("Lighting retention upgraded: saved colors remain on exit and restore on startup.");
+            }
+        }
         catch (Exception error) when (error is IOException or JsonException or UnauthorizedAccessException) { host.Log("Lighting settings: " + error.Message); }
     }
 

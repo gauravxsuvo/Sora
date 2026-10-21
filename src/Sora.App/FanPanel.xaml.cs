@@ -71,6 +71,7 @@ public partial class FanPanel : UserControl
     {
         if (listening && service != null) service.Changed -= Render;
         listening = false; service = fans;
+        if (!editorLoaded) HeaderList.SelectedIndex = Math.Clamp(fans.Preferences.SelectedHeader, 0, 5);
         if (IsLoaded) Listen(); Render();
     }
     private void Listen() { if (service != null && !listening) { service.Changed += Render; listening = true; } }
@@ -84,7 +85,8 @@ public partial class FanPanel : UserControl
         }
         finally { if (refreshEditor) { refreshing = false; Render(); } }
     }
-    private FanProfile CurrentProfile() => drafts.TryGetValue(selected, out var draft) ? draft : HardwareProfile();
+    private FanProfile CurrentProfile() => drafts.TryGetValue(selected, out var draft) ? draft : service?.Preferences.Profiles.TryGetValue(selected, out var saved) == true
+        ? saved with { DeviceKind = service.DeviceKind(selected), FirmwareStop = saved.FirmwareStop ?? service.Snapshot?.Headers.ElementAtOrDefault(selected)?.FirmwareStop } : HardwareProfile();
     private FanProfile HardwareProfile()
     {
         if (service?.Snapshot?.Headers[selected] is not { } state)
@@ -102,7 +104,7 @@ public partial class FanPanel : UserControl
     }
     private void LoadCurrentProfile()
     {
-        if (!drafts.ContainsKey(selected) || !baselines.ContainsKey(selected)) baselines[selected] = HardwareProfile();
+        if (!drafts.ContainsKey(selected) || !baselines.ContainsKey(selected)) baselines[selected] = CurrentProfile();
         LoadEditor(CurrentProfile());
     }
     private void Render()
@@ -133,9 +135,9 @@ public partial class FanPanel : UserControl
         PauseServiceButton.IsEnabled = !service.Busy && canPause;
         InstallFirmwareButton.IsEnabled = !service.Busy;
         InstallFirmwareButton.Visibility = InstallFirmwareHint.Visibility = snapshot?.FirmwareInterface == GigabyteFanFirmware.WmiClassName ? Visibility.Collapsed : Visibility.Visible;
-        PauseServiceButton.Visibility = canPause ? Visibility.Visible : Visibility.Collapsed;
+        PauseServiceButton.Visibility = canPause && !service.CanTakePriority ? Visibility.Visible : Visibility.Collapsed;
         ConflictTitle.Text = service.CanTakePriority ? "Sora can take fan control" : "Fan changes are blocked";
-        PauseServiceHint.Text = service.CanTakePriority ? "Apply automatically pauses " + service.ConflictingProcess + " and preserves the current fan settings. The helper resumes when Sora exits." : canPause ? "Pause the fan helper here, then apply your curve. It resumes when Sora exits." : "Exit " + service.ConflictingProcess + " to let Sora apply fan settings.";
+        PauseServiceHint.Text = service.CanTakePriority ? "Sora automatically stops " + service.ConflictingProcess + " before applying your saved curve. Current settings are preserved during the handoff." : canPause ? "Pause the fan helper here, then apply your curve, or enable automatic priority below." : "Exit " + service.ConflictingProcess + " to let Sora apply fan settings.";
         MeasureButton.IsEnabled = !service.Busy && !blocked && !fixedPump && snapshot?.Headers[selected].Rpm > 0;
         CalibrateButton.IsEnabled = !service.Busy && !blocked && snapshot?.Headers[selected].Rpm > 0 && DeviceKindBox.SelectedIndex == (int)FanDeviceKind.Fan;
         CancelMeasureButton.Visibility = service.Measuring ? Visibility.Visible : Visibility.Collapsed;
@@ -299,7 +301,9 @@ public partial class FanPanel : UserControl
         if (HeaderList.SelectedIndex < 0 || service == null) return;
         if (HeaderList.SelectedIndex == selected) return;
         if (invalidEditor) { HeaderList.SelectedIndex = selected; StatusLabel.Text = "Finish entering numeric values before switching headers."; return; }
-        selected = HeaderList.SelectedIndex; measurementMessage = null; LoadCurrentProfile(); Render(); EnsureSelectedHeaderVisible();
+        selected = HeaderList.SelectedIndex;
+        try { service.RememberHeader(selected); } catch (Exception error) when (error is IOException or UnauthorizedAccessException) { ShowFeedback("Cannot remember the selected header: " + error.Message); }
+        measurementMessage = null; LoadCurrentProfile(); Render(); EnsureSelectedHeaderVisible();
     }
     private void EnsureSelectedHeaderVisible()
     {
@@ -427,6 +431,7 @@ public partial class FanPanel : UserControl
     }
     private void ShowFeedback(string message) { measurementMessage = message; Render(); }
     internal void ShowLowerControlsPreview() { UpdateLayout(); EditorScroll.ScrollToEnd(); }
+    internal void ShowPublicPreview() { BoardLabel.Visibility = Visibility.Collapsed; }
     internal void ShowRadiatorHeaderPreview() { HeaderList.SelectedIndex = 5; }
     internal async Task<Dictionary<string, bool>> RunEditorChecksAsync()
     {
@@ -596,9 +601,10 @@ public partial class FanPanel : UserControl
             check("Read recovery restores controls and saved names", pollingService.Snapshot != null && ApplyButton.IsEnabled && HeaderNameBox.Text == "Radiator fans");
             source = new(TaskCreationOptions.RunContinuationsAsynchronously);
             pendingRead = pollingService.ReadAsync(); source.SetResult(new(snapshot, true, null, "EasyTuneEngineService")); await pendingRead;
-            check("GCC conflict is visible above the editor with a pause action", ConflictBanner.Visibility == Visibility.Visible && PauseServiceButton.Visibility == Visibility.Visible && PauseServiceButton.IsEnabled);
+            check("GCC conflict explains automatic takeover without asking for a manual pause", ConflictBanner.Visibility == Visibility.Visible && PauseServiceButton.Visibility == Visibility.Collapsed);
             check("Automatic priority keeps Apply available for a supported fan helper", ApplyButton.IsEnabled && pollingService.CanTakePriority);
             PriorityCheck.IsChecked = false;
+            check("Manual pause remains available only after opting out of automatic takeover", PauseServiceButton.Visibility == Visibility.Visible && PauseServiceButton.IsEnabled);
             check("Fan priority opt-out persists across restart", !new SoraHost(directory).Fans.Preferences.TakePriority);
             check("GCC conflict blocks Apply, Restore and speed tests", !ApplyButton.IsEnabled && !RestoreButton.IsEnabled && !MeasureButton.IsEnabled && !CalibrateButton.IsEnabled);
             PriorityCheck.IsChecked = true;
@@ -617,6 +623,10 @@ public partial class FanPanel : UserControl
             source = new(TaskCreationOptions.RunContinuationsAsynchronously);
             pendingRead = pollingService.ReadAsync(); source.SetResult(new(fixedSnapshot, false, null)); await pendingRead;
             check("Fixed-duty readback retains saved temperature points after reopening", ReadEditor().Mode == FanCurveMode.Fixed && ReadEditor().Points.SequenceEqual(savedFixed.Points));
+            editorLoaded = false;
+            source = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            pendingRead = pollingService.ReadAsync(); source.SetResult(new(snapshot, false, null)); await pendingRead;
+            check("A different live controller curve never replaces the saved editor configuration", ReadEditor().Mode == savedFixed.Mode && ReadEditor().Points.SequenceEqual(savedFixed.Points));
             ModeBox.SelectedIndex = (int)FanCurveMode.Step;
             check("Switching a saved fixed profile to stair step restores a non-flat graph", Chart.Profile?.Mode == FanCurveMode.Step && Chart.Profile.Points.SequenceEqual(savedFixed.Points) && ApplyButton.IsEnabled);
         }

@@ -12,8 +12,10 @@ namespace Sora.App;
 internal sealed record FanPreferences
 {
     public bool ApplyAtStartup { get; init; } = true;
-    public bool RestoreOnExit { get; init; } = true;
+    public bool RestoreOnExit { get; init; } = false;
     public bool TakePriority { get; init; } = true;
+    public int RetentionVersion { get; init; } = 1;
+    public int SelectedHeader { get; init; }
     public Dictionary<int, FanProfile> Profiles { get; init; } = new();
     public Dictionary<int, string> HeaderNames { get; init; } = new();
     public Dictionary<int, FanDeviceKind> HeaderDevices { get; init; } = new();
@@ -22,7 +24,7 @@ internal sealed record FanBackup(string Board, string Controller, Dictionary<int
 internal sealed record FanFirmwareBackup(string Board, Dictionary<int, FanStopConfig> Headers);
 internal sealed record FanReadResult(FanSnapshot Snapshot, bool VendorServiceInstalled, string? Notice, string? ConflictingProcess = null);
 
-internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardware = null)
+internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardware = null, IFanPrioritySystem? prioritySystem = null)
 {
     private readonly SemaphoreSlim gate = new(1, 1);
     private readonly Dictionary<int, FanRegisterValue[]> sessionOriginal = new();
@@ -32,9 +34,10 @@ internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardwar
     private bool preview;
     private bool preserveMessage;
     private bool actionBlocked;
-    private readonly FanServicePriority priority = new(new WindowsFanPrioritySystem(), Path.Combine(host.DataDirectory, "fans-priority-session.json"));
+    private readonly FanServicePriority priority = new(prioritySystem ?? new WindowsFanPrioritySystem(), Path.Combine(host.DataDirectory, "fans-priority-session.json"));
     private readonly HashSet<int> activeHeaders = new();
     private DateTime priorityCheckedAt;
+    private bool startupPending;
     public bool CanTakePriority => Preferences.TakePriority && ConflictingProcess is "EasyTuneEngineService" or "FanControlService";
     public bool VendorServicePaused { get; private set; }
     public bool VendorServiceInstalled { get; private set; } = true;
@@ -67,12 +70,31 @@ internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardwar
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or KeyNotFoundException or InvalidOperationException) { host.Log("Fan service ownership record: " + e.Message); }
         try
         {
-            if (File.Exists(SettingsPath)) Preferences = JsonSerializer.Deserialize<FanPreferences>(File.ReadAllText(SettingsPath)) ?? new();
+            string? savedText = File.Exists(SettingsPath) ? File.ReadAllText(SettingsPath) : null;
+            if (savedText != null) Preferences = JsonSerializer.Deserialize<FanPreferences>(savedText) ?? new();
             if (Preferences.Profiles == null || Preferences.HeaderNames == null || Preferences.HeaderDevices == null) throw new InvalidDataException("Missing fan preferences.");
+            if (Preferences.SelectedHeader is < 0 or > 5) throw new InvalidDataException("Unknown selected fan header.");
             foreach (var (h, p) in Preferences.Profiles) { p.Validate(); if (h != p.Header) throw new InvalidDataException("Invalid header in fan settings."); }
             foreach (var (h, name) in Preferences.HeaderNames) ValidateDisplayName(h, name);
             foreach (var (h, kind) in Preferences.HeaderDevices)
                 if (h is < 0 or > 5 || !Enum.IsDefined(kind)) throw new InvalidDataException("Unknown header device type.");
+            if (savedText != null && Preferences.Profiles.Count > 0)
+            {
+                using var document = JsonDocument.Parse(savedText);
+                if (!document.RootElement.TryGetProperty(nameof(FanPreferences.RetentionVersion), out _))
+                {
+                    // Upgrade old defaults once. Later explicit option changes are preserved.
+                    var next = Preferences with { ApplyAtStartup = true, RestoreOnExit = false, TakePriority = true, RetentionVersion = 1,
+                        SelectedHeader = document.RootElement.TryGetProperty(nameof(FanPreferences.SelectedHeader), out _) ? Preferences.SelectedHeader : Preferences.Profiles.Keys.Last() };
+                    try
+                    {
+                        if (!File.Exists(SettingsPath + ".before-retention-v1")) File.Copy(SettingsPath, SettingsPath + ".before-retention-v1");
+                        Save(SettingsPath, next); Preferences = next;
+                        host.Log("Fan retention upgraded: saved profiles reapply on startup and remain in hardware on exit.");
+                    }
+                    catch (Exception error) when (error is IOException or UnauthorizedAccessException) { host.Log("Cannot upgrade fan retention options: " + error.Message); }
+                }
+            }
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException or NullReferenceException)
         { Preferences = new(); Message = "Cannot load saved fan settings: " + e.Message; host.Log(Message); }
@@ -87,6 +109,13 @@ internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardwar
     {
         var next = Preferences with { ApplyAtStartup = startup, RestoreOnExit = restore, TakePriority = takePriority ?? Preferences.TakePriority };
         Save(SettingsPath, next); Preferences = next; Changed?.Invoke();
+        if (!startup) startupPending = false;
+    }
+    public void RememberHeader(int header)
+    {
+        if (preview || header == Preferences.SelectedHeader || header is < 0 or > 5) return;
+        var next = Preferences with { SelectedHeader = header };
+        Save(SettingsPath, next); Preferences = next;
     }
     public string DisplayName(int header) => Preferences.HeaderNames.TryGetValue(header, out var name) ? name : FanProtocol.HeaderNames[header];
     public FanDeviceKind DeviceKind(int header) => Preferences.HeaderDevices.TryGetValue(header, out var kind) ? kind : Preferences.Profiles.TryGetValue(header, out var profile) ? profile.DeviceKind : FanDeviceKind.Unknown;
@@ -121,7 +150,7 @@ internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardwar
         if (preview) throw new InvalidOperationException("Service changes are disabled in screenshot previews.");
         priority.Acquire();
         ConflictingProcess = GigabyteFans.FindConflictProcess();
-        return "Fan helpers paused with current settings preserved. Apply your curve; previously running services resume when Sora exits.";
+        return "Fan helpers stopped automatically with current settings preserved. Apply your curve to keep it after closing Sora.";
     });
     public Task<bool> InstallStandaloneInterfaceAsync() => RunAsync(() =>
     {
@@ -276,17 +305,19 @@ internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardwar
     });
     public async Task MaintainPriorityAsync()
     {
-        if (preview || stopping || Busy || !Preferences.TakePriority || activeHeaders.Count == 0 || DateTime.UtcNow - priorityCheckedAt < TimeSpan.FromSeconds(5)) return;
+        if (preview || stopping || Busy || (!Preferences.TakePriority && !startupPending) || (activeHeaders.Count == 0 && !startupPending) || DateTime.UtcNow - priorityCheckedAt < TimeSpan.FromSeconds(5)) return;
         priorityCheckedAt = DateTime.UtcNow;
         try
         {
             // Ordinary checks never lock or rebuild the editor. A restarted helper triggers a handoff.
-            if (!await Task.Run(() => priority.NeedsAcquire) || stopping || Busy) return;
-            foreach (var header in activeHeaders.ToArray())
+            if ((!startupPending && !await Task.Run(() => priority.NeedsAcquire)) || stopping || Busy) return;
+            foreach (var header in (startupPending ? Preferences.Profiles.Keys : activeHeaders.AsEnumerable()).ToArray())
             {
                 if (stopping) return;
+                if (DeviceKind(header) == FanDeviceKind.FixedSpeedPump) continue;
                 if (Preferences.Profiles.TryGetValue(header, out var profile) && !await ApplyAsync(profile)) return;
             }
+            startupPending = false;
         }
         catch (Exception error) when (error is not OutOfMemoryException)
         { Message = "Cannot reclaim fan control: " + error.Message; preserveMessage = true; host.Log(Message); Changed?.Invoke(); }
@@ -294,6 +325,8 @@ internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardwar
     public async Task ApplyAtStartupAsync(CancellationToken token)
     {
         if (!Preferences.ApplyAtStartup || token.IsCancellationRequested) return;
+        startupPending = true;
+        var applied = new HashSet<int>();
         foreach (var profile in Preferences.Profiles.Values.ToArray())
         {
             if (token.IsCancellationRequested || stopping) return;
@@ -302,13 +335,14 @@ internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardwar
             {
                 if (token.IsCancellationRequested || stopping) return;
                 if (!Preferences.Profiles.TryGetValue(profile.Header, out var current)) break;
-                if (await ApplyAsync(current)) break;
+                if (await ApplyAsync(current)) { applied.Add(profile.Header); break; }
                 host.Log($"Fan startup / resume attempt {attempt + 1}/3: {Message}");
                 if (attempt < 2)
                     try { await Task.Delay(TimeSpan.FromSeconds(3 * (attempt + 1)), token); }
                     catch (OperationCanceledException) { return; }
             }
         }
+        startupPending = Preferences.Profiles.Keys.Any(h => DeviceKind(h) != FanDeviceKind.FixedSpeedPump && !applied.Contains(h));
     }
     public void CancelResponseMeasurement() => responseCancellation?.Cancel();
     public async Task<bool> CalibrateMinimumAsync(int header, FanDeviceKind kind)
@@ -425,7 +459,13 @@ internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardwar
         bool restored = true;
         try
         {
-            if (!Preferences.RestoreOnExit || (sessionOriginal.Count == 0 && sessionFirmwareOriginal.Count == 0)) return;
+            if (!Preferences.RestoreOnExit)
+            {
+                // Keep native curves and the service lease. Resuming the vendor would replace them.
+                if (priority.HasOwnership) await Task.Run(() => priority.Acquire());
+                return;
+            }
+            if (sessionOriginal.Count == 0 && sessionFirmwareOriginal.Count == 0) return;
             await Task.Run(() =>
             {
                 PrepareControl();
@@ -449,12 +489,12 @@ internal sealed class FanService(SoraHost host, Func<FanReadResult>? readHardwar
         catch (Exception e) when (e is not OutOfMemoryException) { restored = false; host.RecordCleanupFailure("Fan exit restore: " + e); Message = "Fan exit restore failed: " + e.Message; }
         finally
         {
-            if (restored)
+            if (restored && Preferences.RestoreOnExit)
             {
                 try { await Task.Run(priority.Release); }
                 catch (Exception e) when (e is not OutOfMemoryException) { restored = false; host.RecordCleanupFailure("Fan service handoff: " + e); Message = "Fan service handoff failed: " + e.Message; }
             }
-            if (restored && VendorServicePaused)
+            if (restored && Preferences.RestoreOnExit && VendorServicePaused)
             {
                 try
                 {

@@ -6,7 +6,6 @@
     <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
     <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
       <Grid Background="Transparent">
-        <Ellipse x:Name="FocusRing" Width="22" Height="22" Stroke="{DynamicResource TextBrush}" StrokeThickness="1" Visibility="Collapsed"/>
         <Ellipse x:Name="Dot" Width="13" Height="13" Fill="{TemplateBinding Background}"/>
         <Viewbox x:Name="Glyph" Width="12" Height="12" Visibility="Collapsed">
           <Canvas Width="24" Height="24"><Path Data="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" Stroke="#222222" StrokeThickness="2.2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/></Canvas>
@@ -14,10 +13,39 @@
       </Grid>
       <ControlTemplate.Triggers>
         <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Glyph" Property="Visibility" Value="Visible"/></Trigger>
-        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="FocusRing" Property="Visibility" Value="Visible"/><Setter TargetName="Glyph" Property="Visibility" Value="Visible"/></Trigger>
+        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Glyph" Property="Visibility" Value="Visible"/></Trigger>
         <Trigger Property="IsPressed" Value="True"><Setter TargetName="Dot" Property="Opacity" Value="0.65"/></Trigger>
       </ControlTemplate.Triggers>
     </ControlTemplate></Setter.Value></Setter>
+  </Style>
+
+  <Style x:Key="TrayMenu" TargetType="ContextMenu">
+    <Setter Property="FontFamily" Value="{DynamicResource UIFont}"/><Setter Property="FontSize" Value="13"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/><Setter Property="MinWidth" Value="240"/>
+    <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ContextMenu">
+      <Border Background="{DynamicResource PopoverBrush}" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1" CornerRadius="12" Padding="6" SnapsToDevicePixels="True">
+        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+      </Border>
+    </ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style x:Key="TrayMenuItem" TargetType="MenuItem">
+    <Setter Property="Height" Value="36"/><Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+    <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="MenuItem">
+      <Border x:Name="Surface" Background="Transparent" CornerRadius="7" Padding="10,0">
+        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="18"/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
+          <ContentPresenter ContentSource="Icon" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+          <ContentPresenter Grid.Column="2" ContentSource="Header" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+        </Grid>
+      </Border>
+      <ControlTemplate.Triggers>
+        <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource ControlSelectedBrush}"/></Trigger>
+        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource ControlSelectedBrush}"/></Trigger>
+        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger>
+      </ControlTemplate.Triggers>
+    </ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style x:Key="TrayMenuSeparator" TargetType="Separator">
+    <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Separator"><Border Height="1" Margin="8,5" Background="{DynamicResource SeparatorBrush}"/></ControlTemplate></Setter.Value></Setter>
   </Style>
 
   <!-- Light system palette. Keep shell and native caption colours in sync. -->

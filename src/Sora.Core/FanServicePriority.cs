@@ -1,4 +1,5 @@
 using System.Management;
+using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Text.Json;
 
@@ -146,12 +147,26 @@ public sealed class WindowsFanPrioritySystem : IFanPrioritySystem
         if (!string.Equals(Convert.ToString(service["PathName"]), expected.Executable, StringComparison.OrdinalIgnoreCase))
             throw new IOException("Fan service executable changed: " + expected.Name);
         if (Convert.ToString(service["State"]) == state) return;
+        // SCM can report Stopped before the helper's process has released its controller.
+        Process? exiting = null;
+        if (state == "Stopped" && Convert.ToInt32(service["ProcessId"]) is > 0 and var pid)
+        {
+            try { exiting = Process.GetProcessById(pid); }
+            catch (ArgumentException) { }
+        }
+        using var stoppedProcess = exiting;
         var code = Convert.ToUInt32(service.InvokeMethod(method, null));
         if (code != 0) throw new IOException(expected.Name + " " + method + " failed (" + code + ").");
         var deadline = DateTime.UtcNow.AddSeconds(20);
         do
         {
-            service.Get(); if (Convert.ToString(service["State"]) == state) return; Thread.Sleep(100);
+            service.Get();
+            if (Convert.ToString(service["State"]) == state)
+            {
+                if (stoppedProcess != null && !stoppedProcess.WaitForExit(5000)) throw new TimeoutException(expected.Name + " stopped but its process is still releasing fan control. Sora will retry automatically.");
+                return;
+            }
+            Thread.Sleep(100);
         } while (DateTime.UtcNow < deadline);
         throw new TimeoutException(expected.Name + " did not become " + state + ".");
     }

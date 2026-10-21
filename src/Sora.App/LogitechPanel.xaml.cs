@@ -107,7 +107,7 @@ public partial class LogitechPanel : UserControl
         ConnectionText.Text = "Reading mouse…"; DpiValue.Text = "—"; ModeText.Text = "Checking";
         snapshot = await WithDeviceAsync(async d => { using var timeout = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(15)); return await d.ReadAsync(timeout.Token); });
         draftDpi = snapshot.Sensors.SingleOrDefault()?.Dpi ?? 0; draftRate = snapshot.ReportRate ?? 0;
-        lightDrafts.Clear(); foreach (var zone in snapshot.Lighting ?? []) lightDrafts[zone.Index] = zone.State.ToArray();
+        lightDrafts.Clear(); foreach (var zone in snapshot.Lighting ?? []) lightDrafts[zone.Index] = LightingBaseline(zone.Index).ToArray();
         rendering = true;
         DeviceTitle.Text = snapshot.Name; DeviceSubtitle.Text = $"Wired · USB 046D:{snapshot.ProductId:X4} · HID++ " + snapshot.Protocol;
         ConnectionText.Text = "Connected directly over USB"; ModeText.Text = snapshot.OnboardMode == 1 ? "Firmware control" : "Software control";
@@ -372,7 +372,7 @@ public partial class LogitechPanel : UserControl
         rendering = true;
         draftDpi = snapshot.Sensors.SingleOrDefault()?.Dpi ?? 0; draftRate = snapshot.ReportRate ?? 0;
         DpiSlider.Value = draftDpi; DpiInput.Text = draftDpi.ToString(); DpiValue.Text = draftDpi.ToString("N0"); RatePicker.SelectedIndex = Array.IndexOf(snapshot.ReportRates, draftRate);
-        lightDrafts.Clear(); foreach (var z in snapshot.Lighting ?? []) lightDrafts[z.Index] = z.State.ToArray();
+        lightDrafts.Clear(); foreach (var z in snapshot.Lighting ?? []) lightDrafts[z.Index] = LightingBaseline(z.Index).ToArray();
         rendering = false; invalidLight = invalidRgb = false; ClearInputError(); LoadReactiveEditor(); SetEnabled();
         if (controlBaseline.Length > 0) StageControlProfile(JsonSerializer.Deserialize<LogitechControlProfile>(controlBaseline)!);
         dpiSelectionPending = false; SetEnabled();

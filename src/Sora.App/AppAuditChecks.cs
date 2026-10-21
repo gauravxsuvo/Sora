@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -146,7 +147,87 @@ internal static class AppAuditChecks
             move.Invoke(chart, [0, 100, 100d]); Assert(moved == new FanPoint(44, 45));
             return Task.CompletedTask;
         });
+        await Check("Legacy fan defaults migrate once without losing the saved curve or header", () =>
+        {
+            var directory = Path.Combine(root, "legacy-retention"); Directory.CreateDirectory(directory);
+            var profile = FanProfile.Preset(5, "Quiet") with { Points = [new(19, 12.94), new(30, 14.02), new(46, 17), new(60, 29), new(75, 51), new(86, 100)] };
+            var legacy = JsonSerializer.SerializeToNode(new FanPreferences { ApplyAtStartup = false, RestoreOnExit = true, Profiles = new() { [5] = profile }, HeaderNames = new() { [5] = "Radiator fans" } })!.AsObject();
+            legacy.Remove("RetentionVersion"); legacy.Remove("SelectedHeader");
+            File.WriteAllText(Path.Combine(directory, "fans.json"), legacy.ToJsonString());
+            var fans = new SoraHost(directory).Fans;
+            Assert(fans.Preferences.ApplyAtStartup && !fans.Preferences.RestoreOnExit && fans.Preferences.TakePriority && fans.Preferences.SelectedHeader == 5);
+            Assert(fans.Preferences.Profiles[5].Points.SequenceEqual(profile.Points) && fans.DisplayName(5) == "Radiator fans" && File.Exists(Path.Combine(directory, "fans.json.before-retention-v1")));
+            fans.SetOptions(false, true, false); fans.RememberHeader(2);
+            var reopened = new SoraHost(directory).Fans.Preferences;
+            Assert(!reopened.ApplyAtStartup && reopened.RestoreOnExit && !reopened.TakePriority && reopened.SelectedHeader == 2);
+            return Task.CompletedTask;
+        });
+        await Check("Legacy RGB retains the saved look and respects later explicit exit choices", () =>
+        {
+            var directory = Path.Combine(root, "legacy-lighting"); Directory.CreateDirectory(directory);
+            var legacy = JsonSerializer.SerializeToNode(new LightingSettings(Memory: new MemoryLighting(EneMode.Static, "#8300FF", 30, 3), ApplyAtStartup: false, RainbowOnExit: true))!.AsObject();
+            legacy.Remove("RetentionVersion"); File.WriteAllText(Path.Combine(directory, "lighting.json"), legacy.ToJsonString());
+            var lighting = new SoraHost(directory).Lighting;
+            Assert(lighting.Settings.ApplyAtStartup && !lighting.Settings.RainbowOnExit && lighting.Settings.Memory?.Color == "#8300FF");
+            lighting.SaveExitPreference(true);
+            Assert(new SoraHost(directory).Lighting.Settings.RainbowOnExit);
+            return Task.CompletedTask;
+        });
+        await Check("Mouse color, brightness, profile and last DPI stage survive reopening", () =>
+        {
+            var directory = Path.Combine(root, "mouse-retention"); var mouse = Path.Combine(directory, "logitech"); Directory.CreateDirectory(mouse);
+            var state = LogitechLighting.Encode(1, "8300FF", 5000, 30);
+            File.WriteAllText(Path.Combine(mouse, "firmware-lighting.json"), JsonSerializer.Serialize(new { Identity = "test-mouse", States = new Dictionary<byte, byte[]> { [1] = state } }));
+            var profile = LogitechControlProfile.Create(); LogitechControlProfile.Save(Path.Combine(mouse, "control-profile.json"), profile);
+            File.WriteAllText(Path.Combine(mouse, "control-enabled.json"), "true");
+            File.WriteAllText(Path.Combine(mouse, "control-runtime.json"), JsonSerializer.Serialize(new { Profile = profile.Name, profile.Stages, profile.ShiftDpi, Stage = 2 }));
+            var host = new SoraHost(directory);
+            Assert(host.LogitechLighting.SavedFirmwareState("test-mouse", 1)!.SequenceEqual(state) && host.LogitechLighting.SavedFirmwareState("another-mouse", 1) == null);
+            var copy = host.LogitechLighting.SavedFirmwareState("test-mouse", 1)!; copy[0] ^= 1;
+            Assert(host.LogitechLighting.SavedFirmwareState("test-mouse", 1)!.SequenceEqual(state));
+            var resume = typeof(LogitechService).GetMethod("ResumeStage", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+            Assert(host.Logitech.Enabled && host.Logitech.Profile!.Stages.SequenceEqual(profile.Stages) && (int)resume.Invoke(host.Logitech, [profile])! == 2);
+            return Task.CompletedTask;
+        });
+        await Check("Keeping fan curves on exit leaves the helper stopped across reopen", async () =>
+        {
+            var directory = Path.Combine(root, "fan-lease"); var host = new SoraHost(directory); var system = new RetentionFanSystem();
+            var service = new FanService(host, prioritySystem: system); service.Load();
+            Assert(await service.PauseVendorServiceAsync()); await service.StopAsync();
+            Assert(!system.Running && system.Starts == 0 && system.Captures == 1 && File.Exists(Path.Combine(directory, "fans-priority-session.json")));
+            var reopened = new FanService(host, prioritySystem: system); reopened.Load(); Assert(await reopened.PauseVendorServiceAsync());
+            Assert(system.Captures == 1); reopened.SetOptions(true, true); await reopened.StopAsync();
+            Assert(system.Running && system.Starts == 1 && !File.Exists(Path.Combine(directory, "fans-priority-session.json")));
+        });
+        await Check("Application icon has transparent margins instead of a dark backing tile", () =>
+        {
+            using var stream = Application.GetResourceStream(new Uri("pack://application:,,,/Sora;component/Assets/Sora.ico"))!.Stream;
+            var decoder = new System.Windows.Media.Imaging.IconBitmapDecoder(stream, System.Windows.Media.Imaging.BitmapCreateOptions.PreservePixelFormat, System.Windows.Media.Imaging.BitmapCacheOption.OnLoad);
+            var frame = new System.Windows.Media.Imaging.FormatConvertedBitmap(decoder.Frames[^1], PixelFormats.Bgra32, null, 0);
+            var pixels = new byte[frame.PixelWidth * frame.PixelHeight * 4]; frame.CopyPixels(pixels, frame.PixelWidth * 4, 0);
+            Assert(pixels[(frame.PixelWidth / 2) * 4 + 3] == 0 && pixels[(frame.PixelHeight / 2 * frame.PixelWidth) * 4 + 3] == 0 && pixels.Where((_, i) => i % 4 == 3).Any(a => a > 0));
+            return Task.CompletedTask;
+        });
         File.WriteAllText(output, JsonSerializer.Serialize(new { passed = results.Values.All(x => x), checks = results, hardwareWrites = 0, dataDirectory = root }, new JsonSerializerOptions { WriteIndented = true }));
         return results.Values.All(x => x);
+    }
+
+    private sealed class RetentionFanSystem : IFanPrioritySystem
+    {
+        public bool Running = true;
+        public int Starts, Captures;
+        public ManagedFanService[] Services() => [new("EasyTuneEngineService", @"C:\GIGABYTE\EasyTuneEngineService.exe", Running)];
+        public string[] Writers() => Running ? ["EasyTuneEngineService"] : [];
+        public FanSnapshot Capture()
+        {
+            Captures++;
+            return new(GigabyteFans.SupportedBoard, FanMaintenance.Controller, DateTimeOffset.UtcNow, [35, 40, 45, 42, 46, 35],
+                Enumerable.Range(0, 6).Select(h => new FanHeaderState(h, "Header", 1200, true, FanProfile.Preset(h, "Balanced"),
+                    FanProtocol.Registers(h).Select(r => new FanRegisterValue(r.Bank, r.Address, (byte)(r == FanProtocol.ControlRegister(h) ? 128 : 0))).ToArray()) { FirmwareStop = new(false, 2, 0, 0) }).ToArray())
+                { FirmwareInterface = FanMaintenance.FirmwareInterface };
+        }
+        public void Restore(FanSnapshot snapshot) => FanMaintenance.Validate(snapshot);
+        public void Stop(ManagedFanService service) => Running = false;
+        public void Start(ManagedFanService service) { Running = true; Starts++; }
     }
 }

@@ -2,7 +2,7 @@
 
 # Sora
 
-A native Windows hardware hub for this PC's DeepCool cooler display, Kreo keyboard, Logitech mouse, Gigabyte lighting and fans, NVIDIA GPU fans, storage health, and Wi-Fi measurements.
+A native Windows PC controller for cooling, lighting, peripherals and hardware monitoring.
 
 [Download for Windows](https://sora.portways.app/#download) · [User guide](docs/user-guide.md)
 
@@ -14,21 +14,14 @@ Sora does not install hardware drivers or update device firmware. CPU sensors an
 
 Normal upgrades preserve preferences and profiles. Uninstall lets you keep saved data or remove it. See [installation](docs/program-files-installation.md) and [download warnings](docs/download-warnings.md).
 
-## Supported hardware
+## Features
 
-| Hardware | Coverage |
-| --- | --- |
-| DeepCool LD360 | Display of live CPU temperature, utilization, and package power |
-| Supported Kreo keyboards and receivers | Model-dependent key mapping and lighting |
-| Logitech G502 HERO | DPI, button profiles, macros, lighting, and selected device preferences |
-| Logitech G102 / G203 family | Wired detection and read-only DPI, polling-rate, and capability information; advanced controls are not yet qualified |
-| Supported RGB memory / Gigabyte controllers | Model-dependent lighting with original-state backups |
-| Gigabyte Z890 GAMING X WIFI7 | Supported motherboard fan controls |
-| NVIDIA graphics | Driver-dependent fan monitoring and controls; native RPM programming is restricted to qualified card interfaces |
-| Storage | Device-dependent identity, health, SMART, and endurance information |
-| Wi-Fi | Windows network readings and manual antenna-position comparisons |
+- Cooling: temperatures, supported fan curves and cooler displays.
+- Lighting: memory, motherboard and peripheral lighting with saved preferences.
+- Peripherals: device-dependent mouse sensitivity, button profiles and keyboard controls.
+- Monitoring: storage health, Wi-Fi readings and hardware maintenance information.
 
-Support is specific to the device, interface, and available capabilities. Sora does not assume that every device from a supported brand accepts the same commands. See the [user guide](docs/user-guide.md) for limitations.
+Available controls depend on detected hardware, drivers and qualified device interfaces. Unsupported controls remain hidden or read-only. See the [user guide](docs/user-guide.md) for capabilities and limitations.
 
 ## Build and check
 

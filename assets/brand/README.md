@@ -18,7 +18,7 @@ The SVG is the scalable master; the PNGs are rendered directly from its geometry
 | `reference.png` | Original uploaded reference; unchanged |
 | `../Sora.ico` | Windows icon with 16, 20, 24, 32, 40, 48, 64, 128, and 256 px entries |
 
-Use the light mark on dark backgrounds and the ink mark on light backgrounds. The Windows ICO and website icons use the dark-backed version so the white silhouette stays visible on either theme. The WPF sidebar uses native vector geometry and follows the application text color.
+Use the light mark on dark backgrounds and the ink mark on light backgrounds. The Windows ICO uses a transparent white mark, and the website uses a transparent ink mark. Neither adds a background tile or an outer border. The WPF sidebar uses native vector geometry and follows the application text color.
 
 Regenerate all assets on Windows:
 

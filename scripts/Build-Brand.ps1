@@ -68,9 +68,9 @@ foreach ($pixels in 64, 128, 256, 512, 1024, 2048, 4096) {
 [IO.File]::WriteAllBytes((Join-Path $Brand 'sora-mark-on-dark.png'), (Render-Png 2048 $ReferenceWhite $Ink))
 [IO.File]::WriteAllBytes((Join-Path $Brand 'sora-mark-on-light.png'), (Render-Png 2048 $Ink $ReferenceWhite))
 
-# A dark backing keeps the application icon legible on both Windows light and dark taskbars.
+# Keep genuine transparency outside the mark; no square backing around the logo.
 $Sizes = 16, 20, 24, 32, 40, 48, 64, 128, 256
-$Images = foreach ($pixels in $Sizes) { ,(Render-Png $pixels $ReferenceWhite $Ink) }
+$Images = foreach ($pixels in $Sizes) { ,(Render-Png $pixels $ReferenceWhite) }
 $Output = [IO.File]::Create((Join-Path $TaskRoot 'assets\Sora.ico'))
 $Writer = [IO.BinaryWriter]::new($Output)
 try {
@@ -95,9 +95,9 @@ $theme = [regex]::Replace($theme, '<(?:LinearGradientBrush|SolidColorBrush) x:Ke
 [IO.File]::WriteAllText($themePath, $theme, [Text.UTF8Encoding]::new($false))
 
 $web = Join-Path $TaskRoot 'web\sora-downloads\public'
-Copy-Item -LiteralPath (Join-Path $Brand 'sora-mark-on-dark.svg') -Destination (Join-Path $web 'sora-mark.svg')
-[IO.File]::WriteAllBytes((Join-Path $web 'sora-mark.png'), (Render-Png 512 $ReferenceWhite $Ink))
-[IO.File]::WriteAllBytes((Join-Path $web 'apple-touch-icon.png'), (Render-Png 256 $ReferenceWhite $Ink))
+Copy-Item -LiteralPath (Join-Path $Brand 'sora-mark-ink.svg') -Destination (Join-Path $web 'sora-mark.svg')
+[IO.File]::WriteAllBytes((Join-Path $web 'sora-mark.png'), (Render-Png 512 $Ink))
+[IO.File]::WriteAllBytes((Join-Path $web 'apple-touch-icon.png'), (Render-Png 256 $Ink))
 Copy-Item -LiteralPath (Join-Path $TaskRoot 'assets\Sora.ico') -Destination (Join-Path $web 'favicon.ico')
 
 if ($PreviewPath) {

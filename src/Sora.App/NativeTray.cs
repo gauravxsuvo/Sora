@@ -2,14 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace Sora.App;
 
 // Notification-area icon built on Shell_NotifyIcon and a plain hidden Win32 window.
-// It avoids loading WinForms and never starts WPF rendering, which keeps the tray-only footprint small.
+// The icon stays native; its themed WPF menu is created only when opened.
 internal sealed class NativeTray : IDisposable
 {
-    public sealed record MenuItem(string Text, Action Run, bool Enabled = true);
+    public sealed record MenuItem(string Text, Action Run, bool Enabled = true, string Icon = "IconInfo");
+    private ContextMenu? popup;
 
     private const int WM_NULL = 0x0000, WM_LBUTTONUP = 0x0202, WM_RBUTTONUP = 0x0205, WM_TRAY = 0x8001;
     private const int NIM_ADD = 0, NIM_MODIFY = 1, NIM_DELETE = 2, NIF_MESSAGE = 1, NIF_ICON = 2, NIF_TIP = 4;
@@ -78,29 +82,40 @@ internal sealed class NativeTray : IDisposable
 
     private void ShowMenu()
     {
-        var items = menu();
-        var handle = CreatePopupMenu();
-        try
+        if (popup != null) popup.IsOpen = false;
+        var opened = BuildMenu(menu()); popup = opened;
+        opened.Placement = PlacementMode.MousePoint;
+        opened.Opened += (_, _) => opened.Focus();
+        opened.Closed += (_, _) => { if (ReferenceEquals(popup, opened)) popup = null; PostMessageW(hwnd, WM_NULL, IntPtr.Zero, IntPtr.Zero); };
+        SetForegroundWindow(hwnd);
+        opened.IsOpen = true;
+    }
+
+    internal static ContextMenu BuildMenu(IReadOnlyList<MenuItem?> items)
+    {
+        var result = new ContextMenu { Style = (Style)Application.Current.FindResource("TrayMenu") };
+        System.Windows.Automation.AutomationProperties.SetName(result, "Sora tray menu");
+        foreach (var item in items)
         {
-            for (var i = 0; i < items.Count; i++)
+            if (item == null) { result.Items.Add(new Separator { Style = (Style)Application.Current.FindResource("TrayMenuSeparator") }); continue; }
+            var row = new System.Windows.Controls.MenuItem
             {
-                var item = items[i];
-                if (item == null) AppendMenuW(handle, MF_SEPARATOR, IntPtr.Zero, null);
-                else AppendMenuW(handle, MF_STRING | (item.Enabled ? 0 : MF_GRAYED), (IntPtr)(i + 1), item.Text);
-            }
-            GetCursorPos(out var point);
-            SetForegroundWindow(hwnd);
-            var chosen = TrackPopupMenuEx(handle, TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, point.X, point.Y, hwnd, IntPtr.Zero);
-            PostMessageW(hwnd, WM_NULL, IntPtr.Zero, IntPtr.Zero);
-            if (chosen > 0 && items[chosen - 1] is { } selected) selected.Run();
+                Header = item.Text, IsEnabled = item.Enabled,
+                Style = (Style)Application.Current.FindResource("TrayMenuItem"),
+                Icon = new ContentControl { Content = Application.Current.FindResource(item.Icon), Style = (Style)Application.Current.FindResource("LineIcon"), Width = 16, Height = 16 }
+            };
+            System.Windows.Automation.AutomationProperties.SetName(row, item.Text);
+            row.Click += (_, _) => { result.IsOpen = false; Application.Current.Dispatcher.BeginInvoke(item.Run); };
+            result.Items.Add(row);
         }
-        finally { DestroyMenu(handle); }
+        return result;
     }
 
     public void Dispose()
     {
         if (disposed) return;
         disposed = true;
+        if (popup != null) popup.IsOpen = false;
         var data = new NOTIFYICONDATAW { cbSize = Marshal.SizeOf<NOTIFYICONDATAW>(), hWnd = hwnd, uID = 1, szTip = "", szInfo = "", szInfoTitle = "" };
         Shell_NotifyIconW(NIM_DELETE, ref data);
         if (icon != IntPtr.Zero) DestroyIcon(icon);

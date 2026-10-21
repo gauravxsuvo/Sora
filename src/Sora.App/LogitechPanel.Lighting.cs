@@ -32,9 +32,10 @@ public partial class LogitechPanel
     private readonly Dictionary<byte, LogitechReactiveZone> reactiveDrafts = [];
     private bool invalidRgb, linkZonesPending;
     private bool IsReactive => (EffectPicker.SelectedItem as EffectOption)?.Mode is 100 or 101;
+    private byte[] LightingBaseline(byte zone) => snapshot == null ? [] : reactive?.SavedFirmwareState(snapshot.Identity, zone) ?? snapshot.Lighting?.SingleOrDefault(z => z.Index == zone)?.State ?? [];
     private bool LightingDirty(byte zone) => invalidLight || linkZonesPending || (reactiveDrafts.TryGetValue(zone, out var draft)
         ? reactive?.Zones.SingleOrDefault(z => z.Zone == zone) != draft
-        : reactive?.Zones.Any(z => z.Zone == zone) == true || snapshot?.Lighting?.SingleOrDefault(z => z.Index == zone) is { } original && lightDrafts.TryGetValue(zone, out var raw) && !raw.SequenceEqual(original.State));
+        : reactive?.Zones.Any(z => z.Zone == zone) == true || lightDrafts.TryGetValue(zone, out var raw) && !raw.SequenceEqual(LightingBaseline(zone)));
     private LogitechReactiveZone ReactiveFromFields(byte zone)
     {
         var setting = new LogitechReactiveZone(zone, (EffectPicker.SelectedItem as EffectOption)?.Mode == 100 ? "Screen sampler" : "Audio visualizer", HexInput.Text.TrimStart('#'), (int)BrightnessSlider.Value, (ScreenAreaPicker.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Whole screen");

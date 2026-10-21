@@ -16,6 +16,15 @@ public partial class App : Application
     private Mutex? instance;
     protected override async void OnStartup(StartupEventArgs e)
     {
+        if (e.Args.Contains("--tray-menu-check"))
+        {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            var index = Array.IndexOf(e.Args, "--output");
+            if (index < 0 || index + 1 >= e.Args.Length) { Shutdown(2); return; }
+            try { Shutdown(await TrayMenuChecks.RunAsync(e.Args[index + 1]) ? 0 : 1); }
+            catch (Exception error) { File.WriteAllText(e.Args[index + 1] + ".error.json", JsonSerializer.Serialize(new { error = error.ToString() })); Shutdown(1); }
+            return;
+        }
         if (e.Args.Contains("--app-audit-check"))
         {
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -327,6 +336,7 @@ public partial class App : Application
         }
         if (screenshot == null)
         {
+            ThemeManager.Apply(host.Settings.DarkMode);
             tray = new NativeTray("Sora", TrayMenu);
             tray.Activated += () => ShowWindow();
             host.Updated += UpdateTray;
@@ -415,13 +425,14 @@ public partial class App : Application
 
     private IReadOnlyList<NativeTray.MenuItem?> TrayMenu() =>
     [
-        new("Open Sora", () => ShowWindow()),
-        new(ApplicationUpdates?.Available == true ? "Sora update available…" : "Check for Sora updates…", () => { page = "updates"; ShowWindow(); window?.OpenUpdates(); }, !updatePrepared),
+        new("Open Sora", () => ShowWindow(), Icon: "IconMonitor"),
+        new(ApplicationUpdates?.Available == true ? "Update available…" : "Check for updates", () => { page = "updates"; ShowWindow(); window?.OpenUpdates(); }, !updatePrepared, "IconDownload"),
         host!.Hardware.Available(HardwareModule.Cooler) || host.Requested
-            ? host.Requested ? new("Stop display", () => _ = host.SetRequestedAsync(false), !updatePrepared) : new("Start display", () => _ = host.SetRequestedAsync(true), !updatePrepared)
+            ? host.Requested ? new("Stop cooler display", () => _ = host.SetRequestedAsync(false), !updatePrepared, "IconMonitor") : new("Start cooler display", () => _ = host.SetRequestedAsync(true), !updatePrepared, "IconMonitor")
             : null,
         null,
-        new("Exit Sora", () => _ = ExitAsync()),
+        new("Settings", () => { page = "settings"; ShowWindow(); window?.OpenSettings(); }, Icon: "IconSettings"),
+        new("Exit Sora", () => _ = ExitAsync(), Icon: "IconClose"),
     ];
 
     private void UpdateTray()

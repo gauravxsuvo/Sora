@@ -125,6 +125,7 @@ public partial class MainWindow : Window
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(screenshotPath))!);
         File.WriteAllText(screenshotPath + ".fonts.json", JsonSerializer.Serialize(fontFiles, new JsonSerializerOptions { WriteIndented = true }));
         var arguments = Environment.GetCommandLineArgs();
+        if (arguments.Contains("--public-preview")) Fans.ShowPublicPreview();
         if (arguments.Contains("--hardware-ui-check"))
             File.WriteAllText(screenshotPath + ".hardware-checks.json", JsonSerializer.Serialize(RunHardwareAvailabilityChecks(), new JsonSerializerOptions { WriteIndented = true }));
         if (Array.IndexOf(arguments, "--settings-navigation-check") >= 0)
@@ -365,6 +366,8 @@ public partial class MainWindow : Window
         void Check(string name, bool passed) { checks[name] = passed; if (!passed) throw new InvalidOperationException(name); }
         var chrome = System.Windows.Shell.WindowChrome.GetWindowChrome(this);
         Check("Custom caption retains the native resize frame", WindowStyle == WindowStyle.None && ResizeMode == ResizeMode.CanResize && chrome is { CaptionHeight: 40, UseAeroCaptionButtons: false } && chrome.ResizeBorderThickness.Left >= 6);
+        WindowMaximize.ApplyTemplate();
+        Check("Traffic-light buttons have no extra outer focus border", WindowMaximize.Template.FindName("FocusRing", WindowMaximize) == null);
         var handle = new WindowInteropHelper(this).Handle;
         int Hit(Point local)
         {
@@ -590,6 +593,7 @@ public partial class MainWindow : Window
     }
 
     internal void OpenUpdates() => NavUpdates.IsChecked = true;
+    internal void OpenSettings() => NavSettings.IsChecked = true;
     internal void CloseForTray() { closingForTray = true; Close(); }
 
     // Waits for any keyboard write to finish before the app exits.

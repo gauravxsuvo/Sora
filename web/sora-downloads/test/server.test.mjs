@@ -11,7 +11,10 @@ async function withServer(storage, run) {
   finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 }
 test('static website, method restrictions and honest unconfigured feed', () => withServer(null, async base => {
-  const home = await fetch(base); assert.equal(home.status, 200); const html = await home.text(); assert.match(html, /One setup/); assert.doesNotMatch(html, /\u2014/);
+  const home = await fetch(base); assert.equal(home.status, 200); const html = await home.text(); assert.match(html, /One app/); assert.doesNotMatch(html, /\u2014/);
+  assert.doesNotMatch(html, /Z890|G502|LD360|WIFI7|Kreo|everyday PC|personal hardware/i);
+  const logo = await (await fetch(base + '/sora-mark.svg')).text(); assert.doesNotMatch(logo, /<rect\b/);
+  const css = await (await fetch(base + '/styles.css')).text(); assert.match(css, /--accent:\s*#111111/);
   assert.match(home.headers.get('content-security-policy'), /object-src 'none'/);
   assert.equal((await fetch(base + '/beta-download.mjs')).status, 404);
   assert.equal((await fetch(base + '/api/beta-release')).status, 404);
