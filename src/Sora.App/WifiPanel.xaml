@@ -5,9 +5,9 @@
       <StackPanel Orientation="Horizontal"><Button x:Name="ScanButton" Content="Refresh" Click="ScanClick" ToolTip="Reads Windows' latest Wi-Fi results. Sora never forces a scan of the card."/><Button Content="Save CSV" Click="ExportClick" Style="{StaticResource QuietButton}" Margin="8,0,0,0"/></StackPanel>
     </local:PageHeader>
     <StackPanel Grid.Row="1">
-      <Border x:Name="WifiOffBanner" Background="{StaticResource WarningSurfaceBrush}" BorderBrush="{StaticResource WarningBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,14,0,0" Visibility="Collapsed" AutomationProperties.LiveSetting="Polite">
+      <Border x:Name="WifiOffBanner" Background="{DynamicResource WarningSurfaceBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,14,0,0" Visibility="Collapsed" AutomationProperties.LiveSetting="Polite">
         <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-          <StackPanel Margin="0,0,14,0"><TextBlock Text="Turn on Wi-Fi to use Wi-Fi Compass" Foreground="{StaticResource WarnTextBrush}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock Text="Your Wi-Fi radio is off. Turn it on in Windows to scan networks and measure antenna signal." Style="{StaticResource CaptionText}" Margin="0,4,0,0"/></StackPanel>
+          <StackPanel Margin="0,0,14,0"><TextBlock Text="Turn on Wi-Fi to use Wi-Fi Compass" Foreground="{DynamicResource WarnTextBrush}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock Text="Your Wi-Fi radio is off. Turn it on in Windows to scan networks and measure antenna signal." Style="{StaticResource CaptionText}" Margin="0,4,0,0"/></StackPanel>
           <Button Content="Open Wi-Fi settings" Click="OpenWifiSettingsClick" Grid.Column="1" VerticalAlignment="Center"/>
         </Grid>
       </Border>
@@ -40,7 +40,7 @@
                 <Canvas x:Name="SignalGauge" ClipToBounds="True" SizeChanged="GaugeSizeChanged"/>
                 <StackPanel VerticalAlignment="Center" Margin="0,24,0,0"><TextBlock x:Name="SignalText" Text="— dBm" FontSize="34" FontWeight="SemiBold" TextAlignment="Center"/><TextBlock x:Name="QualityText" Text="Waiting for a fresh measurement" Style="{StaticResource CaptionText}" TextAlignment="Center" Margin="0,4,0,0"/></StackPanel>
               </Grid>
-              <ProgressBar x:Name="SignalMeter" Minimum="0" Maximum="100" Height="3" Foreground="{StaticResource AccentBrush}" Background="{StaticResource ControlBrush}" BorderThickness="0" Margin="0,2,0,14"/>
+              <ProgressBar x:Name="SignalMeter" Minimum="0" Maximum="100" Height="3" Foreground="{DynamicResource AccentBrush}" Background="{DynamicResource ControlBrush}" BorderThickness="0" Margin="0,2,0,14"/>
               <UniformGrid Columns="3">
                 <StackPanel><TextBlock Text="MINIMUM" Style="{StaticResource CaptionText}" TextAlignment="Center" FontSize="10"/><TextBlock x:Name="MinimumText" Text="—" FontSize="22" FontWeight="SemiBold" TextAlignment="Center" Margin="0,6,0,0"/></StackPanel>
                 <StackPanel><TextBlock Text="AVERAGE" Style="{StaticResource CaptionText}" TextAlignment="Center" FontSize="10"/><TextBlock x:Name="AverageText" Text="—" FontSize="22" FontWeight="SemiBold" TextAlignment="Center" Margin="0,6,0,0"/></StackPanel>
@@ -67,7 +67,7 @@
                 <ComboBox x:Name="PositionBox" Visibility="Collapsed" SelectedIndex="0" SelectionChanged="PositionChanged" AutomationProperties.Name="Position"><ComboBoxItem Content="Front"/><ComboBoxItem Content="Left"/><ComboBoxItem Content="Back"/><ComboBoxItem Content="Right"/></ComboBox>
                 <TextBlock x:Name="PositionHeading" Text="Position 1 · Front" FontSize="16" FontWeight="SemiBold"/>
                 <WrapPanel Margin="0,12,0,0"><Button x:Name="MeasureButton" Content="Measure Front" Click="MeasureClick"/><Button Content="Reset results" Click="ResetClick" Style="{StaticResource QuietButton}" Margin="8,0,0,0"/></WrapPanel>
-                <ProgressBar x:Name="MeasurementProgress" Minimum="0" Maximum="15" Height="4" Margin="0,14,0,10" Foreground="{StaticResource AccentBrush}" Background="{StaticResource ControlBrush}" BorderThickness="0"/>
+                <ProgressBar x:Name="MeasurementProgress" Minimum="0" Maximum="15" Height="4" Margin="0,14,0,10" Foreground="{DynamicResource AccentBrush}" Background="{DynamicResource ControlBrush}" BorderThickness="0"/>
                 <TextBlock x:Name="MeasureText" Style="{StaticResource CaptionText}" Text="Start with the antenna facing forward."/>
                 <TextBlock x:Name="BestText" FontSize="15" FontWeight="SemiBold" Margin="0,12,0,0"/>
               </StackPanel>
@@ -77,8 +77,8 @@
         </Border>
         <Border Style="{StaticResource Card}" Padding="18" Margin="0,12,0,0">
           <StackPanel><TextBlock Text="Nearby access points" Style="{StaticResource Eyebrow}"/><TextBlock Text="Each BSSID is a separate radio. Last seen shows the age of Windows' cached scan results." Style="{StaticResource CaptionText}" Margin="0,8,0,12"/>
-            <DataGrid x:Name="NetworkGrid" IsReadOnly="True" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" RowHeaderWidth="0" MaxHeight="285" MinHeight="90" Background="{StaticResource InsetBrush}" Foreground="{StaticResource TextBrush}" BorderThickness="0" GridLinesVisibility="None" RowBackground="{StaticResource InsetBrush}" AlternatingRowBackground="{StaticResource SurfaceBrush}" FontSize="12" AutomationProperties.Name="Network">
-              <DataGrid.ColumnHeaderStyle><Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}"><Setter Property="Background" Value="{StaticResource ControlBrush}"/><Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}"/><Setter Property="Padding" Value="8,7"/></Style></DataGrid.ColumnHeaderStyle>
+            <DataGrid x:Name="NetworkGrid" IsReadOnly="True" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" RowHeaderWidth="0" MaxHeight="285" MinHeight="90" Background="{DynamicResource InsetBrush}" Foreground="{DynamicResource TextBrush}" BorderThickness="0" GridLinesVisibility="None" RowBackground="{DynamicResource InsetBrush}" AlternatingRowBackground="{DynamicResource SurfaceBrush}" FontSize="12" AutomationProperties.Name="Network">
+              <DataGrid.ColumnHeaderStyle><Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}"><Setter Property="Background" Value="{DynamicResource ControlBrush}"/><Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/><Setter Property="Padding" Value="8,7"/></Style></DataGrid.ColumnHeaderStyle>
               <DataGrid.CellStyle><Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}"><Setter Property="Padding" Value="8,5"/><Setter Property="BorderThickness" Value="0"/></Style></DataGrid.CellStyle>
               <DataGrid.Columns><DataGridTextColumn Header="Network" Binding="{Binding Name}" Width="*"/><DataGridTextColumn Header="BSSID" Binding="{Binding Bssid}" Width="130"/><DataGridTextColumn Header="dBm" Binding="{Binding SignalDbm}" Width="55"/><DataGridTextColumn Header="Band" Binding="{Binding Band}" Width="65"/><DataGridTextColumn Header="Ch." Binding="{Binding ChannelLabel}" Width="45"/><DataGridTextColumn Header="Radio" Binding="{Binding Radio}" Width="78"/><DataGridTextColumn Header="Security" Binding="{Binding Security}" Width="65"/><DataGridTextColumn Header="Last seen" Binding="{Binding Age}" Width="95"/></DataGrid.Columns>
             </DataGrid>

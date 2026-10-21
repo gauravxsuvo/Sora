@@ -30,6 +30,7 @@ public partial class MainWindow : Window
     {
         this.host = host;
         this.screenshotPath = screenshotPath;
+        ThemeManager.Apply(screenshotPath != null && Environment.GetCommandLineArgs().Contains("--light-theme") ? false : host.Settings.DarkMode);
         InitializeComponent();
         var version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0];
         VersionLabel.Text = version == null ? "Sora" : "Sora " + version;
@@ -54,6 +55,7 @@ public partial class MainWindow : Window
         ZerosCheck.IsChecked = settings.LeadingZeros;
         TrayCheck.IsChecked = settings.MinimizeToTray;
         AutoDisplayCheck.IsChecked = settings.AutoStartDisplay;
+        DarkModeCheck.IsChecked = ThemeManager.IsDark;
         StartupCheck.IsChecked = SafeStartupEnabled();
         initialized = true;
         host.Updated += Render;
@@ -61,7 +63,14 @@ public partial class MainWindow : Window
         Loaded += OnLoaded;
         Closing += OnClosing;
         Closed += (_, _) => { host.Updated -= Render; host.Watched = false; Wifi.Dispose(); };
-        StateChanged += (_, _) => { if (WindowState == WindowState.Minimized && host.Settings.MinimizeToTray && screenshotPath == null) ((App)Application.Current).CloseWindowToTray(); };
+        StateChanged += (_, _) =>
+        {
+            var maximized = WindowState == WindowState.Maximized;
+            WindowMaximize.ToolTip = maximized ? "Restore" : "Maximize";
+            System.Windows.Automation.AutomationProperties.SetName(WindowMaximize, maximized ? "Restore window" : "Maximize window");
+            WindowMaximize.Tag = maximized ? "M6,9 L15,9 L15,18 L6,18 Z M9,6 L18,6 L18,15" : "M6,10 L6,6 L10,6 M14,18 L18,18 L18,14";
+            if (WindowState == WindowState.Minimized && host.Settings.MinimizeToTray && screenshotPath == null) ((App)Application.Current).CloseWindowToTray();
+        };
         ApplyHardwareAvailability();
         Render();
     }
@@ -78,6 +87,18 @@ public partial class MainWindow : Window
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        try { await LoadAndCaptureAsync(); }
+        catch (Exception error) when (screenshotPath != null)
+        {
+            host.Log("Screenshot check failed: " + error);
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(screenshotPath))!);
+            File.WriteAllText(screenshotPath + ".error.json", JsonSerializer.Serialize(new { passed = false, error = error.ToString() }));
+            await ((App)Application.Current).ExitAsync();
+        }
+    }
+
+    private async Task LoadAndCaptureAsync()
     {
         await host.TickAsync();
         if (NavKeyboard.IsChecked == true) await Keyboard.ReadAsync();
@@ -122,8 +143,9 @@ public partial class MainWindow : Window
                 foreach (var entry in NavigationEntries())
                 {
                     entry.Button.ApplyTemplate();
+                    var selection = entry.Button.Template.FindName("SelectionSurface", entry.Button) as FrameworkElement;
                     noFalseSelection &= entry.Button.IsChecked != true
-                        && ((FrameworkElement)entry.Button.Template.FindName("SelectionMarker", entry.Button)).Visibility == Visibility.Collapsed
+                        && selection != null && (double)selection.GetAnimationBaseValue(UIElement.OpacityProperty) == 0
                         && !entry.Button.IsKeyboardFocused;
                 }
                 var routes = new[] { (NavDisplay, (UIElement)DisplayPage), (NavKeyboard, (UIElement)Keyboard), (NavLighting, (UIElement)Lighting), (NavFans, (UIElement)Fans), (NavGpu, (UIElement)GpuFans), (NavStorage, (UIElement)Storage), (NavWifi, (UIElement)Wifi), (NavUpdates, (UIElement)Updates), (NavLogitech, (UIElement)Logitech), (NavSettings, (UIElement)SettingsPage) };
@@ -189,6 +211,8 @@ public partial class MainWindow : Window
             var activePage = (FrameworkElement?)componentGallery ?? ((Grid)DisplayPage.Parent).Children.OfType<FrameworkElement>().First(p => p.IsVisible);
             File.WriteAllText(screenshotPath + ".screen-checks.json", JsonSerializer.Serialize(ProductionScreenChecks.Run(activePage), new JsonSerializerOptions { WriteIndented = true }));
         }
+        if (arguments.Contains("--window-ui-check"))
+            File.WriteAllText(screenshotPath + ".window-checks.json", JsonSerializer.Serialize(await CheckWindowChromeAsync(), new JsonSerializerOptions { WriteIndented = true }));
         if (Array.IndexOf(arguments, "--ssd-ui-check") >= 0)
             File.WriteAllText(screenshotPath + ".ssd-checks.json", JsonSerializer.Serialize(SsdPanel.RunEmptyStateChecks(), new JsonSerializerOptions { WriteIndented = true }));
         if (Array.IndexOf(arguments, "--interaction-check") >= 0)
@@ -327,12 +351,66 @@ public partial class MainWindow : Window
         value.Text = text; dot.Fill = (Brush)FindResource(tone); detail.Text = description;
     }
 
-    // Keep the native Windows caption, resize frame and system buttons in step with the light client surface.
+    private void CloseWindowClick(object sender, RoutedEventArgs e) => SystemCommands.CloseWindow(this);
+    private void MinimizeWindowClick(object sender, RoutedEventArgs e) => SystemCommands.MinimizeWindow(this);
+    private void MaximizeWindowClick(object sender, RoutedEventArgs e)
+    {
+        if (WindowState == WindowState.Maximized) SystemCommands.RestoreWindow(this);
+        else SystemCommands.MaximizeWindow(this);
+    }
+
+    private async Task<System.Collections.Generic.Dictionary<string, bool>> CheckWindowChromeAsync()
+    {
+        var checks = new System.Collections.Generic.Dictionary<string, bool>();
+        void Check(string name, bool passed) { checks[name] = passed; if (!passed) throw new InvalidOperationException(name); }
+        var chrome = System.Windows.Shell.WindowChrome.GetWindowChrome(this);
+        Check("Custom caption retains the native resize frame", WindowStyle == WindowStyle.None && ResizeMode == ResizeMode.CanResize && chrome is { CaptionHeight: 40, UseAeroCaptionButtons: false } && chrome.ResizeBorderThickness.Left >= 6);
+        var handle = new WindowInteropHelper(this).Handle;
+        int Hit(Point local)
+        {
+            var screen = PointToScreen(local);
+            var packed = unchecked(((int)(short)screen.Y << 16) | (ushort)(short)screen.X);
+            return (int)SendMessage(handle, 0x84, IntPtr.Zero, new IntPtr(packed));
+        }
+        Check("Empty title bar supports native dragging and double-click", Hit(new Point(ActualWidth / 2, 20)) == 2);
+        foreach (var button in new[] { WindowClose, WindowMinimize, WindowMaximize })
+        {
+            Check(button.Name + " is accessible and clickable inside the caption", !string.IsNullOrWhiteSpace(System.Windows.Automation.AutomationProperties.GetName(button)) && button.ActualWidth >= 28 && Hit(button.TranslatePoint(new Point(14, 14), this)) == 1);
+        }
+        // Intercept posted OS commands so verification cannot close, minimize or show the offscreen window.
+        var commands = new System.Collections.Generic.List<long>();
+        IntPtr CaptureCommand(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (message == 0x112) { commands.Add(wParam.ToInt64() & 0xFFF0); handled = true; }
+            return IntPtr.Zero;
+        }
+        var source = HwndSource.FromHwnd(handle);
+        source.AddHook(CaptureCommand);
+        try
+        {
+            foreach (var pair in new[] { (WindowClose, 0xF060L), (WindowMinimize, 0xF020L), (WindowMaximize, 0xF030L) })
+            {
+                commands.Clear(); pair.Item1.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                await Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                Check(pair.Item1.Name + " sends its native window command", commands.Contains(pair.Item2));
+            }
+        }
+        finally { source.RemoveHook(CaptureCommand); }
+        return checks;
+    }
+    [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam);
+
+    // WindowChrome retains native dragging/resizing; DWM supplies the outer frame and corners.
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
+        ApplyCaptionTheme();
+    }
+    private void ApplyCaptionTheme()
+    {
         var handle = new WindowInteropHelper(this).Handle;
-        int dark = 0;
+        if (handle == IntPtr.Zero) return;
+        int dark = ThemeManager.IsDark ? 1 : 0;
         int caption = ToColorRef((Color)FindResource("WindowColor"));
         int text = ToColorRef((Color)FindResource("WindowCaptionTextColor"));
         int border = ToColorRef((Color)FindResource("WindowBorderColor"));
@@ -438,7 +516,21 @@ public partial class MainWindow : Window
     private async void SettingsChanged(object sender, RoutedEventArgs e)
     {
         if (!initialized) return;
-        await host.SaveSettingsAsync(new(FahrenheitCheck.IsChecked == true, ZerosCheck.IsChecked == true, TrayCheck.IsChecked == true, AutoDisplayCheck.IsChecked == true));
+        try
+        {
+            await host.SaveSettingsAsync(new(FahrenheitCheck.IsChecked == true, ZerosCheck.IsChecked == true, TrayCheck.IsChecked == true, AutoDisplayCheck.IsChecked == true, DarkModeCheck.IsChecked == true));
+            ThemeManager.Apply(host.Settings.DarkMode);
+            ApplyCaptionTheme();
+        }
+        catch (IOException error)
+        {
+            initialized = false;
+            FahrenheitCheck.IsChecked = host.Settings.Fahrenheit; ZerosCheck.IsChecked = host.Settings.LeadingZeros;
+            TrayCheck.IsChecked = host.Settings.MinimizeToTray; AutoDisplayCheck.IsChecked = host.Settings.AutoStartDisplay;
+            DarkModeCheck.IsChecked = host.Settings.DarkMode;
+            initialized = true;
+            MessageBox.Show(this, error.Message, "Preferences not saved", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
         Render();
     }
 

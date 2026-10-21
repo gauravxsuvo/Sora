@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/brand/sora-mark.svg" width="112" alt="Sora"></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/brand/sora-mark-white.svg"><img src="assets/brand/sora-mark-ink.svg" width="112" alt="Sora"></picture></p>
 
 # Sora
 

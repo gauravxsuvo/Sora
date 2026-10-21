@@ -48,11 +48,21 @@ public partial class FanPanel : UserControl
         rows.CollectionChanged += (_, _) => MarkChanged();
         Chart.PointMoved += (index, point) =>
         {
+            if (service?.Busy == true || invalidEditor || index >= rows.Count) return;
             editing = true;
             rows[index].Temperature = point.TemperatureC.ToString(CultureInfo.InvariantCulture);
             rows[index].Duty = point.DutyPercent.ToString("0.##", CultureInfo.InvariantCulture);
             editing = false; MarkChanged();
         };
+        Chart.PointAdded += (index, point) =>
+        {
+            if (service?.Busy == true || invalidEditor) return;
+            var row = new FanPointRow { Temperature = point.TemperatureC.ToString(CultureInfo.InvariantCulture), Duty = point.DutyPercent.ToString("0.##", CultureInfo.InvariantCulture) };
+            row.PropertyChanged += (_, _) => MarkChanged();
+            rows.Insert(index, row); PointGrid.SelectedItem = row;
+        };
+        Chart.PointRemoved += index => { if (service?.Busy != true && !invalidEditor && index < rows.Count) rows.RemoveAt(index); };
+        Chart.EditRejected += ShowFeedback;
         Loaded += (_, _) => { Listen(); timer.Start(); };
         Unloaded += (_, _) => { timer.Stop(); if (listening && service != null) service.Changed -= Render; listening = false; };
         timer.Tick += async (_, _) => { if (IsVisible) await ReadAsync(refreshEditor: false); };
@@ -115,20 +125,21 @@ public partial class FanPanel : UserControl
         StatusLabel.Text = snapshot == null ? service.Message : measurementMessage ?? service.Message;
         RenderPending();
         RefreshButton.IsEnabled = !service.Busy && !refreshing; ControlState.SetIsBusy(RefreshButton, service.Busy || refreshing);
-        bool blocked = service.ConflictingProcess != null;
-        bool canPause = service.ConflictingProcess == "EasyTuneEngineService" && service.VendorServiceInstalled;
-        var bannerVisibility = blocked && !fixedPump ? Visibility.Visible : Visibility.Collapsed;
+        bool blocked = service.ConflictingProcess != null && !service.CanTakePriority;
+        bool canPause = service.ConflictingProcess is "EasyTuneEngineService" or "FanControlService";
+        var bannerVisibility = service.ConflictingProcess != null && !fixedPump ? Visibility.Visible : Visibility.Collapsed;
         bool headerViewportChanged = ConflictBanner.Visibility != bannerVisibility;
         ConflictBanner.Visibility = bannerVisibility;
         PauseServiceButton.IsEnabled = !service.Busy && canPause;
         InstallFirmwareButton.IsEnabled = !service.Busy;
         InstallFirmwareButton.Visibility = InstallFirmwareHint.Visibility = snapshot?.FirmwareInterface == GigabyteFanFirmware.WmiClassName ? Visibility.Collapsed : Visibility.Visible;
         PauseServiceButton.Visibility = canPause ? Visibility.Visible : Visibility.Collapsed;
-        PauseServiceHint.Text = canPause ? "GCC's fan service is running. Pause it here, then click Apply to fan. It resumes when Sora exits." : "Exit " + service.ConflictingProcess + " to let Sora apply fan settings.";
+        ConflictTitle.Text = service.CanTakePriority ? "Sora can take fan control" : "Fan changes are blocked";
+        PauseServiceHint.Text = service.CanTakePriority ? "Apply automatically pauses " + service.ConflictingProcess + " and preserves the current fan settings. The helper resumes when Sora exits." : canPause ? "Pause the fan helper here, then apply your curve. It resumes when Sora exits." : "Exit " + service.ConflictingProcess + " to let Sora apply fan settings.";
         MeasureButton.IsEnabled = !service.Busy && !blocked && !fixedPump && snapshot?.Headers[selected].Rpm > 0;
         CalibrateButton.IsEnabled = !service.Busy && !blocked && snapshot?.Headers[selected].Rpm > 0 && DeviceKindBox.SelectedIndex == (int)FanDeviceKind.Fan;
         CancelMeasureButton.Visibility = service.Measuring ? Visibility.Visible : Visibility.Collapsed;
-        HeaderList.IsHitTestVisible = StartupCheck.IsHitTestVisible = RestoreCheck.IsHitTestVisible = !service.Busy;
+        HeaderList.IsHitTestVisible = StartupCheck.IsHitTestVisible = RestoreCheck.IsHitTestVisible = PriorityCheck.IsHitTestVisible = !service.Busy;
         HeaderNameBox.IsReadOnly = service.Busy;
         RenameHeaderButton.IsEnabled = ResetHeaderNameButton.IsEnabled = !service.Busy;
         ProfileEditor.IsHitTestVisible = !service.Busy;
@@ -136,7 +147,7 @@ public partial class FanPanel : UserControl
         RestoreButton.IsEnabled = !service.Busy && !blocked && !fixedPump && snapshot != null;
         RenderApplyState();
         editing = true;
-        StartupCheck.IsChecked = service.Preferences.ApplyAtStartup; RestoreCheck.IsChecked = service.Preferences.RestoreOnExit;
+        StartupCheck.IsChecked = service.Preferences.ApplyAtStartup; RestoreCheck.IsChecked = service.Preferences.RestoreOnExit; PriorityCheck.IsChecked = service.Preferences.TakePriority;
         editing = false;
         if (snapshot != null)
         {
@@ -268,9 +279,9 @@ public partial class FanPanel : UserControl
         if (service == null || ApplyButton == null) return;
         bool dirty = drafts.ContainsKey(selected) || invalidEditor;
         ApplyButton.Content = applying ? "Applying…" : dirty ? "Apply to fan" : appliedHeaders.Contains(selected) ? "Applied" : "No changes";
-        ApplyButton.IsEnabled = !service.Busy && !applying && dirty && !invalidEditor && service.Snapshot != null && service.ConflictingProcess == null && DeviceKindBox.SelectedIndex != (int)FanDeviceKind.FixedSpeedPump;
+        ApplyButton.IsEnabled = !service.Busy && !applying && dirty && !invalidEditor && service.Snapshot != null && (service.ConflictingProcess == null || service.CanTakePriority) && DeviceKindBox.SelectedIndex != (int)FanDeviceKind.FixedSpeedPump;
     }
-    private bool EditingIsLocked => service?.Busy == true && (ProfileEditor.IsKeyboardFocusWithin || HeaderList.IsKeyboardFocusWithin || StartupCheck.IsKeyboardFocusWithin || RestoreCheck.IsKeyboardFocusWithin);
+    private bool EditingIsLocked => service?.Busy == true && (ProfileEditor.IsKeyboardFocusWithin || HeaderList.IsKeyboardFocusWithin || StartupCheck.IsKeyboardFocusWithin || RestoreCheck.IsKeyboardFocusWithin || PriorityCheck.IsKeyboardFocusWithin);
     private void GuardEditingKey(object sender, KeyEventArgs e) { if (EditingIsLocked) e.Handled = true; }
     private void GuardEditingText(object sender, TextCompositionEventArgs e) { if (EditingIsLocked) e.Handled = true; }
     private void HeaderNameChanged(object sender, TextChangedEventArgs e)
@@ -389,7 +400,7 @@ public partial class FanPanel : UserControl
     private void OptionsChanged(object sender, RoutedEventArgs e)
     {
         if (editing || service == null) return;
-        try { service.SetOptions(StartupCheck.IsChecked == true, RestoreCheck.IsChecked == true); }
+        try { service.SetOptions(StartupCheck.IsChecked == true, RestoreCheck.IsChecked == true, PriorityCheck.IsChecked == true); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { ShowFeedback(error.Message); }
     }
     private void ExportClick(object sender, RoutedEventArgs e)
@@ -428,6 +439,39 @@ public partial class FanPanel : UserControl
             HeaderList.SelectedIndex = 0; LoadCurrentProfile();
             Check("Apply starts disabled when the fan settings are unchanged", !ApplyButton.IsEnabled && Equals(ApplyButton.Content, "No changes"));
             Check("Recovered CPU source is displayed", SourceBox.SelectedIndex == 2);
+            // Exercise the same hit/insertion path as a plot mouse-down against the real draft/table.
+            var clickProfile = FanProfile.Preset(0, "Quiet") with { StopBelowC = 0, Points = new[] { new FanPoint(20, 25), new FanPoint(50, 60), new FanPoint(80, 100) } };
+            LoadEditor(clickProfile); MarkChanged(); Chart.UpdateLayout();
+            Point Plot(int temperature, double duty) => new(48 + temperature / 100d * (Chart.ActualWidth - 72), 36 + (100 - duty) / 100d * (Chart.ActualHeight - 70));
+            int added = Chart.HitOrInsertPoint(Plot(35, 40));
+            Check("Clicking empty plot space inserts a sorted point into the draft and table", added == 1 && rows.Count == 4 && ReadEditor().Points[1] == new FanPoint(35, 40) && ReferenceEquals(PointGrid.SelectedItem, rows[1]) && HasPendingEdits);
+            void KeyPress(Key key) => Chart.RaiseEvent(new KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice, PresentationSource.FromVisual(Chart), 0, key) { RoutedEvent = System.Windows.Input.Keyboard.KeyDownEvent });
+            KeyPress(Key.Right);
+            Check("A newly created point is immediately selected for keyboard movement", ReadEditor().Points[1] == new FanPoint(36, 40));
+            KeyPress(Key.Left);
+            Chart.HitOrInsertPoint(Plot(35, 55));
+            Check("Clicking an existing temperature edits it without duplicating the temperature", rows.Count == 4 && ReadEditor().Points[1] == new FanPoint(35, 55));
+            Chart.HitOrInsertPoint(Plot(42, 5));
+            Check("New point duty stays between its neighbors", ReadEditor().Points[2] == new FanPoint(42, 55));
+            KeyPress(Key.Delete);
+            Check("Delete removes the selected new point from chart and table", rows.Count == 4 && ReadEditor().Points.All(p => p.TemperatureC != 42));
+            Chart.HitOrInsertPoint(Plot(80, 100)); Chart.RemoveSelectedPoint();
+            Check("Chart deletion preserves the final full-speed point", rows.Count == 4 && ReadEditor().Points[^1] == new FanPoint(80, 100));
+            Check("Clicking an axis label does not insert a point", Chart.HitOrInsertPoint(new Point(10, 10)) == -1 && rows.Count == 4);
+            HeaderList.SelectedIndex = 5; HeaderList.SelectedIndex = 0;
+            Check("Chart-created points survive switching fan headers", ReadEditor().Points.Contains(new FanPoint(35, 55)));
+            HysteresisBox.Text = "invalid";
+            Check("Chart clicks preserve an incomplete numeric edit", Chart.HitOrInsertPoint(Plot(42, 5)) == -1 && rows.Count == 4 && HysteresisBox.Text == "invalid");
+            HysteresisBox.Text = "3";
+            rows[1].Duty = "10";
+            Check("Chart clicks safely reject an out-of-order table curve", Chart.HitOrInsertPoint(Plot(42, 5)) == -1 && rows.Count == 4 && rows[1].Duty == "10");
+            LoadEditor(clickProfile with { Points = Enumerable.Range(0, 11).Select(i => new FanPoint(5 + i * 8, i == 10 ? 100 : 10 + i * 9)).ToArray() }); MarkChanged();
+            Check("Chart clicks enforce the controller's eleven-point limit", Chart.HitOrInsertPoint(Plot(92, 0)) == -1 && rows.Count == 11);
+            LoadEditor(clickProfile with { Points = new[] { new FanPoint(20, 25), new FanPoint(80, 100) } }); MarkChanged();
+            Chart.HitOrInsertPoint(Plot(20, 25)); Chart.RemoveSelectedPoint();
+            Check("Chart deletion keeps at least two points", rows.Count == 2);
+            ModeBox.SelectedIndex = (int)FanCurveMode.Fixed;
+            Check("Fixed-duty mode cannot add curve points", Chart.HitOrInsertPoint(Plot(35, 40)) == -1 && rows.Count == 2);
             LoadEditor(FanProfile.Preset(0, "Quiet") with { FirmwareStop = snapshot.Headers[0].FirmwareStop }); MarkChanged();
             if (currentFirmware != null)
             {
@@ -553,7 +597,11 @@ public partial class FanPanel : UserControl
             source = new(TaskCreationOptions.RunContinuationsAsynchronously);
             pendingRead = pollingService.ReadAsync(); source.SetResult(new(snapshot, true, null, "EasyTuneEngineService")); await pendingRead;
             check("GCC conflict is visible above the editor with a pause action", ConflictBanner.Visibility == Visibility.Visible && PauseServiceButton.Visibility == Visibility.Visible && PauseServiceButton.IsEnabled);
+            check("Automatic priority keeps Apply available for a supported fan helper", ApplyButton.IsEnabled && pollingService.CanTakePriority);
+            PriorityCheck.IsChecked = false;
+            check("Fan priority opt-out persists across restart", !new SoraHost(directory).Fans.Preferences.TakePriority);
             check("GCC conflict blocks Apply, Restore and speed tests", !ApplyButton.IsEnabled && !RestoreButton.IsEnabled && !MeasureButton.IsEnabled && !CalibrateButton.IsEnabled);
+            PriorityCheck.IsChecked = true;
             source = new(TaskCreationOptions.RunContinuationsAsynchronously);
             pendingRead = pollingService.ReadAsync(); source.SetResult(new(snapshot, true, null)); await pendingRead;
             check("Clearing a GCC conflict enables Apply without losing the editor", ConflictBanner.Visibility == Visibility.Collapsed && ApplyButton.IsEnabled && HeaderNameBox.Text == "Radiator fans");

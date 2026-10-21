@@ -369,6 +369,8 @@ SensorSample Fresh() => new(42, 125, 37, 5400, DateTimeOffset.UtcNow);
 KreoState SwarmFixture() => JsonSerializer.Deserialize<KreoState>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "kreo-swarm75.json")))!;
 await Check("Fan maintenance validates full backups and recovers all headers after every native/firmware write failure", () =>
 { FanMaintenanceChecks.Run(); return Task.CompletedTask; });
+await Check("Fan service priority preserves cooling state, handles automatic restarts and retains failed recovery", () =>
+{ FanServicePriorityChecks.Run(); return Task.CompletedTask; });
 await Check("Incomplete update checks never claim hardware is up to date", () =>
 {
     var complete = new UpdateReport("Z890 GAMING X WIFI7", "F20", "8AARL032", [], [], [], DateTimeOffset.UtcNow);

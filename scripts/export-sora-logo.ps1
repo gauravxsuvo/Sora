@@ -7,4 +7,9 @@ New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $brand 'sora-mark.svg') -Destination (Join-Path $OutputDirectory 'sora-logo.svg')
 Copy-Item -LiteralPath (Join-Path $brand 'sora-mark-current.svg') -Destination (Join-Path $OutputDirectory 'sora-symbol.svg')
 Copy-Item -LiteralPath (Join-Path $brand 'sora-mark.png') -Destination (Join-Path $OutputDirectory 'sora-logo.png')
+foreach ($variant in 'white', 'ink', 'on-dark', 'on-light') {
+    foreach ($extension in 'svg', 'png') {
+        Copy-Item -LiteralPath (Join-Path $brand "sora-mark-$variant.$extension") -Destination (Join-Path $OutputDirectory "sora-logo-$variant.$extension")
+    }
+}
 Write-Host "Current Sora logo exported to $OutputDirectory"

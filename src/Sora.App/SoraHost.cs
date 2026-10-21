@@ -181,15 +181,16 @@ internal sealed class SoraHost
 
     public Task SaveSettingsAsync(DisplaySettings settings)
     {
-        Settings = settings;
         try
         {
             Directory.CreateDirectory(dataDirectory);
             var path = Path.Combine(dataDirectory, "settings.json");
             File.WriteAllText(path + ".tmp", JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
             File.Move(path + ".tmp", path, true);
+            Settings = settings;
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { Log("Cannot save settings: " + error.Message); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        { Log("Cannot save settings: " + error.Message); throw new IOException("Your preferences could not be saved. " + error.Message, error); }
         return TickAsync();
     }
 
@@ -239,6 +240,8 @@ internal sealed class SoraHost
                 catch (Exception error) when (error is IOException or System.ComponentModel.Win32Exception) { CoolerPresent = null; Log("LD360 scan: " + error.Message); }
             }
             var status = display.Status;
+            if (HardwareChangesAllowed && Hardware.Available(HardwareModule.MotherboardFans))
+                await Fans.MaintainPriorityAsync();
             if (Hardware.Available(HardwareModule.Logitech) || Logitech.Running)
                 await Logitech.TickAsync(hardwareOutputEnabled);
             if (Hardware.Available(HardwareModule.Logitech) || LogitechLighting.Running)

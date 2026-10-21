@@ -58,7 +58,10 @@ public partial class MainWindow
             await Task.Yield();
             var changed = JsonSerializer.Deserialize<DisplaySettings>(File.ReadAllText(Path.Combine(directory, "settings.json")))!;
             Check("Real toggle handlers save both changed preferences", changed.MinimizeToTray == !saved.MinimizeToTray && changed.AutoStartDisplay == !saved.AutoStartDisplay);
-            Check("Other saved fields are preserved", changed.Fahrenheit == saved.Fahrenheit && changed.LeadingZeros == saved.LeadingZeros);
+            Check("Other saved fields are preserved", changed.Fahrenheit == saved.Fahrenheit && changed.LeadingZeros == saved.LeadingZeros && changed.DarkMode == saved.DarkMode);
+            testWindow.DarkModeCheck.IsChecked = !saved.DarkMode;
+            Check("Dark mode toggle persists immediately", new SoraHost(directory).Settings.DarkMode == !saved.DarkMode);
+            testWindow.DarkModeCheck.IsChecked = saved.DarkMode;
             testWindow.NavSettings.IsChecked = true; testWindow.NavDisplay.IsChecked = true; testWindow.NavSettings.IsChecked = true;
             Check("Navigation preserves toggle values", testWindow.TrayCheck.IsChecked == changed.MinimizeToTray && testWindow.AutoDisplayCheck.IsChecked == changed.AutoStartDisplay);
             var restarted = new SoraHost(directory);

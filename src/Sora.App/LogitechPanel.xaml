@@ -4,9 +4,9 @@
     <local:PageHeader Title="Logitech" Subtitle="Your gear. Your settings.">
       <Button x:Name="RefreshButton" Content="Refresh devices" Click="RefreshClick" Style="{StaticResource QuietButton}"/>
     </local:PageHeader>
-    <Border Grid.Row="1" Background="{StaticResource InsetBrush}" CornerRadius="8" Padding="14,10" Margin="0,16,0,14">
+    <Border Grid.Row="1" Background="{DynamicResource InsetBrush}" CornerRadius="8" Padding="14,10" Margin="0,16,0,14">
       <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-        <StackPanel><TextBlock x:Name="ConnectionText" Text="Looking for Logitech devices…" FontSize="13"/><TextBlock x:Name="ConflictText" Foreground="{StaticResource WarnTextBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/></StackPanel>
+        <StackPanel><TextBlock x:Name="ConnectionText" Text="Looking for Logitech devices…" FontSize="13"/><TextBlock x:Name="ConflictText" Foreground="{DynamicResource WarnTextBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/></StackPanel>
         <ComboBox x:Name="DevicePicker" local:ControlState.Placeholder="No supported mouse" Grid.Column="1" Width="175" Margin="16,0,0,0" VerticalAlignment="Center" AutomationProperties.Name="Logitech device" SelectionChanged="DeviceChanged"/>
       </Grid>
     </Border>
@@ -32,12 +32,12 @@
               <TextBlock Text="The outlined marker and Live mouse DPI show the mouse’s actual speed. Edits below take effect when you apply the profile." Style="{StaticResource CaptionText}" Margin="0,6,0,0"/>
               <TextBlock Text="DPI shift speed · hold G6" Style="{StaticResource FieldLabel}" Margin="0,16,0,6"/><TextBox x:Name="ShiftDpiInput" Text="4000" TextChanged="ShiftChanged" AutomationProperties.Name="DPI shift speed"/>
               <TextBlock Text="Hold the thumb DPI Shift button to use this speed; release it to return. DPI Up/Down move through your regular speeds." Style="{StaticResource CaptionText}" Margin="0,6,0,10"/>
-              <StackPanel Orientation="Horizontal" Margin="0,10,0,4"><TextBlock x:Name="DpiValue" Text="—" FontSize="48" FontWeight="Light"/><TextBlock Text="DPI" FontSize="13" Foreground="{StaticResource SecondaryTextBrush}" VerticalAlignment="Bottom" Margin="10,0,0,12"/></StackPanel>
+              <StackPanel Orientation="Horizontal" Margin="0,10,0,4"><TextBlock x:Name="DpiValue" Text="—" FontSize="48" FontWeight="Light"/><TextBlock Text="DPI" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Bottom" Margin="10,0,0,12"/></StackPanel>
               <Slider x:Name="DpiSlider" Minimum="100" Maximum="25600" TickFrequency="50" IsSnapToTickEnabled="True" ValueChanged="SensitivityChanged" AutomationProperties.Name="Mouse DPI"/>
               <TextBlock x:Name="RangeText" Text="Connect your mouse to read its sensitivity range." Style="{StaticResource CaptionText}" Margin="0,8,0,12"/>
               <WrapPanel x:Name="DpiStops" Margin="0,0,0,18"/>
               <TextBlock Text="Exact DPI" Style="{StaticResource FieldLabel}"/><TextBox x:Name="DpiInput" TextChanged="DpiInputChanged" AutomationProperties.Name="Exact mouse DPI"/>
-              <Border BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,22,0,18"/>
+              <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,22,0,18"/>
               <TextBlock Text="REPORT RATE" Style="{StaticResource Eyebrow}"/><ComboBox x:Name="RatePicker" SelectionChanged="RateChanged" Margin="0,12,0,0" AutomationProperties.Name="Mouse report rate"/>
               <TextBlock Text="How often your mouse reports to the PC. Higher rates give more frequent movement updates." Style="{StaticResource CaptionText}" Margin="0,8,0,18"/>
               <TextBlock Text="SENSITIVITY PRESETS" Style="{StaticResource Eyebrow}"/><ComboBox x:Name="PresetPicker" SelectionChanged="PresetChanged" Margin="0,10,0,0" AutomationProperties.Name="Sensitivity preset"/>
@@ -59,7 +59,7 @@
               <TextBlock x:Name="AssignmentCurrentText" Style="{StaticResource SecondaryText}" Margin="0,8,0,10"/>
               <ComboBox x:Name="ActionCategory" SelectionChanged="ActionFilterChanged" SelectedIndex="0" AutomationProperties.Name="Assignment category"><ComboBoxItem Content="Commands"/><ComboBoxItem Content="Keys"/><ComboBoxItem Content="Actions"/><ComboBoxItem Content="Macros"/><ComboBoxItem Content="System"/></ComboBox>
               <TextBox x:Name="ActionSearch" local:ControlState.Placeholder="Search assignments" TextChanged="ActionFilterChanged" Margin="0,8,0,8" AutomationProperties.Name="Search assignments" ToolTip="Search for a command, key, macro or system control"/>
-              <ListBox x:Name="ActionList" Height="190" DisplayMemberPath="Name" Background="{StaticResource InsetBrush}" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource SeparatorBrush}" Padding="4" AutomationProperties.Name="Available assignments"><ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}"><Setter Property="Padding" Value="8,5"/><Setter Property="Foreground" Value="{StaticResource TextBrush}"/></Style></ListBox.ItemContainerStyle></ListBox>
+              <ListBox x:Name="ActionList" Height="190" DisplayMemberPath="Name" Background="{DynamicResource InsetBrush}" Foreground="{DynamicResource TextBrush}" BorderBrush="{DynamicResource SeparatorBrush}" Padding="4" AutomationProperties.Name="Available assignments"><ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}"><Setter Property="Padding" Value="8,5"/><Setter Property="Foreground" Value="{DynamicResource TextBrush}"/></Style></ListBox.ItemContainerStyle></ListBox>
               <TextBlock Text="Custom shortcut (focus and press keys)" Style="{StaticResource FieldLabel}"/><TextBox x:Name="ShortcutCapture" local:ControlState.Placeholder="Focus here, then press a shortcut" IsReadOnly="True" PreviewKeyDown="CaptureShortcut" AutomationProperties.Name="Capture custom shortcut"/>
               <TextBlock Text="Application or HTTPS link" Style="{StaticResource FieldLabel}"/><TextBox x:Name="ActionTarget" local:ControlState.Placeholder="Choose an application or enter an HTTPS link" AutomationProperties.Name="Assignment launch target"/>
               <WrapPanel Margin="0,10,0,0"><Button Content="Use assignment" Click="UseAssignmentClick" Style="{StaticResource SmallButton}" Margin="0,0,8,6"/><Button Content="Use shortcut" Click="UseShortcutClick" Style="{StaticResource SmallButton}" Margin="0,0,8,6"/><Button Content="Browse app…" Click="BrowseActionClick" Style="{StaticResource SmallButton}"/></WrapPanel>
@@ -117,9 +117,9 @@
         </TabItem>
       </TabControl>
     </Grid>
-    <Border Grid.Row="3" Background="{StaticResource WindowBrush}" BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,16,0,0">
+    <Border Grid.Row="3" Background="{DynamicResource WindowBrush}" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,16,0,0">
       <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0"><TextBlock x:Name="EditStatus" Text="Connect your mouse to get started." FontSize="13"/><TextBlock x:Name="ErrorText" Style="{StaticResource CaptionText}" Foreground="{StaticResource WarnTextBrush}" Margin="0,4,0,0" Visibility="Collapsed"/></StackPanel>
+        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0"><TextBlock x:Name="EditStatus" Text="Connect your mouse to get started." FontSize="13"/><TextBlock x:Name="ErrorText" Style="{StaticResource CaptionText}" Foreground="{DynamicResource WarnTextBrush}" Margin="0,4,0,0" Visibility="Collapsed"/></StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Button x:Name="OriginalButton" Content="Load original" Click="OriginalClick" Style="{StaticResource QuietButton}" Margin="0,0,12,0" ToolTip="Stage the settings saved before Sora's first Apply"/><Button x:Name="DiscardButton" Content="Discard" Click="DiscardClick" Style="{StaticResource QuietButton}" Margin="0,0,12,0"/><Button x:Name="ApplyButton" Content="Apply to mouse" Click="ApplyClick" Style="{StaticResource PrimaryButton}" MinWidth="140"/></StackPanel>
       </Grid>
     </Border>

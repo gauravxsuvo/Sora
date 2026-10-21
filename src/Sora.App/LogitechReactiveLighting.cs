@@ -13,7 +13,7 @@ internal sealed record LogitechReactiveZone(byte Zone, string Mode, string Hex, 
     internal void Validate()
     {
         if (Zone > 1 || Mode is not ("Screen sampler" or "Audio visualizer") || Brightness is < 1 or > 100 || ScreenArea is not ("Whole screen" or "Left half" or "Right half")) throw new InvalidDataException("Invalid reactive lighting configuration.");
-        if (Convert.FromHexString(Hex.TrimStart('#')).Length != 3) throw new InvalidDataException("Enter a six-digit lighting color.");
+        if (string.IsNullOrWhiteSpace(Hex) || Convert.FromHexString(Hex.TrimStart('#')).Length != 3) throw new InvalidDataException("Enter a six-digit lighting color.");
     }
 }
 
@@ -39,6 +39,7 @@ internal sealed class LogitechReactiveLighting
     private CancellationTokenSource? lifetime;
     private Task task = Task.CompletedTask;
     private DateTime retryAt;
+    private DateTime verifyAt;
     private bool suspended, stopping;
     public LogitechReactiveZone[] Zones { get; private set; } = [];
     public string Status { get; private set; } = "";
@@ -55,14 +56,14 @@ internal sealed class LogitechReactiveLighting
             if (File.Exists(FirmwarePath))
             {
                 firmware = JsonSerializer.Deserialize<FirmwareLighting>(File.ReadAllText(FirmwarePath));
-                if (firmware == null || firmware.States.Count is < 1 or > 2 || firmware.States.Any(z => z.Key > 1 || z.Value.Length != 11))
+                if (firmware == null || string.IsNullOrWhiteSpace(firmware.Identity) || firmware.States == null || firmware.States.Count is < 1 or > 2 || firmware.States.Any(z => z.Key > 1 || z.Value == null || z.Value.Length != 11))
                     throw new InvalidDataException("Invalid saved mouse lighting.");
             }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or JsonException)
         { firmware = null; host.Log("Mouse lighting settings: " + e.Message); }
     }
-    private static void Validate(LogitechReactiveZone[] zones) { if (zones.Length > 2 || zones.Select(z => z.Zone).Distinct().Count() != zones.Length) throw new InvalidDataException("The G502 has two lighting zones."); foreach (var zone in zones) zone.Validate(); }
+    private static void Validate(LogitechReactiveZone[] zones) { if (zones.Length > 2 || zones.Any(z => z == null) || zones.Select(z => z.Zone).Distinct().Count() != zones.Length) throw new InvalidDataException("The G502 has two lighting zones."); foreach (var zone in zones) zone.Validate(); }
     public async Task SetAsync(LogitechReactiveZone zone)
     {
         zone.Validate(); if (LogitechDevice.IsGHubRunning()) throw new InvalidOperationException("Exit G HUB before applying reactive lighting.");
@@ -162,12 +163,29 @@ internal sealed class LogitechReactiveLighting
         if (new FileInfo(OwnershipPath).Length > 8192) throw new InvalidDataException("Invalid lighting ownership backup.");
         var backup = JsonSerializer.Deserialize<Ownership>(File.ReadAllText(OwnershipPath)) ?? throw new InvalidDataException("Invalid lighting ownership backup.");
         await using var device = new LogitechDevice(LogitechDevice.EnumerateG502().Single()); var fresh = await device.ReadAsync();
-        if (fresh.Identity != backup.Identity || backup.States.Count is < 1 or > 2 || backup.States.Any(z => z.Key > 1 || z.Value.Length != 11)) throw new InvalidDataException("Lighting backup does not match this mouse.");
+        if (fresh.Identity != backup.Identity || backup.States == null || backup.States.Count is < 1 or > 2 || backup.States.Any(z => z.Key > 1 || z.Value == null || z.Value.Length != 11)) throw new InvalidDataException("Lighting backup does not match this mouse.");
         await device.SetLightingAsync(fresh, backup.States); File.Delete(OwnershipPath);
     }
     public async Task TickAsync(bool allowHardware)
     {
-        if (!allowHardware || suspended || stopping || (Zones.Length == 0 && !File.Exists(OwnershipPath) && (firmware == null || firmwareApplied)) || gate.CurrentCount == 0) return;
+        if (!allowHardware || suspended || stopping || gate.CurrentCount == 0) return;
+        if (LogitechDevice.IsGHubRunning()) { firmwareApplied = false; return; }
+        // RAM lighting is lost on USB reconnect, even while Sora stays open.
+        // Verify through the shared mouse connection so control polling cannot consume our replies.
+        if (firmware != null && firmwareApplied && DateTime.UtcNow >= verifyAt)
+        {
+            verifyAt = DateTime.UtcNow.AddSeconds(10);
+            await gate.WaitAsync();
+            try
+            {
+                var fresh = await host.Logitech.UseDeviceAsync(d => d.ReadAsync());
+                firmwareApplied = FirmwareMatches(firmware.Identity, firmware.States, Zones, fresh);
+            }
+            catch (Exception error) when (error is not OutOfMemoryException)
+            { firmwareApplied = false; Status = "Saved mouse lighting waiting for reconnection: " + error.Message; }
+            finally { gate.Release(); }
+        }
+        if (Zones.Length == 0 && !File.Exists(OwnershipPath) && (firmware == null || firmwareApplied)) return;
         if ((!Running || (firmware != null && !firmwareApplied)) && !LogitechDevice.IsGHubRunning() && DateTime.UtcNow >= retryAt)
         {
             retryAt = DateTime.UtcNow.AddSeconds(5); await gate.WaitAsync();
@@ -190,6 +208,10 @@ internal sealed class LogitechReactiveLighting
             finally { gate.Release(); }
         }
     }
+    internal static bool FirmwareMatches(string identity, System.Collections.Generic.IReadOnlyDictionary<byte, byte[]> states, LogitechReactiveZone[] zones, LogitechSnapshot fresh) =>
+        fresh.Identity == identity && states.Where(s => !zones.Any(z => z.Zone == s.Key)).All(s =>
+            fresh.Lighting?.SingleOrDefault(z => z.Index == s.Key) is { } actual &&
+            LogitechLighting.ToWire(s.Value, actual.Effects).SequenceEqual(LogitechLighting.ToWire(actual.State, actual.Effects)));
     public async Task SuspendAsync(bool value) { suspended = value; if (value) { firmwareApplied = false; await gate.WaitAsync(); try { await StopCoreAsync(); } finally { gate.Release(); } } }
     public async Task StopAsync() { stopping = true; await gate.WaitAsync(); try { await StopCoreAsync(); } finally { gate.Release(); } }
     private async Task StopCoreAsync() { lifetime?.Cancel(); await task; lifetime?.Dispose(); lifetime = null; }

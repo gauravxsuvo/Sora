@@ -32,6 +32,14 @@ internal sealed class LogitechService
     private string? indicatorProblem;
     private sealed record RuntimeStage(string Profile, int[] Stages, int ShiftDpi, int Stage);
     private string RuntimePath => Path.Combine(directory, "control-runtime.json");
+    private void SaveEnabled(bool enabled)
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, "control-enabled.json");
+        File.WriteAllText(path + ".tmp", JsonSerializer.Serialize(enabled));
+        File.Move(path + ".tmp", path, true);
+        Enabled = enabled;
+    }
     public LogitechControlProfile? Profile { get; private set; }
     public LogitechSnapshot? Snapshot { get; private set; }
     public bool Enabled { get; private set; }
@@ -127,8 +135,7 @@ internal sealed class LogitechService
             EnsureProfileCapacity(profile);
             // Retain the requested profile even when hardware recovery must retry.
             // The active runtime is started only after all hardware readbacks pass.
-            RememberProfile(profile); Profile = profile; Enabled = true;
-            File.WriteAllText(Path.Combine(directory, "control-enabled.json"), "true");
+            RememberProfile(profile); Profile = profile; SaveEnabled(true);
             await RestoreInterruptedAsync(fresh);
             original = await device.ReadAsync(); originalMap = await device.ReadButtonMapAsync(original);
             var onboard = original.Features.Single(f => f.Id == 0x8100).Index;
@@ -152,7 +159,7 @@ internal sealed class LogitechService
             Profile = profile; Enabled = true; CurrentDpi = Snapshot.Sensors[0].Dpi;
             CurrentStage = initialStage; DpiShiftHeld = false;
             RememberProfile(profile);
-            File.WriteAllText(Path.Combine(directory, "control-enabled.json"), "true");
+            SaveEnabled(true);
             actions = new LogitechActionRunner(new LogitechInput(), profile); actions.Failed += SetFailure;
             runtime = new CancellationTokenSource(); var state = new LogitechButtonState(profile); state.UseProfile(profile, initialStage); buttonState = state;
             SaveRuntimeStage(initialStage);
@@ -411,7 +418,7 @@ internal sealed class LogitechService
     }
     public async Task DisableAsync()
     {
-        Enabled = false; Directory.CreateDirectory(directory); File.WriteAllText(Path.Combine(directory, "control-enabled.json"), "false");
+        SaveEnabled(false);
         await gate.WaitAsync();
         try { await StopCoreAsync(); Status = File.Exists(Path.Combine(directory, "control-ownership.json")) ? "Sora controls stopped · restoration pending; reconnect the original mouse" : "Sora software controls stopped · original settings restored"; Publish(); }
         finally { gate.Release(); }

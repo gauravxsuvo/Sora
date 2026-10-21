@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace Sora.Core;
 
-public sealed record DisplaySettings(bool Fahrenheit = false, bool LeadingZeros = false, bool MinimizeToTray = true, bool AutoStartDisplay = false);
+public sealed record DisplaySettings(bool Fahrenheit = false, bool LeadingZeros = false, bool MinimizeToTray = true, bool AutoStartDisplay = false, bool DarkMode = true);
 public sealed record DisplayStatus(string Title, string Detail, bool Sending, long FramesSent);
 
 public sealed class DisplayController(Func<IDisplayTransport>? open = null) : IAsyncDisposable

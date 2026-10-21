@@ -36,7 +36,7 @@
           <StackPanel>
             <TextBlock Text="How Sora decides" Style="{StaticResource Eyebrow}"/>
             <TextBlock Style="{StaticResource CaptionText}" Margin="0,8,0,0" TextWrapping="Wrap" Text="BIOS: offered only when your board's exact name matches a single entry in Gigabyte's BIOS list (no guessing between revisions). Drivers: matched to devices actually present in this PC by their hardware IDs, using Gigabyte's own tables, and offered only when the installed version is known and older. Every file comes from mb.download.gigabyte.com and must arrive complete; installers must carry a valid digital signature."/>
-            <TextBlock x:Name="NotesText" Style="{StaticResource CaptionText}" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="{StaticResource WarnTextBrush}"/>
+            <TextBlock x:Name="NotesText" Style="{StaticResource CaptionText}" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="{DynamicResource WarnTextBrush}"/>
           </StackPanel>
         </Border>
         <Border Style="{StaticResource Card}" Padding="{StaticResource SectionContentInset}" Margin="0,12,0,0">

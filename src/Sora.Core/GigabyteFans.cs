@@ -129,8 +129,10 @@ public sealed class GigabyteFans : IFanRegisterAccess
         return new(Board, "ITE IT8696E", DateTimeOffset.UtcNow, temperatures, headers);
     }
     public static string? FindConflict() => FindConflictProcess() is { } process ? $"Exit {process} before changing fan settings." : null;
-    public static string? FindConflictProcess()
+    public static string? FindConflictProcess() => FindConflictProcesses().FirstOrDefault();
+    public static string[] FindConflictProcesses()
     {
+        var conflicts = new List<string>();
         var processes = Process.GetProcesses();
         try
         {
@@ -139,13 +141,13 @@ public sealed class GigabyteFans : IFanRegisterAccess
                 try
                 {
                     string n = p.ProcessName;
-                    if (IsFanControllerProcess(n)) return n;
+                    if (IsFanControllerProcess(n)) conflicts.Add(n);
                 }
                 catch (InvalidOperationException) { }
             }
         }
         finally { foreach (var process in processes) process.Dispose(); }
-        return null;
+        return conflicts.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     }
     internal static bool IsFanControllerProcess(string name) => new[]
     {

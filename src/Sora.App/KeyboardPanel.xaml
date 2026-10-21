@@ -7,7 +7,7 @@
           <TextBlock Text="Preview layout" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="0,0,8,0"/>
           <ComboBox x:Name="ModelPicker" Width="140" DisplayMemberPath="Name" SelectionChanged="ModelChanged" ToolTip="Shows a layout while no keyboard is connected. The model is detected automatically on connection." AutomationProperties.Name="Preview layout"/>
         </StackPanel>
-        <Border Style="{StaticResource StatusChip}" Margin="0,0,12,0"><StackPanel Orientation="Horizontal"><Ellipse x:Name="KeyboardDot" Style="{StaticResource StatusDot}" Margin="0,0,8,0"/><TextBlock x:Name="KeyboardStatus" Text="Not connected" FontSize="12" Foreground="{StaticResource SecondaryTextBrush}" VerticalAlignment="Center"/></StackPanel></Border>
+        <Border Style="{StaticResource StatusChip}" Margin="0,0,12,0"><StackPanel Orientation="Horizontal"><Ellipse x:Name="KeyboardDot" Style="{StaticResource StatusDot}" Margin="0,0,8,0"/><TextBlock x:Name="KeyboardStatus" Text="Not connected" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/></StackPanel></Border>
         <Button x:Name="ReadButton" Content="Connect" Click="ReadKeyboard" MinWidth="96" Style="{StaticResource PrimaryButton}" ToolTip="Read settings from the connected keyboard"/>
       </StackPanel>
     </local:PageHeader>
@@ -60,7 +60,7 @@
             <Grid Margin="0,0,0,0">
               <Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="12"/><ColumnDefinition Width="32"/><ColumnDefinition Width="6"/><ColumnDefinition Width="96"/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
               <ComboBox x:Name="ColorMode" SelectedIndex="0" SelectionChanged="ColorModeChanged" AutomationProperties.Name="Effect color mode"><ComboBoxItem Content="Single color"/><ComboBoxItem Content="Multicolor"/></ComboBox>
-              <Border x:Name="EffectColorPreview" Grid.Column="2" Background="{StaticResource InsetBrush}" CornerRadius="6" BorderBrush="{StaticResource InputBorderBrush}" BorderThickness="1"/>
+              <Border x:Name="EffectColorPreview" Grid.Column="2" Background="{DynamicResource InsetBrush}" CornerRadius="6" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1"/>
               <TextBox x:Name="EffectHex" Grid.Column="4" Text="—" MaxLength="7" TextChanged="EffectHexChanged" FontFamily="{StaticResource MonoFont}" AutomationProperties.Name="Effect hex color"/>
               <WrapPanel x:Name="EffectSwatches" Grid.Column="6" VerticalAlignment="Center" ToolTip="Effect palette · click a color to edit it"/>
             </Grid>
@@ -73,17 +73,17 @@
           <StackPanel>
             <Grid><TextBlock Text="Per-key color" Style="{StaticResource SectionText}"/><TextBlock x:Name="PaintTarget" Text="No key selected" Style="{StaticResource CaptionText}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid>
             <!-- Selected colour is synchronized with the staged per-key state. -->
-            <StackPanel x:Name="KeyColorRow" Orientation="Horizontal" Margin="0,8,0,0" Visibility="Collapsed"><Border x:Name="KeyColorSwatch" Width="14" Height="14" CornerRadius="4" BorderBrush="{StaticResource InputBorderBrush}" BorderThickness="1" Margin="0,0,8,0"/><TextBlock x:Name="KeyColorInfo" Style="{StaticResource CaptionText}" VerticalAlignment="Center"/></StackPanel>
+            <StackPanel x:Name="KeyColorRow" Orientation="Horizontal" Margin="0,8,0,0" Visibility="Collapsed"><Border x:Name="KeyColorSwatch" Width="14" Height="14" CornerRadius="4" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" Margin="0,0,8,0"/><TextBlock x:Name="KeyColorInfo" Style="{StaticResource CaptionText}" VerticalAlignment="Center"/></StackPanel>
             <TextBlock x:Name="SelectionHint" Text="Select a key in the keyboard above to choose its colour." Style="{StaticResource CaptionText}" Margin="0,6,0,8"/>
             <Grid Margin="0,8,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="32"/><ColumnDefinition Width="6"/><ColumnDefinition Width="104"/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
-              <Border x:Name="PaintColorPreview" Height="32" Background="{StaticResource AccentBrush}" CornerRadius="6" BorderBrush="{StaticResource InputBorderBrush}" BorderThickness="1"/>
+              <Border x:Name="PaintColorPreview" Height="32" Background="{DynamicResource AccentBrush}" CornerRadius="6" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1"/>
               <TextBox x:Name="PaintColor" Grid.Column="2" Text="#0A84FF" MaxLength="7" TextChanged="PaintHexChanged" FontFamily="{StaticResource MonoFont}" AutomationProperties.Name="Brush hex color"/>
               <WrapPanel x:Name="BrushSwatches" Grid.Column="4" VerticalAlignment="Center"/>
             </Grid>
             <TextBlock x:Name="PaintError" Style="{StaticResource KeyboardValidation}"/>
             <Button x:Name="PaintSelectedButton" Content="Paint selected key" Click="PaintKey" HorizontalAlignment="Left" Margin="0,8,0,0"/>
             <TextBlock x:Name="PaintHint" Text="Painting switches lighting to Custom per-key." Style="{StaticResource CaptionText}" Margin="0,8,0,0"/>
-            <Border BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,6,0,0"><Grid><TextBlock Text="Whole keyboard" Style="{StaticResource CaptionText}" VerticalAlignment="Center"/><Button x:Name="PaintAllButton" Content="Fill all keys" Click="PaintAll" HorizontalAlignment="Right"/></Grid></Border>
+            <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,6,0,0"><Grid><TextBlock Text="Whole keyboard" Style="{StaticResource CaptionText}" VerticalAlignment="Center"/><Button x:Name="PaintAllButton" Content="Fill all keys" Click="PaintAll" HorizontalAlignment="Right"/></Grid></Border>
           </StackPanel>
         </Border>
       </Grid></TabItem>
@@ -97,7 +97,7 @@
               <TextBlock Text="Click a key on the keyboard to choose what it sends." Style="{StaticResource SecondaryText}" Margin="0,6,0,0"/>
             </StackPanel>
             <StackPanel x:Name="AssignEditor" Visibility="Collapsed">
-              <TextBlock x:Name="ActionLabel" Text="" FontSize="20" Foreground="{StaticResource TextBrush}"/>
+              <TextBlock x:Name="ActionLabel" Text="" FontSize="20" Foreground="{DynamicResource TextBrush}"/>
               <Grid Margin="0,10,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="8"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <Grid><ComboBox x:Name="TargetKey" DisplayMemberPath="Label" SelectionChanged="TargetChanged" IsTextSearchEnabled="True" AutomationProperties.Name="New action"/><TextBlock x:Name="TargetPlaceholder" Text="Read keyboard to view actions" Style="{StaticResource CaptionText}" Margin="12,0,32,0" VerticalAlignment="Center" IsHitTestVisible="False"/></Grid>
                 <Button x:Name="AssignButton" Grid.Column="2" Content="Use this action" Click="AssignKey" Style="{StaticResource PrimaryButton}"/>

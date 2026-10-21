@@ -16,6 +16,13 @@ public partial class App : Application
     private Mutex? instance;
     protected override async void OnStartup(StartupEventArgs e)
     {
+        if (e.Args.Contains("--app-audit-check"))
+        {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            var index = Array.IndexOf(e.Args, "--output");
+            if (index < 0 || index + 1 >= e.Args.Length) { Shutdown(2); return; }
+            Shutdown(await AppAuditChecks.RunAsync(e.Args[index + 1]) ? 0 : 1); return;
+        }
         if (e.Args.Contains("--application-update-ui-check"))
         {
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -301,6 +308,11 @@ public partial class App : Application
         else if (screenshot != null && e.Args.Contains("--isolated-ui-check"))
             SoraData.UseIsolatedPreviewDirectory(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(screenshot))!, "screen-check-data", Guid.NewGuid().ToString("N")), developmentGallery: false);
         host = new SoraHost();
+        if (screenshot != null && SoraData.IsIsolated && !File.Exists(Path.Combine(host.DataDirectory, "settings.json")))
+        {
+            Directory.CreateDirectory(host.DataDirectory);
+            File.WriteAllText(Path.Combine(host.DataDirectory, "settings.json"), JsonSerializer.Serialize(host.Settings));
+        }
         var fanPreviewIndex = Array.IndexOf(e.Args, "--fan-preview");
         if (screenshot != null && fanPreviewIndex >= 0 && fanPreviewIndex + 1 < e.Args.Length)
             host.Fans.SetPreview(JsonSerializer.Deserialize<FanSnapshot>(File.ReadAllText(e.Args[fanPreviewIndex + 1])) ?? throw new InvalidDataException("Missing fan preview snapshot."));

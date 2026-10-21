@@ -152,7 +152,7 @@ public partial class GpuFanPanel : UserControl
             if (current != null) { catalog.RemoveAll(p => string.Equals(p.Name, current.Name, StringComparison.OrdinalIgnoreCase)); catalog.Add(current); }
             SavedProfileBox.ItemsSource = catalog.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToArray(); catalogIdentity = Selected.Identity; loading = previous; SyncProfileSelection();
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException) { loading = false; ValidationText.Text = error.Message; }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException) { loading = false; ValidationText.Text = error.Message; }
     }
     private void SyncProfileSelection()
     {
@@ -170,13 +170,13 @@ public partial class GpuFanPanel : UserControl
     {
         if (service == null || Selected == null || IsBusy) return;
         try { service.Profiles.Save(Selected.Identity, ReadProfile()); RefreshProfileList(true); StatusText.Text = "Named profile saved for this GPU. Apply to send it to hardware."; }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException or FormatException or OverflowException or System.Collections.Generic.KeyNotFoundException) { ValidationText.Text = error.Message; }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException or FormatException or OverflowException or System.Collections.Generic.KeyNotFoundException) { ValidationText.Text = error.Message; }
     }
     private void DeleteProfileClick(object sender, RoutedEventArgs e)
     {
         if (service == null || Selected == null || IsBusy || SavedProfileBox.SelectedItem is not GpuFanProfile profile) return;
         try { service.Profiles.Delete(Selected.Identity, profile.Name); RefreshProfileList(true); StatusText.Text = "Saved profile deleted. Current hardware settings are unchanged."; }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException) { ValidationText.Text = error.Message; }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException) { ValidationText.Text = error.Message; }
     }
     internal void PrepareCurvePreview()
     {
@@ -214,7 +214,7 @@ public partial class GpuFanPanel : UserControl
             var profile = text.TrimStart().StartsWith("[", StringComparison.Ordinal) ? GpuGccFanProfiles.Import(text, Path.GetFileNameWithoutExtension(dialog.FileName), FanTargetBox.SelectedIndex > 0 ? (uint)(FanTargetBox.SelectedIndex - 1) : null) : JsonSerializer.Deserialize<GpuFanProfile>(text) ?? throw new InvalidDataException("Missing GPU profile.");
             profile.Validate(); SetProfile(profile); dirty = true; StatusText.Text = "Profile imported into editor. Apply to send it to the GPU.";
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException or FormatException or OverflowException or System.Collections.Generic.KeyNotFoundException) { ValidationText.Text = "Cannot import GPU profile: " + error.Message; }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException or FormatException or OverflowException or System.Collections.Generic.KeyNotFoundException) { ValidationText.Text = "Cannot import GPU profile: " + error.Message; }
     }
     private void ExportClick(object sender, RoutedEventArgs e)
     {
@@ -223,7 +223,7 @@ public partial class GpuFanPanel : UserControl
             var profile = ReadProfile(); var dialog = new SaveFileDialog { Filter = "Sora GPU fan profile (*.json)|*.json", FileName = "gpu-fan-profile.json" };
             if (dialog.ShowDialog() == true) { File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(profile, new JsonSerializerOptions { WriteIndented = true })); StatusText.Text = "Sora profile exported."; }
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException) { ValidationText.Text = error.Message; }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException) { ValidationText.Text = error.Message; }
     }
 }
 
@@ -234,17 +234,32 @@ public sealed class GpuFanChart : FrameworkElement
     public string Unit { get; set; } = "%";
     protected override void OnRender(DrawingContext dc)
     {
-        base.OnRender(dc); double width = Math.Max(1, ActualWidth - 54), height = Math.Max(1, ActualHeight - 30);
-        var grid = new Pen(TryFindResource("SeparatorBrush") as Brush ?? Brushes.LightGray, 1); var accent = TryFindResource("AccentBrush") as Brush ?? Brushes.DodgerBlue;
-        Point Map(double temperature, double duty) => new(36 + width * temperature / 100, 6 + height * (1 - duty / 100));
+        base.OnRender(dc); double width = Math.Max(1, ActualWidth - 72), height = Math.Max(1, ActualHeight - 64);
+        var grid = new Pen(TryFindResource("SeparatorBrush") as Brush ?? Brushes.LightGray, 1); var accent = TryFindResource("ChartBrush") as Brush ?? Brushes.SeaGreen;
+        Point Map(double temperature, double duty) => new(48 + width * temperature / 100, 30 + height * (1 - duty / 100));
+        var surface = TryFindResource("InsetBrush") as Brush ?? Brushes.WhiteSmoke;
+        dc.DrawRoundedRectangle(surface, null, new Rect(Map(0, 100), Map(100, 0)), 8, 8);
         for (int i = 0; i <= 5; i++) { dc.DrawLine(grid, Map(i * 20, 0), Map(i * 20, 100)); dc.DrawLine(grid, Map(0, i * 20), Map(100, i * 20)); }
         var valid = Points.Where(p => double.IsFinite(p.TemperatureC) && double.IsFinite(p.DutyPercent) && p.TemperatureC is >= 0 and <= 100 && p.DutyPercent is >= 0 and <= 100).ToArray();
-        for (int i = 1; i < valid.Length; i++) dc.DrawLine(new Pen(accent, 2), Map(valid[i - 1].TemperatureC, valid[i - 1].DutyPercent), Map(valid[i].TemperatureC, valid[i].DutyPercent));
-        foreach (var p in valid) dc.DrawEllipse(accent, null, Map(p.TemperatureC, p.DutyPercent), 4, 4);
+        if (valid.Length > 1)
+        {
+            var area = new StreamGeometry();
+            using (var path = area.Open())
+            {
+                path.BeginFigure(Map(valid[0].TemperatureC, 0), true, true);
+                foreach (var p in valid) path.LineTo(Map(p.TemperatureC, p.DutyPercent), true, false);
+                path.LineTo(Map(valid[^1].TemperatureC, 0), true, false);
+            }
+            dc.PushOpacity(.12); dc.DrawGeometry(accent, null, area); dc.Pop();
+        }
+        for (int i = 1; i < valid.Length; i++) dc.DrawLine(new Pen(accent, 2.5), Map(valid[i - 1].TemperatureC, valid[i - 1].DutyPercent), Map(valid[i].TemperatureC, valid[i].DutyPercent));
+        foreach (var p in valid) dc.DrawEllipse(surface, new Pen(accent, 2), Map(p.TemperatureC, p.DutyPercent), 4.5, 4.5);
+        FormattedText Label(string text) => new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface((FontFamily)FindResource("UIFont"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), 10, TryFindResource("TertiaryTextBrush") as Brush ?? Brushes.Gray, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+        dc.DrawText(Label(Unit == "RPM" ? "FAN SPEED (RPM)" : "FAN DUTY (%)"), new Point(48, 5));
+        dc.DrawText(Label("TEMPERATURE (°C)"), new Point(Math.Max(48, ActualWidth - 132), ActualHeight - 13));
         for (int i = 0; i <= 5; i++)
         {
-            FormattedText Label(string text) => new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface((FontFamily)FindResource("UIFont"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), 10, TryFindResource("TertiaryTextBrush") as Brush ?? Brushes.Gray, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-            dc.DrawText(Label((i * 20).ToString(CultureInfo.InvariantCulture)), new Point(27 + width * i / 5, height + 12)); dc.DrawText(Label((i * Maximum / 5).ToString("0", CultureInfo.InvariantCulture)), new Point(2, 1 + height * (1 - i / 5d)));
+            dc.DrawText(Label((i * 20).ToString(CultureInfo.InvariantCulture) + "°"), new Point(41 + width * i / 5, height + 39)); dc.DrawText(Label((i * Maximum / 5).ToString("0", CultureInfo.InvariantCulture)), new Point(2, 23 + height * (1 - i / 5d)));
         }
     }
 }

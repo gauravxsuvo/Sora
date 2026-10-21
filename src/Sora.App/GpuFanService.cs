@@ -64,12 +64,12 @@ internal sealed class GpuFanService
                 if (new FileInfo(BackupPath).Length > 1024 * 1024) throw new InvalidDataException("GPU backup exceeds 1 MiB.");
                 var backups = JsonSerializer.Deserialize<GpuFanBackup[]>(File.ReadAllText(BackupPath)) ?? throw new InvalidDataException("Missing GPU backup entries.");
                 var validated = new Dictionary<string, GpuFanBackup>();
-                foreach (var backup in backups) { NvidiaGpuFans.ValidateBackup(backup); if (!validated.TryAdd(backup.Identity, backup)) throw new InvalidDataException("Duplicate GPU backup identity."); }
+                foreach (var backup in backups) { if (backup == null) throw new InvalidDataException("Missing GPU backup entry."); NvidiaGpuFans.ValidateBackup(backup); if (!validated.TryAdd(backup.Identity, backup)) throw new InvalidDataException("Duplicate GPU backup identity."); }
                 foreach (var backup in validated.Values) { originals.Add(backup.Identity, backup); recoveryPending.Add(backup.Identity); }
                 Message = "Saved original GPU settings will be recovered before the last applied profile is reapplied.";
             }
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException)
         { invalidBackup = true; Message = "Cannot load GPU fan backup; automatic and manual changes are blocked: " + e.Message; host.Log(Message); }
         try
         {
@@ -83,7 +83,7 @@ internal sealed class GpuFanService
                 desired = saved; StartupPending = true;
             }
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException)
         { Message = "Cannot load the last GPU profile: " + e.Message; host.Log(Message); }
     }
     private void Notify(string message) { Message = message; Changed?.Invoke(); StatusChanged?.Invoke(message); }
