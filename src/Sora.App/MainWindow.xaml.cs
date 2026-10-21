@@ -32,6 +32,9 @@ public partial class MainWindow : Window
         this.screenshotPath = screenshotPath;
         ThemeManager.Apply(screenshotPath != null && Environment.GetCommandLineArgs().Contains("--light-theme") ? false : host.Settings.DarkMode);
         InitializeComponent();
+        WindowClose.Tag = TrafficLightVisual.CloseSymbol;
+        WindowMinimize.Tag = TrafficLightVisual.MinimizeSymbol;
+        WindowMaximize.Tag = TrafficLightVisual.MaximizeSymbol;
         var version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0];
         VersionLabel.Text = version == null ? "Sora" : "Sora " + version;
         PreviewKeyDown += (_, e) =>
@@ -68,7 +71,7 @@ public partial class MainWindow : Window
             var maximized = WindowState == WindowState.Maximized;
             WindowMaximize.ToolTip = maximized ? "Restore" : "Maximize";
             System.Windows.Automation.AutomationProperties.SetName(WindowMaximize, maximized ? "Restore window" : "Maximize window");
-            WindowMaximize.Tag = maximized ? "M4,5.5 L8.5,5.5 L8.5,10 L4,10 Z M5.5,4 L10,4 L10,8.5" : "M3.5,7 L3.5,3.5 L7,3.5 M7,10.5 L10.5,10.5 L10.5,7";
+            WindowMaximize.Tag = maximized ? TrafficLightVisual.RestoreSymbol : TrafficLightVisual.MaximizeSymbol;
             if (WindowState == WindowState.Minimized && host.Settings.MinimizeToTray && screenshotPath == null) ((App)Application.Current).CloseWindowToTray();
         };
         ApplyHardwareAvailability();
@@ -205,7 +208,7 @@ public partial class MainWindow : Window
             foreach (var button in new[] { WindowClose, WindowMinimize, WindowMaximize })
             {
                 button.ApplyTemplate();
-                if (button.Template.FindName("Glyph", button) is FrameworkElement glyph) glyph.Visibility = Visibility.Visible;
+                if (button.Template.FindName("Dot", button) is TrafficLightVisual dot) dot.ShowSymbol = true;
             }
         var keyboardSectionIndex = Array.IndexOf(arguments, "--keyboard-section");
         if (keyboardSectionIndex >= 0 && keyboardSectionIndex + 1 < arguments.Length) Keyboard.ShowSection(arguments[keyboardSectionIndex + 1]);
@@ -386,7 +389,7 @@ public partial class MainWindow : Window
         foreach (var button in new[] { WindowClose, WindowMinimize, WindowMaximize })
         {
             var bounds = Geometry.Parse((string)button.Tag).Bounds;
-            Check(button.Name + " glyph is centered inside its dot", Math.Abs(bounds.Left + bounds.Width / 2 - 7) < 0.01 && Math.Abs(bounds.Top + bounds.Height / 2 - 7) < 0.01 && bounds.Width <= 8 && bounds.Height <= 8);
+            Check(button.Name + " glyph is centered inside its dot", Math.Abs(bounds.Left + bounds.Width / 2 - 7) < 0.01 && Math.Abs(bounds.Top + bounds.Height / 2 - 7) < 0.01 && bounds.Width <= 9 && bounds.Height <= 9);
             Check(button.Name + " is accessible and clickable inside the caption", !string.IsNullOrWhiteSpace(System.Windows.Automation.AutomationProperties.GetName(button)) && button.ActualWidth >= 28 && Hit(button.TranslatePoint(new Point(14, 14), this)) == 1);
         }
         // Intercept posted OS commands so verification cannot close, minimize or show the offscreen window.

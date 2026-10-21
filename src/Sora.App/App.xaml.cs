@@ -16,6 +16,13 @@ public partial class App : Application
     private Mutex? instance;
     protected override async void OnStartup(StartupEventArgs e)
     {
+        if (e.Args.Contains("--traffic-light-check"))
+        {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            var index = Array.IndexOf(e.Args, "--output");
+            if (index < 0 || index + 1 >= e.Args.Length) { Shutdown(2); return; }
+            Shutdown(TrafficLightChecks.Run(e.Args[index + 1]) ? 0 : 1); return;
+        }
         if (e.Args.Contains("--tray-menu-check"))
         {
             ShutdownMode = ShutdownMode.OnExplicitShutdown;

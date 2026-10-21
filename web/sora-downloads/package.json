@@ -2,7 +2,7 @@
   "name": "sora-downloads",
   "private": true,
   "type": "module",
-  "version": "0.13.2",
+  "version": "0.13.3",
   "engines": {
     "node": ">=22"
   },

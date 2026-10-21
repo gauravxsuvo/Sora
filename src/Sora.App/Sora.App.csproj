@@ -5,7 +5,7 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>Sora</AssemblyName>
-    <Version>0.13.2</Version>
+    <Version>0.13.3</Version>
     <SoraNumericVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(Version)', '-.*$', ''))</SoraNumericVersion>
     <Product>Sora</Product>
     <Description>Hardware controls, GPU fans, SSD health and Wi-Fi antenna tools</Description>
@@ -35,7 +35,7 @@
   <ItemGroup><None Include="../../docs/Gigabyte-wifi-compass.md" Link="Gigabyte-wifi-compass.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/Gigabyte-gpu-fan-control.md" Link="Gigabyte-gpu-fan-control.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/Logitech-GHUB.md" Link="Logitech-GHUB.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
-  <ItemGroup><None Include="../../docs/Sora-0.13.2.md" Link="ReleaseNotes.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Sora-0.13.3.md" Link="ReleaseNotes.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/user-guide.md" Link="user-guide.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/program-files-installation.md" Link="program-files-installation.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/download-warnings.md" Link="download-warnings.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
