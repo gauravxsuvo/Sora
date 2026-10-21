@@ -3,11 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       channel:
-        description: 'Signed update channel (beta never promotes stable)'
+        description: 'Signed stable update channel'
         type: choice
         options:
           - stable
-          - beta
         default: stable
       sequence:
         description: 'Increasing feed sequence (leave blank to build without signing)'
@@ -72,7 +71,7 @@ jobs:
           $keyFile = Join-Path $env:RUNNER_TEMP 'sora-release-key.pem'
           try {
             [IO.File]::WriteAllText($keyFile, $env:SORA_RELEASE_PRIVATE_KEY)
-            $prepareCommand = if ($env:SORA_RELEASE_CHANNEL -eq 'beta') { 'prepare-beta' } elseif ($env:SORA_RELEASE_CHANNEL -eq 'stable') { 'prepare' } else { throw 'Unknown release channel' }
+          $prepareCommand = if ($env:SORA_RELEASE_CHANNEL -eq 'stable') { 'prepare' } else { throw 'Only stable releases are published' }
             dotnet run --project scripts/Sora.ReleaseTool -- $prepareCommand "artifacts/release/setup/Sora-Setup-$version-x64.exe" $version $env:SORA_FEED_SEQUENCE "docs/Sora-$version.md" release/update-policy.json $keyFile artifacts/release/metadata
             if ($LASTEXITCODE -ne 0) { throw 'Release metadata signing failed' }
           } finally { if (Test-Path -LiteralPath $keyFile) { Remove-Item -LiteralPath $keyFile -Force } }
@@ -106,7 +105,7 @@ jobs:
           S3_FORCE_PATH_STYLE: 'true'
           SORA_RELEASE_CHANNEL: ${{ inputs.channel }}
         run: |
-          if ($env:SORA_RELEASE_CHANNEL -notin @('stable','beta')) { throw 'Unknown release channel' }
+          if ($env:SORA_RELEASE_CHANNEL -ne 'stable') { throw 'Only stable releases are published' }
           $feedPath = "artifacts/release/metadata/$env:SORA_RELEASE_CHANNEL.json"
           if (-not (Test-Path $feedPath)) { throw 'A signed feed sequence is required for promotion.' }
           $version = ([xml](Get-Content src/Sora.App/Sora.App.csproj)).Project.PropertyGroup.Version | Where-Object { $_ }

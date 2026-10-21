@@ -27,11 +27,7 @@ The server defaults to port 3000 locally. `npm test` covers public routes, HTTP 
 
 ## Releases
 
-The service also exposes `/channels/beta.json` and immutable `-beta.N` installer paths from the same storage. Beta publishing requires the explicit final `beta` argument to `publish-release.mjs`; omitting it retains Stable. Both channels verify signed metadata before upload or promotion and maintain independent monotonic feed sequences. See the operating guide for signing commands. The website's stable download continues to verify only Stable metadata.
-
-### Public download
-
-The website offers only the signed stable release for this PC's setup. There is no beta download section or GitHub prerelease discovery. The legacy beta feed and immutable files remain available for compatibility with already-installed desktop updaters.
+The website publishes only signed stable releases. The cancelled beta channel and its installer routes return HTTP 410, and the publisher refuses prerelease channels. There is no beta download section, prerelease discovery, or Legion promotion.
 
 See [the operating guide](../../docs/sora-updater-operations.md). With publisher access-key values loaded into this shell's environment (never command arguments or tracked files):
 

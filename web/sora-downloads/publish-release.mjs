@@ -13,8 +13,8 @@ async function digest(stream, limit) {
 
 try {
   const [mode, installerPath, feedPath, channel = 'stable'] = process.argv.slice(2);
-  if (!['upload', 'promote'].includes(mode) || !installerPath || !feedPath || !['stable', 'beta'].includes(channel) || ![5, 6].includes(process.argv.length))
-    throw new Error('Usage: node publish-release.mjs upload|promote INSTALLER_PATH SIGNED_FEED_PATH [stable|beta]');
+  if (!['upload', 'promote'].includes(mode) || !installerPath || !feedPath || channel !== 'stable' || ![5, 6].includes(process.argv.length))
+    throw new Error('Usage: node publish-release.mjs upload|promote INSTALLER_PATH SIGNED_STABLE_FEED_PATH [stable]. Only stable releases are published.');
   const config = storageConfig(process.env, { internal: false });
   if (!config) throw new Error('Set the S3 endpoint, bucket and separately revocable release-publisher access-key environment variables.');
   if (process.env.S3_PREFIX) throw new Error('Production publishing is not permitted with preview storage credentials.');
