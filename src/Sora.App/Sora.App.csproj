@@ -5,7 +5,7 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>Sora</AssemblyName>
-    <Version>0.13.1</Version>
+    <Version>0.13.2</Version>
     <SoraNumericVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(Version)', '-.*$', ''))</SoraNumericVersion>
     <Product>Sora</Product>
     <Description>Hardware controls, GPU fans, SSD health and Wi-Fi antenna tools</Description>
@@ -21,6 +21,7 @@
     <Compile Include="../Sora.Update.Windows/*.cs" Link="UpdateWindows/%(Filename)%(Extension)" />
     <PackageReference Include="MahApps.Metro.IconPacks.Lucide" Version="6.2.1" />
     <Resource Include="../../assets/Sora.ico" Link="Assets/Sora.ico" />
+    <Resource Include="../../assets/keyboard/kreo-swarm75.png" Link="Assets/Keyboard/kreo-swarm75.png" />
     <None Include="../../assets/Sora.ico" Link="Assets/sora-brand-$(SoraNumericVersion).ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Resource Include="../../assets/fonts/Inter/*.ttf" Link="Assets/Fonts/Inter/%(Filename)%(Extension)" />
     <None Include="../../assets/fonts/Inter/LICENSE.txt" Link="licenses/Inter-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
@@ -34,7 +35,7 @@
   <ItemGroup><None Include="../../docs/Gigabyte-wifi-compass.md" Link="Gigabyte-wifi-compass.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/Gigabyte-gpu-fan-control.md" Link="Gigabyte-gpu-fan-control.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/Logitech-GHUB.md" Link="Logitech-GHUB.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
-  <ItemGroup><None Include="../../docs/Sora-0.13.1.md" Link="ReleaseNotes.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../docs/Sora-0.13.2.md" Link="ReleaseNotes.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/user-guide.md" Link="user-guide.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/program-files-installation.md" Link="program-files-installation.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup><None Include="../../docs/download-warnings.md" Link="download-warnings.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>

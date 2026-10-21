@@ -173,7 +173,41 @@ internal static class AppAuditChecks
             Assert(new SoraHost(directory).Lighting.Settings.RainbowOnExit);
             return Task.CompletedTask;
         });
-        await Check("Mouse color, brightness, profile and last DPI stage survive reopening", () =>
+        await Check("Keyboard photo and key map preserve model selection and key inspection", () =>
+        {
+            new KeyboardPanel().RunViewChecks(); return Task.CompletedTask;
+        });
+        await Check("Fixed mouse color and 30 percent brightness survive save, reopen, zone switching and discard", () =>
+        {
+            var directory = Path.Combine(root, "mouse-editor-retention");
+            var first = new SoraHost(directory);
+            var choice = new LogitechLightingChoice(1, "8300FF", 5000, 30);
+            first.LogitechLighting.RememberFirmware("test-mouse", 1, choice.Encode(), choice);
+            var dpiChoice = new LogitechLightingChoice(10, "00CCFF", 7000, 55);
+            first.LogitechLighting.RememberFirmware("test-mouse", 0, dpiChoice.Encode(), dpiChoice);
+            var reopened = new SoraHost(directory);
+            Assert(reopened.LogitechLighting.SavedChoice("test-mouse", 1) == choice);
+            Assert(reopened.LogitechLighting.SavedChoice("test-mouse", 0) == dpiChoice);
+            var reading = new LogitechSnapshot("G502 HERO", "test-mouse", 0xc08b, "4.2", [], [], 1000, [1000], 2, [],
+                [new(0, "DPI", [0, 1, 10, 3], LogitechLighting.Encode(1, "FFFFFF", 5000, 100)), new(1, "Logo", [0, 1, 10, 3], choice.Encode())]);
+            var panel = new LogitechPanel(); panel.Attach(reopened.Logitech, reopened.LogitechLighting);
+            panel.CheckRetainedLightingEditor(reading);
+            return Task.CompletedTask;
+        });
+        await Check("Bad mouse editor metadata retains valid hardware state and old files remain readable", () =>
+        {
+            var directory = Path.Combine(root, "mouse-metadata-recovery"); var mouse = Path.Combine(directory, "logitech"); Directory.CreateDirectory(mouse);
+            var choice = new LogitechLightingChoice(1, "8300FF", 5000, 30);
+            var path = Path.Combine(mouse, "firmware-lighting.json");
+            File.WriteAllText(path, JsonSerializer.Serialize(new { Identity = "mouse", States = new Dictionary<byte, byte[]> { [1] = choice.Encode() }, Choices = new Dictionary<byte, LogitechLightingChoice> { [1] = choice with { Brightness = 90 } } }));
+            var lighting = new SoraHost(directory).LogitechLighting;
+            Assert(lighting.SavedFirmwareState("mouse", 1)!.SequenceEqual(choice.Encode()));
+            Assert(lighting.SavedChoice("mouse", 1)!.Encode().SequenceEqual(choice.Encode()));
+            Assert(lighting.SavedChoice("mouse", 1)!.Brightness == 100);
+            Assert(lighting.SavedChoice("other-mouse", 1) == null);
+            return Task.CompletedTask;
+        });
+        await Check("Mouse hardware state and profile and last DPI stage survive reopening", () =>
         {
             var directory = Path.Combine(root, "mouse-retention"); var mouse = Path.Combine(directory, "logitech"); Directory.CreateDirectory(mouse);
             var state = LogitechLighting.Encode(1, "8300FF", 5000, 30);

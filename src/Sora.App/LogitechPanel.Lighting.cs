@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Sora.Core;
 
 namespace Sora.App;
 
@@ -29,13 +30,54 @@ public partial class LogitechPanel
     }
 
     private LogitechReactiveLighting? reactive;
+    private readonly Dictionary<byte, LogitechLightingChoice> lightingChoices = [];
+    private LogitechLightingChoice ChoiceBaseline(byte zone) => reactive?.SavedChoice(snapshot!.Identity, zone) ?? LogitechLightingChoice.FromState(LightingBaseline(zone));
+    private void ResetLightingDrafts()
+    {
+        lightDrafts.Clear(); lightingChoices.Clear();
+        foreach (var zone in snapshot?.Lighting ?? [])
+        {
+            lightDrafts[zone.Index] = LightingBaseline(zone.Index).ToArray();
+            lightingChoices[zone.Index] = ChoiceBaseline(zone.Index);
+        }
+    }
+    internal void CheckRetainedLightingEditor(LogitechSnapshot reading)
+    {
+        snapshot = reading; baselineDpi = draftDpi = 800; baselineRate = draftRate = 1000;
+        ResetLightingDrafts();
+        rendering = true;
+        ZonePicker.ItemsSource = new[] { "DPI LEDs", "Logo" }; ZonePicker.SelectedIndex = 1;
+        Sections.SelectedItem = LightingTab; rendering = false;
+        LoadReactiveEditor();
+        void Check(bool valid) { if (!valid) throw new InvalidDataException("Retained lighting editor lost user color or brightness."); }
+        Check(HexInput.Text == "#8300FF" && BrightnessSlider.Value == 30 && !LightingDirty(1));
+        ZonePicker.SelectedIndex = 0; ZonePicker.SelectedIndex = 1;
+        Check(HexInput.Text == "#8300FF" && BrightnessSlider.Value == 30 && !LightingDirty(1));
+        BrightnessSlider.Value = 40;
+        Check(HexInput.Text == "#8300FF" && lightDrafts[1].SequenceEqual(LogitechLighting.Encode(1, "8300FF", 5000, 40)) && LightingDirty(1));
+        ZonePicker.SelectedIndex = 0; ZonePicker.SelectedIndex = 1;
+        Check(HexInput.Text == "#8300FF" && BrightnessSlider.Value == 40);
+        BrightnessSlider.Value = 50; BrightnessSlider.Value = 30;
+        Check(HexInput.Text == "#8300FF" && lightDrafts[1].SequenceEqual(LogitechLighting.Encode(1, "8300FF", 5000, 30)) && !LightingDirty(1));
+        HexInput.Text = "#000000"; BrightnessSlider.Value = 10;
+        var black = lightDrafts[1].ToArray(); BrightnessSlider.Value = 20;
+        Check(black.SequenceEqual(lightDrafts[1]) && lightingChoices[1].Brightness == 20 && LightingDirty(1));
+        DiscardClick(this, new RoutedEventArgs());
+        Check(HexInput.Text == "#8300FF" && BrightnessSlider.Value == 30 && !LightingDirty(1));
+        LinkZonesCheck.IsChecked = true;
+        BrightnessSlider.Value = 45;
+        Check(lightingChoices[0].Brightness == 45 && lightingChoices[1].Brightness == 45 && lightingChoices[0].Hex == "8300FF");
+        // Do not leave a fixture preference in a production data directory.
+        reactive!.SaveLinkedZones(false);
+    }
     private readonly Dictionary<byte, LogitechReactiveZone> reactiveDrafts = [];
     private bool invalidRgb, linkZonesPending;
     private bool IsReactive => (EffectPicker.SelectedItem as EffectOption)?.Mode is 100 or 101;
     private byte[] LightingBaseline(byte zone) => snapshot == null ? [] : reactive?.SavedFirmwareState(snapshot.Identity, zone) ?? snapshot.Lighting?.SingleOrDefault(z => z.Index == zone)?.State ?? [];
     private bool LightingDirty(byte zone) => invalidLight || linkZonesPending || (reactiveDrafts.TryGetValue(zone, out var draft)
         ? reactive?.Zones.SingleOrDefault(z => z.Zone == zone) != draft
-        : reactive?.Zones.Any(z => z.Zone == zone) == true || lightDrafts.TryGetValue(zone, out var raw) && !raw.SequenceEqual(LightingBaseline(zone)));
+        : reactive?.Zones.Any(z => z.Zone == zone) == true || lightDrafts.TryGetValue(zone, out var raw) && !raw.SequenceEqual(LightingBaseline(zone))
+          || lightingChoices.TryGetValue(zone, out var choice) && choice != ChoiceBaseline(zone));
     private LogitechReactiveZone ReactiveFromFields(byte zone)
     {
         var setting = new LogitechReactiveZone(zone, (EffectPicker.SelectedItem as EffectOption)?.Mode == 100 ? "Screen sampler" : "Audio visualizer", HexInput.Text.TrimStart('#'), (int)BrightnessSlider.Value, (ScreenAreaPicker.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Whole screen");

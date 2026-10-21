@@ -26,10 +26,16 @@
         </Border>
         <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
           <TextBlock x:Name="BoardHint" Text="Click a key to select it" Style="{StaticResource SecondaryText}" TextWrapping="NoWrap" VerticalAlignment="Center"/>
-          <Button x:Name="ClearSelectionButton" Content="Clear" Click="ClearSelection" Style="{StaticResource QuietButton}" Margin="6,0,-8,0" Visibility="Collapsed" ToolTip="Clear the selection (Esc)"/>
+          <Button x:Name="ClearSelectionButton" Content="Clear" Click="ClearSelection" Style="{StaticResource QuietButton}" Margin="6,0,0,0" Visibility="Collapsed" ToolTip="Clear the selection (Esc)"/>
+          <Button x:Name="ViewToggle" Content="Key map" Click="ToggleBoardView" Margin="12,0,0,0" ToolTip="Switch between the product photo and the interactive key map"/>
         </StackPanel>
-        <Viewbox Grid.Row="1" Stretch="Uniform" StretchDirection="Both" Margin="0,10,0,0">
-          <Border x:Name="BoardCase" Background="#18191D" BorderBrush="#34353B" BorderThickness="1" CornerRadius="12" Padding="10">
+        <Grid x:Name="ProductPreview" Grid.Row="1" Margin="0,12,0,0">
+          <Grid.RowDefinitions><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <Image Source="pack://application:,,,/Sora;component/Assets/Keyboard/kreo-swarm75.png" Stretch="Uniform" Margin="16,4,16,8" RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.Name="Kreo Swarm 75 keyboard product photo"/>
+          <TextBlock Grid.Row="1" Text="Swarm 75 · Product photo. Open Key map to select keys and edit colors or assignments." Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+        </Grid>
+        <Viewbox x:Name="BoardMap" Grid.Row="1" Stretch="Uniform" StretchDirection="Both" Margin="0,10,0,0" Visibility="Collapsed">
+          <Border x:Name="BoardCase" Background="#DCDCDD" BorderBrush="#F2F2F2" BorderThickness="2" CornerRadius="12" Padding="12">
             <Canvas x:Name="Board" KeyboardNavigation.TabNavigation="Once" KeyboardNavigation.DirectionalNavigation="None" PreviewKeyDown="BoardKeyDown" AutomationProperties.Name="Keyboard layout"/>
           </Border>
         </Viewbox>

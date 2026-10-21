@@ -7,9 +7,9 @@
     <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
       <Grid Background="Transparent">
         <Ellipse x:Name="Dot" Width="13" Height="13" Fill="{TemplateBinding Background}"/>
-        <Viewbox x:Name="Glyph" Width="12" Height="12" Visibility="Collapsed">
-          <Canvas Width="24" Height="24"><Path Data="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" Stroke="#222222" StrokeThickness="2.2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/></Canvas>
-        </Viewbox>
+        <Canvas x:Name="Glyph" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
+          <Path Data="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" Stroke="#52221E" StrokeThickness="1.65" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+        </Canvas>
       </Grid>
       <ControlTemplate.Triggers>
         <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Glyph" Property="Visibility" Value="Visible"/></Trigger>
@@ -487,7 +487,7 @@
 
   <!-- Keycap. Sizes are in keyboard design units; the board is scaled as a whole, so proportions never change.
        Tag="Selected" draws the accent ring outside the cap so the key's own colour stays visible. -->
-  <SolidColorBrush x:Key="KeycapSurface" Color="#303137"/>
+  <SolidColorBrush x:Key="KeycapSurface" Color="#252527"/>
   <Style x:Key="KeyFocusRing"><Setter Property="Control.Template"><Setter.Value><ControlTemplate><Rectangle Margin="-5" RadiusX="12" RadiusY="12" Stroke="#D9FFFFFF" StrokeThickness="2" StrokeDashArray="2 2"/></ControlTemplate></Setter.Value></Setter></Style>
   <Style x:Key="Keycap" TargetType="Button">
     <Setter Property="FontFamily" Value="{StaticResource UIFont}"/><Setter Property="FontSize" Value="17"/><Setter Property="Foreground" Value="#E5E5E5"/>
@@ -496,7 +496,7 @@
       <Grid>
         <Border x:Name="SelectionHalo" Margin="-3" CornerRadius="9" BorderBrush="{DynamicResource KeySelectionSeparatorBrush}" BorderThickness="1" Visibility="Collapsed"/>
         <Border x:Name="Ring" Margin="-2" CornerRadius="8" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="2" Visibility="Collapsed"/>
-        <Border x:Name="Skirt" CornerRadius="6" Background="#222329" BorderBrush="#484950" BorderThickness="1">
+        <Border x:Name="Skirt" CornerRadius="6" Background="#141415" BorderBrush="#454547" BorderThickness="1">
           <Border x:Name="Cap" Margin="1,1,1,3" CornerRadius="5" Background="{TemplateBinding Background}">
             <Grid>
               <Border x:Name="Hover" CornerRadius="6"/>

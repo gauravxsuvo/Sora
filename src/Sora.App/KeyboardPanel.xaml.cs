@@ -22,6 +22,44 @@ public partial class KeyboardPanel : UserControl
     private KreoState? baseline, edited;
     private KreoKey? selected;
     private bool updating, busy, ready;
+    private bool preferProductPhoto = true;
+    private void ToggleBoardView(object sender, RoutedEventArgs e)
+    {
+        preferProductPhoto = !preferProductPhoto; UpdateBoardView();
+    }
+    private void UpdateBoardView()
+    {
+        var supported = model.Name == "Swarm 75";
+        var showPhoto = supported && preferProductPhoto && ModeAssign.IsChecked != true;
+        ProductPreview.Visibility = showPhoto ? Visibility.Visible : Visibility.Collapsed;
+        BoardMap.Visibility = showPhoto ? Visibility.Collapsed : Visibility.Visible;
+        ViewToggle.Visibility = supported && ModeAssign.IsChecked != true ? Visibility.Visible : Visibility.Collapsed;
+        ViewToggle.Content = showPhoto ? "Key map" : "Product photo";
+        BoardHint.Visibility = showPhoto ? Visibility.Collapsed : Visibility.Visible;
+    }
+    internal object RunViewChecks()
+    {
+        var checks = new Dictionary<string, bool>();
+        void Check(string name, bool valid) { checks[name] = valid; if (!valid) throw new IOException(name); }
+        ModelPicker.SelectedItem = KreoModel.All.Single(m => m.Name == "Swarm 75");
+        ModeLighting.IsChecked = true; preferProductPhoto = true; UpdateBoardView();
+        Check("Swarm photo and key map switch are available", ProductPreview.Visibility == Visibility.Visible && BoardMap.Visibility == Visibility.Collapsed && ViewToggle.Visibility == Visibility.Visible);
+        ToggleBoardView(this, new RoutedEventArgs());
+        Check("Key map exposes every model key", BoardMap.Visibility == Visibility.Visible && keyButtons.Count == KreoLayout.Build(model).Count);
+        var a = model.Keys.Single(k => k.Label == "A");
+        keyButtons[a.Index].RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check("Offline key inspection still works", selected?.Index == a.Index);
+        preferProductPhoto = true; ModeAssign.IsChecked = true;
+        Check("Assignments automatically reveal interactive map", BoardMap.Visibility == Visibility.Visible && ProductPreview.Visibility == Visibility.Collapsed);
+        ModeLighting.IsChecked = true;
+        Check("Returning to lighting restores preferred photo", ProductPreview.Visibility == Visibility.Visible);
+        foreach (var other in KreoModel.All.Where(m => m.Name != "Swarm 75"))
+        {
+            ModelPicker.SelectedItem = other;
+            Check(other.Name + " retains its own key map", ProductPreview.Visibility == Visibility.Collapsed && BoardMap.Visibility == Visibility.Visible && keyButtons.Count == KreoLayout.Build(other).Count);
+        }
+        return checks;
+    }
     private int colorSlot;
     private string statusTone = "Idle";
     // Set when only the 2.4 GHz receiver is present: the keyboard works, but its settings can't be reached.
@@ -89,6 +127,7 @@ public partial class KeyboardPanel : UserControl
             Board.Children.Add(button); keyButtons[key.Index] = button; keyParts[key.Index] = new KeyParts(glow, legend, remap, dot);
         }
         UpdateKeys();
+        UpdateBoardView();
     }
 
     // Largest legend size (16 down to 11 design px) that fits the cap without trimming.
@@ -119,6 +158,7 @@ public partial class KeyboardPanel : UserControl
             updating = false;
         }
         UpdateKeys(); UpdateAvailability();
+        UpdateBoardView();
     }
     private void ClearSelection(object sender, RoutedEventArgs e) => SelectKey(null);
 
@@ -217,7 +257,7 @@ public partial class KeyboardPanel : UserControl
     {
         if (!ready) return;
         Editors.SelectedIndex = ModeAssign.IsChecked == true ? 1 : ModeProfiles.IsChecked == true ? 2 : 0;
-        UpdateKeys();
+        UpdateKeys(); UpdateBoardView();
     }
 
     // Arrow keys move between caps by position; Space or Enter selects; Esc clears the selection.
@@ -734,6 +774,7 @@ public partial class KeyboardPanel : UserControl
 
     public void PreparePreview(string scenario)
     {
+        preferProductPhoto = false; UpdateBoardView();
         if (edited == null) return;
         SelectKey(model.Keys.Single(k => k.Label == "A"));
         if (scenario == "assignment") { ModeAssign.IsChecked = true; TargetKey.SelectedItem = TargetKey.Items.Cast<KreoAction>().Single(k => k.Label == "B"); AssignButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }

@@ -107,7 +107,7 @@ public partial class LogitechPanel : UserControl
         ConnectionText.Text = "Reading mouse…"; DpiValue.Text = "—"; ModeText.Text = "Checking";
         snapshot = await WithDeviceAsync(async d => { using var timeout = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(15)); return await d.ReadAsync(timeout.Token); });
         draftDpi = snapshot.Sensors.SingleOrDefault()?.Dpi ?? 0; draftRate = snapshot.ReportRate ?? 0;
-        lightDrafts.Clear(); foreach (var zone in snapshot.Lighting ?? []) lightDrafts[zone.Index] = LightingBaseline(zone.Index).ToArray();
+        ResetLightingDrafts();
         rendering = true;
         DeviceTitle.Text = snapshot.Name; DeviceSubtitle.Text = $"Wired · USB 046D:{snapshot.ProductId:X4} · HID++ " + snapshot.Protocol;
         ConnectionText.Text = "Connected directly over USB"; ModeText.Text = snapshot.OnboardMode == 1 ? "Firmware control" : "Software control";
@@ -254,10 +254,10 @@ public partial class LogitechPanel : UserControl
         var state = lightDrafts[zone.Index]; previousZoneIndex = ZonePicker.SelectedIndex; rendering = true;
         EffectPicker.ItemsSource = zone.Effects.Where(m => m is 0 or 1 or 3 or 10).Select(m => new EffectOption(m, LogitechLighting.EffectName(m))).Concat(new[] { new EffectOption(100, "Screen sampler"), new EffectOption(101, "Audio visualizer") }).ToArray();
         EffectPicker.DisplayMemberPath = nameof(EffectOption.Name); EffectPicker.SelectedIndex = Array.FindIndex(((EffectOption[])EffectPicker.ItemsSource), f => f.Mode == state[0]);
-        HexInput.Text = "#" + Convert.ToHexString(state.AsSpan(1, 3));
-        BrightnessSlider.Value = state[0] == 3 ? state[8] == 0 ? 100 : state[8] : state[0] == 10 ? state[7] == 0 ? 100 : state[7] : 100;
-        var period = state[0] == 3 ? state[6] << 8 | state[7] : state[0] == 10 ? state[4] << 8 | state[5] : 5000;
-        PeriodSlider.Value = Math.Clamp(period, 1000, 20000);
+        var choice = lightingChoices.GetValueOrDefault(zone.Index) ?? LogitechLightingChoice.FromState(state);
+        HexInput.Text = "#" + choice.Hex.TrimStart('#');
+        BrightnessSlider.Value = choice.Brightness;
+        PeriodSlider.Value = choice.Period;
         PopulateReactiveFields(zone.Index);
         rendering = false; SyncRgbFields(); UpdateLightFields(); UpdatePreview(); SetEnabled();
     }
@@ -278,7 +278,12 @@ public partial class LogitechPanel : UserControl
         foreach (var target in targets)
         {
             if (IsReactive) reactiveDrafts[target] = ReactiveFromFields(target);
-            else { reactiveDrafts.Remove(target); lightDrafts[target] = state.ToArray(); }
+            else
+            {
+                reactiveDrafts.Remove(target); lightDrafts[target] = state.ToArray();
+                lightingChoices[target] = new((EffectPicker.SelectedItem as EffectOption)!.Mode,
+                    HexInput.Text.TrimStart('#').ToUpperInvariant(), (int)PeriodSlider.Value, (int)BrightnessSlider.Value);
+            }
         }
         SyncRgbFields(); UpdateLightFields(); UpdatePreview(); SetEnabled();
     }
@@ -355,10 +360,14 @@ public partial class LogitechPanel : UserControl
                 foreach (var target in targets)
                 {
                     if (reactiveDrafts.TryGetValue(zone.Index, out var software)) await reactive.SetAsync(software with { Zone = target });
-                    else await reactive.ApplyFirmwareAsync(target, lightDrafts[zone.Index].ToArray());
+                    else await reactive.ApplyFirmwareAsync(target, lightDrafts[zone.Index].ToArray(), lightingChoices.GetValueOrDefault(zone.Index));
                 }
                 snapshot = await WithDeviceAsync(device => device.ReadAsync());
-                foreach (var target in targets) lightDrafts[target] = snapshot.Lighting!.Single(z => z.Index == target).State.ToArray();
+                foreach (var target in targets)
+                {
+                    lightDrafts[target] = LightingBaseline(target).ToArray();
+                    lightingChoices[target] = ChoiceBaseline(target);
+                }
                 reactiveDrafts.Clear(); foreach (var software in reactive.Zones) reactiveDrafts[software.Zone] = software;
                 linkZonesPending = false;
             }
@@ -372,7 +381,7 @@ public partial class LogitechPanel : UserControl
         rendering = true;
         draftDpi = snapshot.Sensors.SingleOrDefault()?.Dpi ?? 0; draftRate = snapshot.ReportRate ?? 0;
         DpiSlider.Value = draftDpi; DpiInput.Text = draftDpi.ToString(); DpiValue.Text = draftDpi.ToString("N0"); RatePicker.SelectedIndex = Array.IndexOf(snapshot.ReportRates, draftRate);
-        lightDrafts.Clear(); foreach (var z in snapshot.Lighting ?? []) lightDrafts[z.Index] = LightingBaseline(z.Index).ToArray();
+        ResetLightingDrafts();
         rendering = false; invalidLight = invalidRgb = false; ClearInputError(); LoadReactiveEditor(); SetEnabled();
         if (controlBaseline.Length > 0) StageControlProfile(JsonSerializer.Deserialize<LogitechControlProfile>(controlBaseline)!);
         dpiSelectionPending = false; SetEnabled();
@@ -430,7 +439,12 @@ public partial class LogitechPanel : UserControl
             if (current == null || zone.State == null || zone.State.Length != 11 || !current.Effects.Contains(zone.State[0])) throw new InvalidDataException("The saved lighting does not match this mouse.");
         }
         StagePreset(preset); invalidLight = false;
-        foreach (var zone in original.Lighting ?? []) lightDrafts[zone.Index] = zone.State.ToArray();
+        reactiveDrafts.Clear();
+        foreach (var zone in original.Lighting ?? [])
+        {
+            lightDrafts[zone.Index] = zone.State.ToArray();
+            lightingChoices[zone.Index] = LogitechLightingChoice.FromState(zone.State);
+        }
         PopulateZone(); SetEnabled(); EditStatus.Text = "Original settings staged. Apply each section to restore it.";
     });
     private void ExportClick(object sender, RoutedEventArgs e) => FileAction(() =>

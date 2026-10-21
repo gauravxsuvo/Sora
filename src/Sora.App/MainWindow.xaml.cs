@@ -68,7 +68,7 @@ public partial class MainWindow : Window
             var maximized = WindowState == WindowState.Maximized;
             WindowMaximize.ToolTip = maximized ? "Restore" : "Maximize";
             System.Windows.Automation.AutomationProperties.SetName(WindowMaximize, maximized ? "Restore window" : "Maximize window");
-            WindowMaximize.Tag = maximized ? "M6,9 L15,9 L15,18 L6,18 Z M9,6 L18,6 L18,15" : "M6,10 L6,6 L10,6 M14,18 L18,18 L18,14";
+            WindowMaximize.Tag = maximized ? "M4,5.5 L8.5,5.5 L8.5,10 L4,10 Z M5.5,4 L10,4 L10,8.5" : "M3.5,7 L3.5,3.5 L7,3.5 M7,10.5 L10.5,10.5 L10.5,7";
             if (WindowState == WindowState.Minimized && host.Settings.MinimizeToTray && screenshotPath == null) ((App)Application.Current).CloseWindowToTray();
         };
         ApplyHardwareAvailability();
@@ -200,6 +200,13 @@ public partial class MainWindow : Window
         if (Array.IndexOf(arguments, "--keyboard-paint-preview") >= 0) Keyboard.PreparePreview("paint");
         if (Array.IndexOf(arguments, "--keyboard-blue-select-preview") >= 0) Keyboard.PreparePreview("paint-blue");
         if (Array.IndexOf(arguments, "--keyboard-select-preview") >= 0) Keyboard.PreparePreview("select");
+        if (arguments.Contains("--keyboard-map-preview")) Keyboard.ViewToggle.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        if (arguments.Contains("--window-glyph-preview"))
+            foreach (var button in new[] { WindowClose, WindowMinimize, WindowMaximize })
+            {
+                button.ApplyTemplate();
+                if (button.Template.FindName("Glyph", button) is FrameworkElement glyph) glyph.Visibility = Visibility.Visible;
+            }
         var keyboardSectionIndex = Array.IndexOf(arguments, "--keyboard-section");
         if (keyboardSectionIndex >= 0 && keyboardSectionIndex + 1 < arguments.Length) Keyboard.ShowSection(arguments[keyboardSectionIndex + 1]);
         if (Array.IndexOf(arguments, "--sidebar-focus-preview") >= 0) NavSettings.Focus();
@@ -378,6 +385,8 @@ public partial class MainWindow : Window
         Check("Empty title bar supports native dragging and double-click", Hit(new Point(ActualWidth / 2, 20)) == 2);
         foreach (var button in new[] { WindowClose, WindowMinimize, WindowMaximize })
         {
+            var bounds = Geometry.Parse((string)button.Tag).Bounds;
+            Check(button.Name + " glyph is centered inside its dot", Math.Abs(bounds.Left + bounds.Width / 2 - 7) < 0.01 && Math.Abs(bounds.Top + bounds.Height / 2 - 7) < 0.01 && bounds.Width <= 8 && bounds.Height <= 8);
             Check(button.Name + " is accessible and clickable inside the caption", !string.IsNullOrWhiteSpace(System.Windows.Automation.AutomationProperties.GetName(button)) && button.ActualWidth >= 28 && Hit(button.TranslatePoint(new Point(14, 14), this)) == 1);
         }
         // Intercept posted OS commands so verification cannot close, minimize or show the offscreen window.

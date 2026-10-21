@@ -13,6 +13,21 @@ public sealed record LogitechSnapshot(string Name, string Identity, ushort Produ
 public sealed record LogitechLightZone(byte Index, string Name, int[] Effects, byte[] State);
 public sealed record LogitechOnboardSlot(int Slot, bool Enabled, bool ChecksumValid, string Name, int[] Dpi, int ReportRate, string[] Bindings, string[] ShiftBindings, byte[] Raw);
 
+// User intent must survive separately from HID bytes: fixed colour folds brightness
+// into RGB, so a readback cannot recover the original colour/brightness pair.
+public sealed record LogitechLightingChoice(int Mode, string Hex, int Period, int Brightness)
+{
+    public byte[] Encode() => LogitechLighting.Encode(Mode, Hex, Period, Brightness);
+    public static LogitechLightingChoice FromState(byte[] state)
+    {
+        if (state.Length != 11) throw new InvalidDataException("Invalid Logitech light state.");
+        var mode = state[0];
+        var level = mode == 3 ? state[8] : mode == 10 ? state[7] : 0;
+        var period = mode == 3 ? state[6] << 8 | state[7] : mode == 10 ? state[4] << 8 | state[5] : 5000;
+        return new(mode, Convert.ToHexString(state.AsSpan(1, 3)), Math.Clamp(period, 1000, 20000), level == 0 ? 100 : level);
+    }
+}
+
 public static class LogitechLighting
 {
     // 8070 transmits the per-zone effect INDEX; onboard profiles store the effect ID.

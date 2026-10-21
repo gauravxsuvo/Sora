@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -32,9 +33,12 @@ internal sealed class LogitechReactiveLighting
         File.WriteAllText(LinkPath + ".tmp", JsonSerializer.Serialize(linked));
         File.Move(LinkPath + ".tmp", LinkPath, true); LinkedZones = linked;
     }
-    private sealed record FirmwareLighting(string Identity, System.Collections.Generic.Dictionary<byte, byte[]> States);
+    private sealed record FirmwareLighting(string Identity, System.Collections.Generic.Dictionary<byte, byte[]> States,
+        System.Collections.Generic.Dictionary<byte, LogitechLightingChoice>? Choices = null);
     private FirmwareLighting? firmware;
     internal byte[]? SavedFirmwareState(string identity, byte zone) => firmware?.Identity == identity && !Zones.Any(z => z.Zone == zone) && firmware.States.TryGetValue(zone, out var state) ? state.ToArray() : null;
+    internal LogitechLightingChoice? SavedChoice(string identity, byte zone) => SavedFirmwareState(identity, zone) is { } state
+        ? firmware!.Choices?.GetValueOrDefault(zone) ?? LogitechLightingChoice.FromState(state) : null;
     private bool firmwareApplied;
     private sealed record Ownership(string Identity, System.Collections.Generic.Dictionary<byte, byte[]> States);
     private CancellationTokenSource? lifetime;
@@ -59,6 +63,13 @@ internal sealed class LogitechReactiveLighting
                 firmware = JsonSerializer.Deserialize<FirmwareLighting>(File.ReadAllText(FirmwarePath));
                 if (firmware == null || string.IsNullOrWhiteSpace(firmware.Identity) || firmware.States == null || firmware.States.Count is < 1 or > 2 || firmware.States.Any(z => z.Key > 1 || z.Value == null || z.Value.Length != 11))
                     throw new InvalidDataException("Invalid saved mouse lighting.");
+                // Bad editor metadata must not discard a valid saved hardware state.
+                if (firmware.Choices != null)
+                    foreach (var entry in firmware.Choices.ToArray())
+                    {
+                        try { if (entry.Value == null || !firmware.States.TryGetValue(entry.Key, out var state) || !entry.Value.Encode().SequenceEqual(state)) firmware.Choices.Remove(entry.Key); }
+                        catch (Exception e) when (e is ArgumentException or FormatException or InvalidDataException) { firmware.Choices.Remove(entry.Key); }
+                    }
             }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or JsonException)
@@ -78,8 +89,9 @@ internal sealed class LogitechReactiveLighting
         }
         finally { gate.Release(); }
     }
-    public async Task ApplyFirmwareAsync(byte zone, byte[] state)
+    public async Task ApplyFirmwareAsync(byte zone, byte[] state, LogitechLightingChoice? choice = null)
     {
+        if (zone > 1 || state.Length != 11 || choice != null && !choice.Encode().SequenceEqual(state)) throw new InvalidDataException("Lighting choice does not match the device state.");
         if (LogitechDevice.IsGHubRunning()) throw new InvalidOperationException("Exit G HUB before applying lighting.");
         await gate.WaitAsync();
         try
@@ -91,16 +103,25 @@ internal sealed class LogitechReactiveLighting
                 await device.SetLightingAsync(current, new System.Collections.Generic.Dictionary<byte, byte[]> { [zone] = state });
                 return current;
             });
-            var states = firmware?.Identity == fresh.Identity ? new System.Collections.Generic.Dictionary<byte, byte[]>(firmware.States) : new();
-            states[zone] = state.ToArray();
-            var saved = new FirmwareLighting(fresh.Identity, states);
-            Directory.CreateDirectory(Path.GetDirectoryName(FirmwarePath)!);
-            File.WriteAllText(FirmwarePath + ".tmp", JsonSerializer.Serialize(saved, new JsonSerializerOptions { WriteIndented = true }));
-            File.Move(FirmwarePath + ".tmp", FirmwarePath, true);
-            firmware = saved; firmwareApplied = true;
+            RememberFirmware(fresh.Identity, zone, state, choice);
+            firmwareApplied = true;
             Zones = Zones.Where(z => z.Zone != zone).ToArray(); Save(); if (Zones.Length > 0) await StartCoreAsync();
         }
         finally { gate.Release(); }
+    }
+    internal void RememberFirmware(string identity, byte zone, byte[] state, LogitechLightingChoice? choice)
+    {
+        if (string.IsNullOrWhiteSpace(identity) || zone > 1 || state.Length != 11 || choice != null && !choice.Encode().SequenceEqual(state))
+            throw new InvalidDataException("Lighting choice does not match the device state.");
+        var states = firmware?.Identity == identity ? new Dictionary<byte, byte[]>(firmware.States) : new();
+        states[zone] = state.ToArray();
+        var choices = firmware?.Identity == identity && firmware.Choices != null ? new Dictionary<byte, LogitechLightingChoice>(firmware.Choices) : new();
+        choices[zone] = choice ?? LogitechLightingChoice.FromState(state);
+        var saved = new FirmwareLighting(identity, states, choices);
+        Directory.CreateDirectory(Path.GetDirectoryName(FirmwarePath)!);
+        File.WriteAllText(FirmwarePath + ".tmp", JsonSerializer.Serialize(saved, new JsonSerializerOptions { WriteIndented = true }));
+        File.Move(FirmwarePath + ".tmp", FirmwarePath, true);
+        firmware = saved;
     }
     private void Save() { Directory.CreateDirectory(Path.GetDirectoryName(path)!); File.WriteAllText(path + ".tmp", JsonSerializer.Serialize(Zones, new JsonSerializerOptions { WriteIndented = true })); File.Move(path + ".tmp", path, true); }
     private async Task StartCoreAsync()

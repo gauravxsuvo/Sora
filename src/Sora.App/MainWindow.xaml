@@ -9,9 +9,9 @@
       <Grid>
         <TextBlock Text="Sora" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0">
-          <Button x:Name="WindowClose" Style="{StaticResource TrafficLightButton}" Background="#FF5F57" Tag="M7,7 L17,17 M17,7 L7,17" Click="CloseWindowClick" AutomationProperties.Name="Close window" ToolTip="Close" WindowChrome.IsHitTestVisibleInChrome="True"/>
-          <Button x:Name="WindowMinimize" Style="{StaticResource TrafficLightButton}" Background="#FEBC2E" Tag="M6,12 L18,12" Click="MinimizeWindowClick" AutomationProperties.Name="Minimize window" ToolTip="Minimize" WindowChrome.IsHitTestVisibleInChrome="True"/>
-          <Button x:Name="WindowMaximize" Style="{StaticResource TrafficLightButton}" Background="#28C840" Tag="M6,10 L6,6 L10,6 M14,18 L18,18 L18,14" Click="MaximizeWindowClick" AutomationProperties.Name="Maximize or restore window" ToolTip="Maximize / Restore" WindowChrome.IsHitTestVisibleInChrome="True"/>
+          <Button x:Name="WindowClose" Style="{StaticResource TrafficLightButton}" Background="#FF5F57" Tag="M4.5,4.5 L9.5,9.5 M9.5,4.5 L4.5,9.5" Click="CloseWindowClick" AutomationProperties.Name="Close window" ToolTip="Close" WindowChrome.IsHitTestVisibleInChrome="True"/>
+          <Button x:Name="WindowMinimize" Style="{StaticResource TrafficLightButton}" Background="#FEBC2E" Tag="M3.5,7 L10.5,7" Click="MinimizeWindowClick" AutomationProperties.Name="Minimize window" ToolTip="Minimize" WindowChrome.IsHitTestVisibleInChrome="True"/>
+          <Button x:Name="WindowMaximize" Style="{StaticResource TrafficLightButton}" Background="#28C840" Tag="M3.5,7 L3.5,3.5 L7,3.5 M7,10.5 L10.5,10.5 L10.5,7" Click="MaximizeWindowClick" AutomationProperties.Name="Maximize or restore window" ToolTip="Maximize / Restore" WindowChrome.IsHitTestVisibleInChrome="True"/>
         </StackPanel>
       </Grid>
     </Border>
