@@ -1,5 +1,6 @@
 # Roadmap
 
+- Publish stable releases only. The Legion support and beta-release plan is cancelled.
 - Hardware-aware setup, navigation, and background activity.
 - Capability-based wired Logitech discovery, including G102 / G203 variants.
 - Device-specific controls and profile isolation.
