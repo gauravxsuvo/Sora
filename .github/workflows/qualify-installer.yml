@@ -17,6 +17,7 @@ on:
         options:
           - stable
           - github-prerelease
+          - github-release
         default: stable
 permissions:
   contents: read
@@ -55,8 +56,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $arguments = @{ Version = $env:CANDIDATE_VERSION; Sha256 = $env:CANDIDATE_SHA256; ArtifactDirectory = 'artifacts/installed-lifecycle' }
-          if ($env:CANDIDATE_SOURCE -eq 'github-prerelease') {
-            if ($env:CANDIDATE_VERSION -notmatch '^\d+\.\d+\.\d+-beta\.\d+$') { throw 'Expected a beta version.' }
+          if ($env:CANDIDATE_SOURCE -in @('github-prerelease','github-release')) {
+            if ($env:CANDIDATE_VERSION -notmatch '^\d+\.\d+\.\d+(-beta\.\d+)?$') { throw 'Invalid release version.' }
+            if ($env:CANDIDATE_SOURCE -eq 'github-prerelease' -and $env:CANDIDATE_VERSION -notmatch '-beta\.') { throw 'Expected a beta version.' }
             gh release download "v$env:CANDIDATE_VERSION" --repo $env:GITHUB_REPOSITORY --pattern "Sora-Setup-$env:CANDIDATE_VERSION-x64.exe" --dir artifacts/candidate
             if ($LASTEXITCODE -ne 0) { throw 'Candidate download failed.' }
             $arguments.CandidateInstaller = "artifacts/candidate/Sora-Setup-$env:CANDIDATE_VERSION-x64.exe"
