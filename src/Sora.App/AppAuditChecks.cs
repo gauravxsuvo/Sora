@@ -28,6 +28,41 @@ internal static class AppAuditChecks
             catch (Exception error) { results[name] = false; File.AppendAllText(output + ".errors.txt", name + ": " + error + Environment.NewLine); }
         }
         static void Assert(bool condition) { if (!condition) throw new InvalidOperationException("Regression assertion failed."); }
+        await Check("DPI verification survives blocked host polling, retries busy focus switches and preserves intentional Shift", async () =>
+        {
+            using var cancel = new System.Threading.CancellationTokenSource();
+            var ticks = System.Threading.Channels.Channel.CreateUnbounded<TaskCompletionSource>();
+            TaskCompletionSource? previous = null;
+            async Task Delay(System.Threading.CancellationToken token)
+            {
+                previous?.TrySetResult();
+                previous = await ticks.Reader.ReadAsync(token);
+            }
+            var focus = new IntPtr(100); var time = DateTime.UtcNow;
+            var actual = 800; var expected = 800; var count = 0; var available = true;
+            var monitor = LogitechDpiWatchdog.RunAsync(() => focus, () =>
+            {
+                count++; if (!available) return Task.FromResult(false);
+                actual = expected; return Task.FromResult(true);
+            }, cancel.Token, Delay, () => time);
+            async Task Tick()
+            {
+                var complete = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                await ticks.Writer.WriteAsync(complete); await complete.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            }
+            try
+            {
+                await Tick(); Assert(count == 1 && actual == 800);
+                actual = 1600; focus = new IntPtr(200); available = false;
+                await Tick(); Assert(count == 2 && actual == 1600);
+                available = true; await Tick(); Assert(count == 3 && actual == 800);
+                await Tick(); Assert(count == 3);
+                actual = 3200; time = time.AddSeconds(2); await Tick(); Assert(count == 4 && actual == 800);
+                expected = 4000; focus = new IntPtr(300); await Tick(); Assert(actual == 4000);
+                expected = 800; focus = new IntPtr(400); await Tick(); Assert(actual == 800);
+            }
+            finally { cancel.Cancel(); await monitor.WaitAsync(TimeSpan.FromSeconds(2)); }
+        });
         await Check("Legacy preferences retain values and default to dark mode", () =>
         {
             var legacy = JsonSerializer.Deserialize<DisplaySettings>("{\"Fahrenheit\":true,\"LeadingZeros\":true,\"MinimizeToTray\":false,\"AutoStartDisplay\":true}")!;

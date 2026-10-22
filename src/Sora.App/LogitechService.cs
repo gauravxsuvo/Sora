@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,10 +25,10 @@ internal sealed class LogitechService
     private DateTime indicatorHideAt;
     private CancellationTokenSource? runtime;
     private Task inputTask = Task.CompletedTask;
+    private Task healthTask = Task.CompletedTask;
     private LogitechActionRunner? actions;
     private bool suspended, stopping;
     private DateTime retryAt;
-    private DateTime healthAt;
     private LogitechButtonState? buttonState;
     private string? indicatorProblem;
     private sealed record RuntimeStage(string Profile, int[] Stages, int ShiftDpi, int Stage);
@@ -165,7 +166,7 @@ internal sealed class LogitechService
             SaveRuntimeStage(initialStage);
             var connection = device; var snapshot = Snapshot; var runner = actions; var token = runtime.Token;
             inputTask = Task.Run(() => ProcessButtonsAsync(connection, snapshot, state, runner, token));
-            healthAt = DateTime.UtcNow.AddSeconds(2);
+            healthTask = Task.Run(() => LogitechDpiWatchdog.RunAsync(GetForegroundWindow, RefreshLiveDpiAsync, token));
             Status = indicatorProblem ?? "Sora software control · applied and verified"; host.Log($"Logitech: profile active, stage {initialStage + 1}, actual DPI {CurrentDpi}."); Publish();
         }
         catch
@@ -195,7 +196,9 @@ internal sealed class LogitechService
                 // presses. A cached value must never suppress a requested DPI change.
                 if (dpiFeedback || CurrentDpi != state.CurrentDpi)
                 {
+                    var beforeDpi = CurrentDpi;
                     await connection.SetLiveDpiAsync(snapshot, state.CurrentDpi, token); CurrentDpi = state.CurrentDpi;
+                    if (beforeDpi != CurrentDpi) host.Log($"Logitech: DPI button action {beforeDpi} -> {CurrentDpi}; stage {state.Stage + 1}, Shift {(state.ShiftHeld ? "held" : "released")}.");
                 }
                 if (dpiFeedback || CurrentStage != state.Stage || DpiShiftHeld != state.ShiftHeld)
                     await ShowIndicatorAsync(connection, snapshot, Profile!, state.CurrentDpi, state.ShiftHeld, token);
@@ -228,15 +231,15 @@ internal sealed class LogitechService
             host.Log(indicatorProblem); Status = indicatorProblem;
         }
     }
-    public async Task RefreshLiveDpiAsync()
+    public async Task<bool> RefreshLiveDpiAsync()
     {
-        if (!Running || LogitechDevice.IsGHubRunning() || !await gate.WaitAsync(0)) return;
+        if (!Running || LogitechDevice.IsGHubRunning() || !await gate.WaitAsync(0)) return false;
         try
         {
             await inputGate.WaitAsync();
             try
             {
-                if (!Running || device == null || Snapshot == null) return;
+                if (!Running || device == null || Snapshot == null) return false;
                 var token = runtime!.Token;
                 var mode = await device.RequestAsync(Snapshot.Features.Single(f => f.Id == 0x8100).Index, 2, token: token);
                 if (mode[0] != 2) throw new IOException("The mouse returned to firmware control; reapplying the saved Sora profile.");
@@ -257,14 +260,17 @@ internal sealed class LogitechService
                     await ShowIndicatorAsync(device, Snapshot, Profile, actual, DpiShiftHeld, token);
                 Status = indicatorProblem ?? "Sora controls active · actual DPI " + actual.ToString("N0");
                 Publish();
+                return true;
             }
             finally { inputGate.Release(); }
         }
+        catch (Exception) when (runtime?.IsCancellationRequested == true) { return false; }
         catch (Exception error) when (error is not OutOfMemoryException)
         {
             runtime?.Cancel(); CurrentDpi = null;
             retryAt = DateTime.UtcNow.AddSeconds(1);
             SetFailure("Mouse control interrupted · reconnecting automatically: " + error.Message);
+            return false;
         }
         finally { gate.Release(); }
     }
@@ -380,11 +386,6 @@ internal sealed class LogitechService
             if (device != null) { await gate.WaitAsync(); try { await StopCoreAsync(); } finally { gate.Release(); } }
             Status = "G HUB is running · Sora controls paused"; return;
         }
-        if (Running && DateTime.UtcNow >= healthAt)
-        {
-            healthAt = DateTime.UtcNow.AddSeconds(2);
-            await RefreshLiveDpiAsync();
-        }
         if (Running && originalIndicator != null && DateTime.UtcNow >= indicatorHideAt)
         {
             await gate.WaitAsync();
@@ -427,6 +428,7 @@ internal sealed class LogitechService
     private async Task StopCoreAsync()
     {
         runtime?.Cancel(); try { await inputTask; } catch (Exception e) when (e is not OutOfMemoryException) { host.Log("Logitech input cleanup: " + e.Message); }
+        try { await healthTask; } catch (Exception e) when (e is not OutOfMemoryException) { host.Log("Logitech DPI monitor cleanup: " + e.Message); }
         runtime?.Dispose(); runtime = null; actions = null; buttonState = null; PressedButtons = 0; DpiShiftHeld = false; CurrentDpi = null;
         if (device == null) return;
         try
@@ -487,4 +489,5 @@ internal sealed class LogitechService
     }
     private void SetFailure(string message) { Status = message; host.Log("Logitech: " + message); Publish(); }
     private void Publish() => Updated?.Invoke();
+    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
 }

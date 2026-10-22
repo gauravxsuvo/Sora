@@ -127,6 +127,7 @@ public partial class LogitechPanel
         LightEdited();
     }
     private void WindowsLightingClick(object sender, RoutedEventArgs e) => FileAction(() => Process.Start(new ProcessStartInfo("ms-settings:personalization-dynamiclighting") { UseShellExecute = true }));
+    private void WindowsMouseSettingsClick(object sender, RoutedEventArgs e) => FileAction(() => Process.Start(new ProcessStartInfo("ms-settings:mousetouchpad") { UseShellExecute = true }));
     private void SaveColorClick(object sender, RoutedEventArgs e) => FileAction(() =>
     {
         var hex = HexInput.Text.ToUpperInvariant(); if (Convert.FromHexString(hex.TrimStart('#')).Length != 3) throw new InvalidDataException("Choose a valid color first.");

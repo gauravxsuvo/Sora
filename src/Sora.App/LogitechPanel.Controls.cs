@@ -26,6 +26,7 @@ public partial class LogitechPanel
     private bool ControlsDirty => controlDraft != null && JsonSerializer.Serialize(controlDraft) != controlBaseline;
     private async Task PollLiveAsync()
     {
+        WindowsPointerInfo.Text = WindowsPointerSettings.Description();
         if (pollingLive || IsBusy || snapshot == null || selectedDevice < 0 || snapshot.Sensors.Length != 1) return;
         pollingLive = true;
         try

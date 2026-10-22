@@ -34,7 +34,7 @@ public partial class LogitechPanel : UserControl
 
     public LogitechPanel()
     {
-        InitializeComponent(); ready = true;
+        InitializeComponent(); WindowsPointerInfo.Text = WindowsPointerSettings.Description(); ready = true;
         void SelectPreviewZone(int index)
         {
             if (IsBusy || snapshot?.Lighting == null || LinkZonesCheck.IsChecked == true) return;

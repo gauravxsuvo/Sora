@@ -28,6 +28,8 @@
               <local:LogitechDpiScale x:Name="DpiScale" Margin="0,8,0,4"/>
               <TextBlock x:Name="LiveDpiText" Text="Live mouse DPI: —" Style="{StaticResource CaptionText}"/>
               <TextBlock Text="Speeds (comma separated)" Style="{StaticResource FieldLabel}"/><TextBox x:Name="StagesInput" Text="400, 800, 1600" TextChanged="StagesChanged" AutomationProperties.Name="DPI speeds"/>
+              <TextBlock x:Name="WindowsPointerInfo" Style="{StaticResource CaptionText}" Margin="0,0,0,8"/>
+              <Button Content="Windows mouse settings" Style="{StaticResource QuietButton}" Click="WindowsMouseSettingsClick" HorizontalAlignment="Left" Margin="0,0,0,12"/>
               <TextBlock Text="Speed to edit / apply" Style="{StaticResource FieldLabel}"/><ComboBox x:Name="StagePicker" local:ControlState.Placeholder="Read mouse to view DPI stages" SelectionChanged="StageChanged" AutomationProperties.Name="DPI stage to edit"/>
               <TextBlock Text="The outlined marker and Live mouse DPI show the mouse’s actual speed. Edits below take effect when you apply the profile." Style="{StaticResource CaptionText}" Margin="0,6,0,0"/>
               <TextBlock Text="DPI shift speed · hold G6" Style="{StaticResource FieldLabel}" Margin="0,16,0,6"/><TextBox x:Name="ShiftDpiInput" Text="4000" TextChanged="ShiftChanged" AutomationProperties.Name="DPI shift speed"/>
