@@ -20,6 +20,8 @@ Sora saves original settings before taking control where restoration is supporte
 
 The DeepCool LD360 page displays CPU temperature, utilization, and package power. Valid readings and an available USB connection are required before display output starts. Configure automatic display output on that page. Computers without the cooler do not show these settings.
 
+The cooler image's RGB strip follows **ARGB header 2** in Sora's Lighting page, including its color, brightness, effect and Off setting. Sora-driven animations share the color frames sent to the header. Controller-run effects match the selected look, with an approximate animation phase. Without a saved header-2 look, the preview strip stays unlit.
+
 ## Connection changes
 
 New devices are detected automatically. Saved data remains local when a device is unplugged. Never apply another model's settings to a newly connected device. Unsupported features remain unavailable even if a device uses the same brand or protocol family.

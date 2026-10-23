@@ -61,7 +61,13 @@ public partial class FanPanel : UserControl
             row.PropertyChanged += (_, _) => MarkChanged();
             rows.Insert(index, row); PointGrid.SelectedItem = row;
         };
-        Chart.PointRemoved += index => { if (service?.Busy != true && !invalidEditor && index < rows.Count) rows.RemoveAt(index); };
+        Chart.PointRemoved += index =>
+        {
+            if (service?.Busy == true || invalidEditor || index < 0 || index >= rows.Count - 1 || rows.Count <= 2) return;
+            editing = true; rows.RemoveAt(index); editing = false;
+            MarkChanged(); PointGrid.SelectedIndex = Math.Min(index, rows.Count - 1); UpdatePointSelection();
+        };
+        Chart.SelectedPointChanged += index => { PointGrid.SelectedIndex = index; UpdatePointSelection(); };
         Chart.EditRejected += ShowFeedback;
         Loaded += (_, _) => { Listen(); timer.Start(); };
         Unloaded += (_, _) => { timer.Stop(); if (listening && service != null) service.Changed -= Render; listening = false; };
@@ -183,7 +189,7 @@ public partial class FanPanel : UserControl
         }
         Chart.Profile = p;
         if (p.Mode != FanCurveMode.Fixed) temperatureProfiles[selected] = p;
-        editing = false; UpdateMode();
+        editing = false; PointGrid.SelectedIndex = Chart.SelectedPointIndex; UpdateMode();
         invalidEditor = false;
     }
     private FanProfile ReadEditor()
@@ -206,6 +212,8 @@ public partial class FanPanel : UserControl
         bool fixedDuty = ModeBox.SelectedIndex == (int)FanCurveMode.Fixed;
         FixedEditor.Visibility = fixedDuty ? Visibility.Visible : Visibility.Collapsed;
         CurveEditor.Visibility = fixedDuty ? Visibility.Collapsed : Visibility.Visible;
+        CurveTools.Visibility = fixedDuty ? Visibility.Collapsed : Visibility.Visible;
+        UpdatePointSelection();
         FullBox.IsEnabled = fixedDuty; StopBox.IsEnabled = !fixedDuty;
         FixedLabel.Text = $"Fixed duty · {FixedSlider.Value:0}%";
         ModeHint.Text = ModeBox.SelectedIndex switch { (int)FanCurveMode.Step => "Stair step holds each duty until the next temperature point.", (int)FanCurveMode.Fixed => "Fixed duty stays constant until the full-speed temperature override.", _ => "Temperature curve ramps smoothly between the points." };
@@ -261,6 +269,7 @@ public partial class FanPanel : UserControl
             if (p.Mode != FanCurveMode.Fixed) temperatureProfiles[selected] = p;
         }
         catch (Exception e) when (e is FormatException or OverflowException) { invalidEditor = true; }
+        UpdatePointSelection();
         RenderPending();
     }
     private void RenderPending()
@@ -296,6 +305,20 @@ public partial class FanPanel : UserControl
     private void EditorChanged(object sender, RoutedEventArgs e) => MarkChanged();
     private void PointEditEnding(object sender, DataGridCellEditEndingEventArgs e) => Dispatcher.BeginInvoke(new Action(MarkChanged));
     private void PointKeyUp(object sender, KeyEventArgs e) => MarkChanged();
+    private void PointSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (editing || PointGrid.SelectedIndex < 0) return;
+        Chart.SelectedPointIndex = PointGrid.SelectedIndex; UpdatePointSelection();
+    }
+    private void UpdatePointSelection()
+    {
+        if (RemovePointButton == null) return;
+        int index = Chart.SelectedPointIndex;
+        RemovePointButton.IsEnabled = service?.Busy != true && !invalidEditor && Chart.CanRemoveSelectedPoint;
+        SelectedPointLabel.Text = index < rows.Count ? $"Point {index + 1} · {rows[index].Temperature}°C / {rows[index].Duty}%" : "Select a curve point";
+        RemovePointButton.ToolTip = rows.Count <= 2 ? "Keep at least two curve points." : index == rows.Count - 1
+            ? "Keep the final 100% point. Drag it to change the full-speed temperature." : "Remove the highlighted point from the chart and table (Delete).";
+    }
     private void HeaderChanged(object sender, SelectionChangedEventArgs e)
     {
         if (HeaderList.SelectedIndex < 0 || service == null) return;
@@ -360,7 +383,7 @@ public partial class FanPanel : UserControl
     }
     private void AddPointClick(object sender, RoutedEventArgs e)
     {
-        if (rows.Count >= 11 || rows.Count < 2) return;
+        if (service?.Busy == true || invalidEditor || rows.Count >= 11 || rows.Count < 2) return;
         try
         {
             var p = ReadEditor();
@@ -368,11 +391,15 @@ public partial class FanPanel : UserControl
             for (int i = 1; i < p.Points.Length; i++) if (p.Points[i].TemperatureC - p.Points[i - 1].TemperatureC > p.Points[at].TemperatureC - p.Points[at - 1].TemperatureC) at = i;
             var a = p.Points[at - 1]; var b = p.Points[at]; if (b.TemperatureC - a.TemperatureC < 2) return;
             var list = p.Points.ToList(); list.Insert(at, new((a.TemperatureC + b.TemperatureC) / 2, Math.Round((a.DutyPercent + b.DutyPercent) / 2)));
-            LoadEditor(p with { Points = list.ToArray() }); MarkChanged();
+            LoadEditor(p with { Points = list.ToArray() }); Chart.SelectedPointIndex = at; PointGrid.SelectedIndex = at; MarkChanged();
         }
         catch (Exception error) when (error is FormatException or OverflowException) { ShowFeedback(error.Message); }
     }
-    private void RemovePointClick(object sender, RoutedEventArgs e) { if (rows.Count > 2 && PointGrid.SelectedItem is FanPointRow row) rows.Remove(row); }
+    private void RemovePointClick(object sender, RoutedEventArgs e)
+    {
+        if (service?.Busy == true || invalidEditor) return;
+        Chart.RemoveSelectedPoint(); UpdatePointSelection();
+    }
     private async void ApplyClick(object sender, RoutedEventArgs e)
     {
         if (service == null) return;
@@ -460,8 +487,22 @@ public partial class FanPanel : UserControl
             Check("New point duty stays between its neighbors", ReadEditor().Points[2] == new FanPoint(42, 55));
             KeyPress(Key.Delete);
             Check("Delete removes the selected new point from chart and table", rows.Count == 4 && ReadEditor().Points.All(p => p.TemperatureC != 42));
+            Chart.HitOrInsertPoint(Plot(50, 60));
+            Check("Selecting an existing chart point selects the matching table row", Chart.SelectedPointIndex == 2 && PointGrid.SelectedIndex == 2 && RemovePointButton.IsEnabled);
+            RemovePointClick(this, new RoutedEventArgs());
+            Check("The visible Remove button deletes the chart-selected point", rows.Count == 3 && ReadEditor().Points.All(p => p.TemperatureC != 50));
+            Chart.HitOrInsertPoint(Plot(50, 60));
+            PointGrid.SelectedIndex = 1;
+            Check("Selecting a table row selects its chart point", Chart.SelectedPointIndex == 1 && SelectedPointLabel.Text.Contains("35°C", StringComparison.Ordinal));
+            var pointMenu = Chart.PointMenu(Plot(50, 60));
+            Check("Right-click targets the clicked point even when another row was selected", pointMenu != null && Chart.SelectedPointIndex == 2 && PointGrid.SelectedIndex == 2);
+            ((MenuItem)pointMenu!.Items[0]).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            Check("Right-click Remove deletes that point from both views", rows.Count == 3 && ReadEditor().Points.All(p => p.TemperatureC != 50));
+            Chart.HitOrInsertPoint(Plot(50, 60));
             Chart.HitOrInsertPoint(Plot(80, 100)); Chart.RemoveSelectedPoint();
             Check("Chart deletion preserves the final full-speed point", rows.Count == 4 && ReadEditor().Points[^1] == new FanPoint(80, 100));
+            PointGrid.SelectedIndex = rows.Count - 1; RemovePointClick(this, new RoutedEventArgs());
+            Check("The table and Remove button preserve the final full-speed point", rows.Count == 4 && !RemovePointButton.IsEnabled && !((MenuItem)Chart.PointMenu(Plot(80, 100))!.Items[0]).IsEnabled);
             Check("Clicking an axis label does not insert a point", Chart.HitOrInsertPoint(new Point(10, 10)) == -1 && rows.Count == 4);
             HeaderList.SelectedIndex = 5; HeaderList.SelectedIndex = 0;
             Check("Chart-created points survive switching fan headers", ReadEditor().Points.Contains(new FanPoint(35, 55)));
@@ -475,6 +516,7 @@ public partial class FanPanel : UserControl
             LoadEditor(clickProfile with { Points = new[] { new FanPoint(20, 25), new FanPoint(80, 100) } }); MarkChanged();
             Chart.HitOrInsertPoint(Plot(20, 25)); Chart.RemoveSelectedPoint();
             Check("Chart deletion keeps at least two points", rows.Count == 2);
+            Check("Remove is disabled for a two-point curve", !RemovePointButton.IsEnabled);
             ModeBox.SelectedIndex = (int)FanCurveMode.Fixed;
             Check("Fixed-duty mode cannot add curve points", Chart.HitOrInsertPoint(Plot(35, 40)) == -1 && rows.Count == 2);
             LoadEditor(FanProfile.Preset(0, "Quiet") with { FirmwareStop = snapshot.Headers[0].FirmwareStop }); MarkChanged();
@@ -486,6 +528,9 @@ public partial class FanPanel : UserControl
             HeaderList.SelectedIndex = 5;
             Check("Switching headers loads that header's curve", ReadEditor().Header == 5 && HeaderTitle.Text == FanProtocol.HeaderNames[5]);
             var selectedRow = (ListBoxItem)HeaderList.ItemContainerGenerator.ContainerFromIndex(5);
+            selectedRow.ApplyTemplate();
+            var rowSurface = (Border)selectedRow.Template.FindName("Item", selectedRow);
+            Check("Fan headers use one consistent border without a second focus adorner", selectedRow.FocusVisualStyle == null && rowSurface.BorderThickness == (Thickness)FindResource("ControlBorderThickness") && rowSurface.BorderThickness.Left == 2);
             var bounds = selectedRow.TransformToAncestor(HeaderList).TransformBounds(new Rect(selectedRow.RenderSize));
             Check("Selected header stays visible in the scrolling list", bounds.Top >= 0 && bounds.Bottom <= HeaderList.ActualHeight);
             HeaderList.SelectedIndex = 0;

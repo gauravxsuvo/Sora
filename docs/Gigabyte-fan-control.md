@@ -4,6 +4,8 @@ Motherboard fan programming is restricted to the Gigabyte Z890 GAMING X WIFI7 an
 
 Read current configuration before editing a header. Identify the physical fan or pump connection before changing its operating mode. Connection names and types are descriptive preferences and do not program a header by themselves.
 
+Click empty space on the curve to add a point. Click a point or its table row to select it, then use **Remove point**, right-click the point and choose **Remove point**, or press **Delete** while the chart has focus. The chart and table share the same selection. Keep at least two points; the final 100% point cannot be removed, but can be dragged to change the full-speed temperature.
+
 Apply saves original state, programs the selected supported configuration, and verifies readback. Restore returns supported original settings. A fixed-speed pump should retain its intended operating mode.
 
 “Give Sora priority over fan helper services” is enabled by default. When applying a curve, Sora automatically pauses the supported DeepCool `FanControl` and Gigabyte `EasyTuneEngineService` helpers. Saved profiles use the same handoff at startup and resume. While an applied profile is active, Sora checks every five seconds for helper restarts and reclaims control. Enable Settings → Start at sign-in to launch Sora automatically with Windows.

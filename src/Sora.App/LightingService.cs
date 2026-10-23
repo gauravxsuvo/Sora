@@ -312,6 +312,14 @@ internal sealed class LightingService(SoraHost host)
 
     /// <summary>True while Sora is driving an animated sync effect.</summary>
     public bool SyncRunning => engine?.Running == true;
+    internal CoolerLighting CoolerPreviewLighting
+    {
+        get
+        {
+            var active = engine;
+            return CoolerLighting.From(Settings, active?.BoardFrame, active?.Running == true);
+        }
+    }
 
     public void StopEngine()
     {

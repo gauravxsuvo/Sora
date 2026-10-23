@@ -182,6 +182,114 @@ internal static class AppAuditChecks
             move.Invoke(chart, [0, 100, 100d]); Assert(moved == new FanPoint(44, 45));
             return Task.CompletedTask;
         });
+        await Check("LD360 cutout has real transparency and live screen fields clear correctly", () =>
+        {
+            var preview = new CoolerDisplayPreview { Width = 550, Height = 550 };
+            var bitmap = new System.Windows.Media.Imaging.FormatConvertedBitmap(preview.ProductImage, PixelFormats.Bgra32, null, 0);
+            var pixels = new byte[bitmap.PixelWidth * bitmap.PixelHeight * 4]; bitmap.CopyPixels(pixels, bitmap.PixelWidth * 4, 0);
+            Assert(pixels[3] == 0 && pixels[(bitmap.PixelWidth - 1) * 4 + 3] == 0);
+            Assert(pixels[((bitmap.PixelHeight / 3) * bitmap.PixelWidth + bitmap.PixelWidth / 2) * 4 + 3] >= 245);
+            preview.UpdateReadings("48", "62", "96", "°C", true);
+            Assert(preview.TemperatureText == " 48" && preview.PowerText == " 62" && preview.UsageText == " 96" && preview.UnitText == "°C");
+            preview.Measure(new Size(550, 550)); preview.Arrange(new Rect(0, 0, 550, 550)); preview.UpdateLayout();
+            byte[] Capture(string name)
+            {
+                preview.UpdateLayout();
+                var image = new System.Windows.Media.Imaging.RenderTargetBitmap(550, 550, 96, 96, PixelFormats.Pbgra32); image.Render(preview);
+                var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder(); encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(image));
+                using var file = File.Create(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(output))!, name)); encoder.Save(file);
+                var captured = new byte[550 * 550 * 4]; image.CopyPixels(captured, 550 * 4, 0); return captured;
+            }
+            var celsius = Capture("ld360-celsius.png");
+            preview.UpdateReadings("118", "062", "096", "°F", false);
+            Assert(preview.TemperatureText == "118" && preview.PowerText == "062" && preview.UsageText == "096" && preview.UnitText == "°F");
+            var fahrenheit = Capture("ld360-fahrenheit.png"); Assert(!celsius.SequenceEqual(fahrenheit));
+            preview.UpdateReadings(null, null, null, "°C", false);
+            Assert(preview.TemperatureText == "---" && preview.PowerText == "---" && preview.UsageText == "---");
+            var unavailable = Capture("ld360-unavailable.png"); Assert(!unavailable.SequenceEqual(fahrenheit));
+            Assert(System.Windows.Automation.AutomationProperties.GetName(preview).Contains("unavailable", StringComparison.Ordinal));
+            return Task.CompletedTask;
+        });
+        await Check("Cooler strip follows ARGB header 2, isolates other zones and preserves the product", async () =>
+        {
+            var zones = new[] { new BoardZoneLighting(2, BoardEffect.Static, "#FF0000"), new BoardZoneLighting(5, BoardEffect.Static, "#0000FF"), new BoardZoneLighting(6, BoardEffect.Static, "#8300FF") };
+            var settings = new LightingSettings(BoardZones: zones);
+            var purple = CoolerLighting.From(settings);
+            Assert(purple.Header?.Zone == 6 && purple.ColorAt(0) == Color.FromRgb(131, 0, 255) && !purple.Animated);
+            Assert(CoolerLighting.From(settings with { BoardZones = [zones[0] with { Color = "#00FF00" }, zones[1], zones[2]] }).ColorAt(0) == purple.ColorAt(0));
+            var dim = CoolerLighting.From(settings with { BoardZones = [zones[2] with { Brightness = 0 }] });
+            Assert(dim.ColorAt(0) == Color.FromRgb(13, 0, 26));
+            var off = CoolerLighting.From(settings with { BoardZones = [zones[2] with { Effect = BoardEffect.Off }] });
+            Assert(off.ColorAt(0) == Colors.Black && !off.Animated);
+            Assert(CoolerLighting.From(new()).Header == null && CoolerLighting.From(new()).ColorAt(0) == Colors.Black);
+            Assert(CoolerLighting.From(new(BoardZones: [zones[2] with { Color = "invalid" }])).Header == null);
+            Assert(CoolerLighting.From(new(BoardZones: [zones[2] with { Speed = -1 }])).Header == null);
+            var cycle = CoolerLighting.From(settings with { BoardZones = [zones[2] with { Effect = BoardEffect.Rainbow }] });
+            Assert(!cycle.SpatialRainbow && cycle.ColorAt(0) != cycle.ColorAt(1) && cycle.ColorAt(1, 0) == cycle.ColorAt(1, .5));
+            var catalog = GigabyteRgb.ZonesFor(GigabyteFans.SupportedBoard);
+            var rainbowSettings = new LightingSettings(BoardZones: catalog.Select(z => new BoardZoneLighting(z.Number)).ToArray());
+            var rainbow = CoolerLighting.From(rainbowSettings);
+            Assert(rainbow.SpatialRainbow && rainbow.ColorAt(0, 0) != rainbow.ColorAt(0, .5));
+            var live = CoolerLighting.From(settings, Color.FromRgb(12, 34, 56));
+            Assert(live.ColorAt(999) == Color.FromRgb(12, 34, 56)); // already brightness-scaled, no second scaling or independent clock
+            var stopped = CoolerLighting.From(settings, Color.FromRgb(12, 34, 56), false);
+            Assert(!stopped.Animated && stopped.ColorAt(999) == live.ColorAt(0) && stopped.Caption.Contains("last sent", StringComparison.Ordinal));
+            foreach (var effect in new[] { BoardEffect.Pulse, BoardEffect.Flash, BoardEffect.DoubleFlash })
+            {
+                var effectLook = CoolerLighting.From(settings with { BoardZones = [zones[2] with { Effect = effect }] });
+                Assert(effectLook.Animated && effectLook.ColorAt(.05) != effectLook.ColorAt(1.5));
+            }
+            var engine = new SyncEngine(new SoraHost(Path.Combine(root, "cooler-frame")), new(), false, false);
+            Assert(engine.BoardFrame == null); engine.RecordBoardFrame(7, 23, 89); Assert(engine.BoardFrame == Color.FromRgb(7, 23, 89));
+            var preview = new CoolerDisplayPreview { Width = 550, Height = 550 };
+            preview.UpdateReadings("48", "62", "96", "°C", false);
+            preview.Measure(new Size(550, 550)); preview.Arrange(new Rect(0, 0, 550, 550));
+            byte[] Capture(string name, CoolerLighting look, double seconds = .5)
+            {
+                preview.SetLightingPreview(look, seconds); preview.UpdateLayout();
+                var image = new System.Windows.Media.Imaging.RenderTargetBitmap(550, 550, 96, 96, PixelFormats.Pbgra32); image.Render(preview);
+                var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder(); encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(image));
+                using var file = File.Create(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(output))!, name)); encoder.Save(file);
+                var pixels = new byte[550 * 550 * 4]; image.CopyPixels(pixels, 550 * 4, 0); return pixels;
+            }
+            var purplePixels = Capture("ld360-argb2-purple.png", purple);
+            var offPixels = Capture("ld360-argb2-off.png", off);
+            var rainbowPixels = Capture("ld360-argb2-rainbow.png", rainbow);
+            Assert(!purplePixels.SequenceEqual(offPixels) && !rainbowPixels.SequenceEqual(purplePixels));
+            int changed = 0;
+            for (int i = 0; i < offPixels.Length; i += 4)
+            {
+                Assert(offPixels[i + 3] == purplePixels[i + 3] && offPixels[i + 3] == rainbowPixels[i + 3]);
+                if (offPixels[i] != purplePixels[i] || offPixels[i + 1] != purplePixels[i + 1] || offPixels[i + 2] != purplePixels[i + 2]) changed++;
+            }
+            Assert(changed > 5000 && preview.TemperatureText == " 48");
+            foreach (var (x, y) in new[] { (275, 30), (360, 210), (10, 10) })
+            {
+                int at = (y * 550 + x) * 4;
+                Assert(purplePixels.AsSpan(at, 4).SequenceEqual(offPixels.AsSpan(at, 4))); // casing, neutral glass, transparent background
+            }
+            var directory = Path.Combine(root, "cooler-preview-source"); Directory.CreateDirectory(directory);
+            File.WriteAllText(Path.Combine(directory, "lighting.json"), JsonSerializer.Serialize(rainbowSettings));
+            var host = new SoraHost(directory); preview.AttachLighting(host.Lighting);
+            var window = new Window { Content = preview, Left = -12000, ShowInTaskbar = false, Width = 600, Height = 600 };
+            try
+            {
+                window.Show(); await Application.Current.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                Assert(preview.LightingTimerRunning == InteractionMotion.Allowed(preview));
+                host.Lighting.RememberEdits(null, null, zones, null); preview.RefreshLighting();
+                Assert(preview.LightingCaption == "ARGB header 2 · Static" && !preview.LightingTimerRunning);
+                host.Lighting.RememberEdits(null, null, rainbowSettings.BoardZones, null); preview.RefreshLighting();
+                Assert(preview.LightingTimerRunning == InteractionMotion.Allowed(preview));
+                preview.Visibility = Visibility.Collapsed; Assert(!preview.LightingTimerRunning);
+                preview.Visibility = Visibility.Visible;
+                ControlState.SetReduceMotion(preview, true); Assert(!preview.LightingTimerRunning);
+                var before = File.ReadAllBytes(Path.Combine(directory, "lighting.json"));
+                preview.RefreshLighting(); preview.RefreshLighting();
+                Assert(before.SequenceEqual(File.ReadAllBytes(Path.Combine(directory, "lighting.json"))));
+            }
+            finally { window.Close(); }
+            Assert(!preview.LightingTimerRunning);
+        });
         await Check("Legacy fan defaults migrate once without losing the saved curve or header", () =>
         {
             var directory = Path.Combine(root, "legacy-retention"); Directory.CreateDirectory(directory);

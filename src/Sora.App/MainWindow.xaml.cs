@@ -44,6 +44,7 @@ public partial class MainWindow : Window
             if (target != null && RouteAvailable(target)) { target.IsChecked = true; e.Handled = true; }
         };
         Lighting.Attach(host.Lighting);
+        CoolerPreview.AttachLighting(host.Lighting);
         Fans.Attach(host.Fans);
         GpuFans.Attach(host.GpuFans);
         Storage.Attach(host);
@@ -322,9 +323,10 @@ public partial class MainWindow : Window
         LastUpdate.Text = sample != null ? "Updated " + sample.ReceivedAt.ToLocalTime().ToString("HH:mm:ss")
             : sensors.State == SensorState.Unavailable ? "No readings · sensors unavailable"
             : host.Latest != null ? "Readings are stale" : "Waiting for the first reading";
-        PreviewTemperature.Text = (sample == null ? "—" : host.FormatTemperature(sample, format)) + " " + unit;
-        PreviewUsage.Text = (sample == null ? "—" : Math.Truncate(sample.UsagePercent).ToString(format, CultureInfo.InvariantCulture)) + " %  USAGE";
-        PreviewPower.Text = (sample == null ? "—" : Math.Truncate(sample.PowerW).ToString(format, CultureInfo.InvariantCulture)) + " W  POWER";
+        CoolerPreview.UpdateReadings(sample == null ? null : host.FormatTemperature(sample, format),
+            sample == null ? null : Math.Truncate(sample.PowerW).ToString(format, CultureInfo.InvariantCulture),
+            sample == null ? null : Math.Truncate(sample.UsagePercent).ToString(format, CultureInfo.InvariantCulture), unit, status.Sending);
+        CoolerPreview.RefreshLighting();
         PreviewCaption.Text = status.Sending ? "On the cooler now" : "Preview · not being sent";
 
         // Status rows: sensors, the physical cooler and the output are independent.

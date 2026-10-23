@@ -526,10 +526,11 @@
   </Style>
   <!-- Native selection/editing behaviour is retained; only presentation is shared. -->
   <Style TargetType="ListBoxItem">
-    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/><Setter Property="Padding" Value="8,5"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
-    <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="Item" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" Padding="{TemplateBinding Padding}" CornerRadius="{StaticResource ControlRadius}"><ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers>
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/><Setter Property="Padding" Value="8,5"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+    <Setter Property="BorderThickness" Value="{StaticResource ControlBorderThickness}"/><Setter Property="SnapsToDevicePixels" Value="True"/>
+    <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="Item" Background="Transparent" BorderBrush="Transparent" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" CornerRadius="{StaticResource ControlRadius}"><ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers>
       <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Item" Property="Background" Value="{DynamicResource NavHoverBrush}"/></Trigger>
-      <Trigger Property="IsSelected" Value="True"><Setter TargetName="Item" Property="Background" Value="{DynamicResource NavSelectedBrush}"/></Trigger>
+      <Trigger Property="IsSelected" Value="True"><Setter TargetName="Item" Property="Background" Value="{DynamicResource NavSelectedBrush}"/><Setter TargetName="Item" Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/></Trigger>
       <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Item" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/></Trigger>
       <Trigger Property="IsEnabled" Value="False"><Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/></Trigger>
     </ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>

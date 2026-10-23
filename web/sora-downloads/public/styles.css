@@ -20,6 +20,8 @@ button, a, summary { -webkit-tap-highlight-color: transparent; }
 .shell { width: min(100%, 1220px); margin-inline: auto; padding-inline: clamp(20px, 4vw, 56px); }
 .site-header { min-height: 100px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-block: 22px; }
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-size: 24px; font-weight: 650; letter-spacing: -.7px; flex-shrink: 0; }
+.brand-definitions { position: absolute; width: 0; height: 0; overflow: hidden; }
+.brand-mark { display: block; flex-shrink: 0; color: var(--accent); shape-rendering: geometricPrecision; }
 nav { display: flex; align-items: center; gap: clamp(18px, 3vw, 34px); font-size: 14px; }
 nav a { text-decoration: none; color: var(--muted); }
 nav .nav-download { padding: 10px 15px; border: 1px solid var(--line); border-radius: 24px; color: var(--text); background: #fff; }
@@ -33,7 +35,7 @@ h1 { font-size: clamp(40px, 4.6vw, 66px); font-weight: 620; line-height: 1.08; l
 .text-link span { margin-left: 5px; }
 .hero-note { font-size: 12px; line-height: 1.8; color: var(--muted); margin-top: 23px; }
 .download-panel { min-width: 0; background: #fff; border: 1px solid #e0e0e8; border-radius: 20px; padding: clamp(24px, 3vw, 34px); scroll-margin-top: 25px; }
-.download-mark { display: block; margin-bottom: 22px; }
+.download-mark { width: 64px; height: 64px; margin-bottom: 22px; }
 .download-panel .eyebrow { margin-bottom: 9px; }
 h2 { font-size: clamp(28px, 3vw, 39px); letter-spacing: -1.2px; line-height: 1.18; font-weight: 610; margin: 0 0 20px; overflow-wrap: break-word; }
 .download-panel h2 { font-size: 29px; margin-bottom: 9px; }

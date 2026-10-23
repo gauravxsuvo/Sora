@@ -26,6 +26,17 @@ internal sealed class SyncEngine
     private readonly CancellationTokenSource stop = new();
     private Task? task;
     private int appliedFrames;
+    private int boardFrame = -1;
+    internal System.Windows.Media.Color? BoardFrame
+    {
+        get
+        {
+            int value = Volatile.Read(ref boardFrame);
+            return value < 0 ? null : System.Windows.Media.Color.FromRgb((byte)(value >> 16), (byte)(value >> 8), (byte)value);
+        }
+    }
+    // Publish only after a board write succeeds. RAM-only frames cannot color the cooler preview.
+    internal void RecordBoardFrame(byte r, byte g, byte b) => Volatile.Write(ref boardFrame, r << 16 | g << 8 | b);
 
     public SyncEngine(SoraHost host, SyncLighting sync, bool memory, bool board) => (this.host, this.sync, this.memory, this.board) = (host, sync, memory, board);
 
@@ -110,6 +121,7 @@ internal sealed class SyncEngine
                     controller = new GigabyteRgb();
                     zones = GigabyteRgb.ZonesFor(GigabyteRgb.BoardModel()).Select(z => z.Number).ToArray();
                     controller.ApplyZones(zones.Select(z => new BoardZoneEffect(z, BoardEffect.Static, r0, g0, b0, 8, 0)).ToArray(), GigabyteRgb.ZonesFor(GigabyteRgb.BoardModel()), initialize: true);
+                    RecordBoardFrame(r0, g0, b0);
                 }
                 catch (Exception error) when (error is System.IO.IOException or InvalidOperationException or System.ComponentModel.Win32Exception)
                 {
@@ -152,7 +164,11 @@ internal sealed class SyncEngine
                 var color = ColorAt(sync, frameStart / 1000.0);
                 if (color != last)
                 {
-                    if (zones.Count > 0) controller!.SendFrame(zones, color.R, color.G, color.B);
+                    if (zones.Count > 0)
+                    {
+                        controller!.SendFrame(zones, color.R, color.G, color.B);
+                        RecordBoardFrame(color.R, color.G, color.B);
+                    }
                     if (dimms.Count > 0)
                     {
                         EneDram.WriteFrame(bus!, dimms, color.R, color.G, color.B, EneColorOrder.Rbg, method, lastBrightness);

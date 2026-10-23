@@ -67,6 +67,8 @@ internal static class InteractionMotion
         active.RemoveAll(r => !r.TryGetTarget(out _));
     }
 
+    internal static void FadeIn(UIElement element, double from) => Opacity(element, from, 1, "FeedbackMotionMilliseconds");
+
     public static readonly DependencyProperty OpacityTargetProperty = DependencyProperty.RegisterAttached("OpacityTarget", typeof(double), typeof(InteractionMotion),
         new PropertyMetadata(1d, (d, e) => { if (d is UIElement element) Opacity(element, element.Opacity, (double)e.NewValue, "FeedbackMotionMilliseconds"); }));
     public static double GetOpacityTarget(DependencyObject d) => (double)d.GetValue(OpacityTargetProperty);

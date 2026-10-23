@@ -117,22 +117,23 @@
         <Grid Grid.Row="2">
           <Grid.ColumnDefinitions><ColumnDefinition Width="1.35*"/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions>
 
-          <!-- Readings: one hero value, two secondary metrics. Dashes, never stale numbers, when sensors are not live. -->
+          <!-- Product preview and telemetry share the same fresh sensor sample. -->
           <Border Style="{StaticResource Card}" Padding="28,22,28,20">
             <Grid>
-              <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="200"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-              <TextBlock Text="CPU temperature" Style="{StaticResource Eyebrow}"/>
-              <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <TextBlock FontSize="80" FontWeight="Light" Style="{StaticResource NumericText}" TextAlignment="Center" MinWidth="220" HorizontalAlignment="Center"><Run x:Name="TemperatureValue" Text="–"/><Run x:Name="TemperatureUnit" Text="&#x2009;°C" FontSize="32" Foreground="{DynamicResource SecondaryTextBrush}" BaselineAlignment="Baseline"/></TextBlock>
-                <TextBlock x:Name="TemperatureUnavailableHint" Text="Waiting for CPU sensor data" Style="{StaticResource SecondaryText}" FontSize="12" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,2,0,0" Visibility="Collapsed"/>
-              </StackPanel>
+              <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="340"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+              <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="LD360 display" Style="{StaticResource Eyebrow}"/><TextBlock x:Name="PreviewCaption" Grid.Column="1" Text="Preview · not being sent" Style="{StaticResource CaptionText}"/></Grid>
+              <Grid Grid.Row="1">
+                <local:CoolerDisplayPreview x:Name="CoolerPreview" Margin="0,12,0,30"/>
+                <TextBlock Text="{Binding LightingCaption, ElementName=CoolerPreview}" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,7" ToolTip="Follows the ARGB header 2 look set in Sora. Hardware-run effects match the selected look; their animation phase may differ."/>
+              </Grid>
               <Grid Grid.Row="2" Margin="0,0,0,16">
-                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
                 <Border Grid.ColumnSpan="3" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" VerticalAlignment="Top"/>
-                <StackPanel Margin="0,14,0,0"><TextBlock Text="Usage" Style="{StaticResource CaptionText}"/><StackPanel Orientation="Horizontal" Margin="0,2,0,0"><TextBlock x:Name="UsageValue" Text="--" FontSize="30" FontWeight="Light" Style="{StaticResource NumericText}"/><TextBlock Text="%" FontSize="16" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Bottom" Margin="4,0,0,6"/></StackPanel></StackPanel>
-                <Border Grid.Column="1" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="1,0,0,0" Margin="0,14,24,0"/>
+                <StackPanel Margin="0,14,0,0"><TextBlock Text="CPU temperature" Style="{StaticResource CaptionText}"/><TextBlock FontSize="30" FontWeight="Light" Style="{StaticResource NumericText}" Margin="0,2,0,0"><Run x:Name="TemperatureValue" Text="–"/><Run x:Name="TemperatureUnit" Text="&#x2009;°C" FontSize="16" Foreground="{DynamicResource SecondaryTextBrush}"/></TextBlock></StackPanel>
+                <StackPanel Grid.Column="1" Margin="0,14,0,0"><TextBlock Text="Usage" Style="{StaticResource CaptionText}"/><StackPanel Orientation="Horizontal" Margin="0,2,0,0"><TextBlock x:Name="UsageValue" Text="--" FontSize="30" FontWeight="Light" Style="{StaticResource NumericText}"/><TextBlock Text="%" FontSize="16" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Bottom" Margin="4,0,0,6"/></StackPanel></StackPanel>
                 <StackPanel Grid.Column="2" Margin="0,14,0,0"><TextBlock Text="Package power" Style="{StaticResource CaptionText}"/><StackPanel Orientation="Horizontal" Margin="0,2,0,0"><TextBlock x:Name="PowerValue" Text="--" FontSize="30" FontWeight="Light" Style="{StaticResource NumericText}"/><TextBlock Text="W" FontSize="16" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Bottom" Margin="4,0,0,6"/></StackPanel></StackPanel>
               </Grid>
+              <TextBlock x:Name="TemperatureUnavailableHint" Grid.Row="4" Text="Waiting for CPU sensor data" Style="{StaticResource SecondaryText}" FontSize="12" Margin="0,8,0,0" Visibility="Collapsed"/>
               <Grid Grid.Row="3">
                 <TextBlock x:Name="CpuLabel" Text="CPU" Style="{StaticResource CaptionText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,140,0"/>
                 <TextBlock x:Name="LastUpdate" Text="No readings yet" HorizontalAlignment="Right" Style="{StaticResource CaptionText}" TextWrapping="NoWrap" Typography.NumeralAlignment="Tabular"/>
@@ -165,17 +166,7 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Ellipse x:Name="OutputDot" Style="{StaticResource StatusDot}" Margin="0,0,7,0"/><TextBlock x:Name="OutputValue" Text="Off" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}"/></StackPanel>
                 <TextBlock x:Name="OutputDetail" Grid.Row="1" Grid.ColumnSpan="2" Text="" Style="{StaticResource CaptionText}" Margin="0,3,0,0"/>
               </Grid>
-              <!-- What the cooler's screen shows, with the current unit and leading-zero settings. -->
-              <Border Background="{DynamicResource InsetBrush}" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1" CornerRadius="8" Padding="16,10,16,12">
-                <StackPanel>
-                  <TextBlock x:Name="PreviewCaption" Text="Preview · not being sent" Style="{StaticResource CaptionText}"/>
-                  <Grid Margin="0,4,0,0">
-                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <TextBlock x:Name="PreviewTemperature" Text="— °C" FontFamily="Bahnschrift" FontSize="30" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock x:Name="PreviewUsage" Text="— %  USAGE" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"/><TextBlock x:Name="PreviewPower" Text="— W  POWER" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,3,0,0"/></StackPanel>
-                  </Grid>
-                </StackPanel>
-              </Border>
+              <TextBlock Text="The preview follows your temperature unit and leading-zero settings." Style="{StaticResource CaptionText}" Margin="0,8,0,0"/>
             </StackPanel>
           </Border>
         </Grid>

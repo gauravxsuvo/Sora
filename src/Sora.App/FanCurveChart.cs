@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Sora.Core;
@@ -23,7 +24,19 @@ public sealed class FanCurveChart : FrameworkElement
     public event Action<int, FanPoint>? PointMoved;
     public event Action<int, FanPoint>? PointAdded;
     public event Action<int>? PointRemoved;
+    public event Action<int>? SelectedPointChanged;
     public event Action<string>? EditRejected;
+    internal int SelectedPointIndex
+    {
+        get => selected;
+        set
+        {
+            int next = Math.Clamp(value, 0, Math.Max(0, (profile?.Points.Length ?? 0) - 1));
+            if (next == selected) return;
+            selected = next; InvalidateVisual(); SelectedPointChanged?.Invoke(selected);
+        }
+    }
+    internal bool CanRemoveSelectedPoint => profile is { Mode: not FanCurveMode.Fixed, Points.Length: > 2 } && selected < profile.Points.Length - 1;
     public FanProfile? Profile { get => profile; set { profile = value; selected = Math.Clamp(selected, 0, Math.Max(0, (value?.Points?.Length ?? 0) - 1)); InvalidateVisual(); } }
     private double? temperature;
     public double? Temperature { get => temperature; set { if (temperature == value) return; temperature = value; InvalidateVisual(); } }
@@ -76,7 +89,7 @@ public sealed class FanCurveChart : FrameworkElement
         dc.DrawGeometry(null, new Pen(accent, 2.5), geometry);
         if (profile.Mode != FanCurveMode.Fixed) for (var i = 0; i < points.Length; i++)
         {
-            var p = points[i]; var active = i == hover || i == drag || IsKeyboardFocused && i == selected;
+            var p = points[i]; var active = i == hover || i == drag || i == selected;
             if (active) { dc.PushOpacity(.2); dc.DrawEllipse(accent, null, Position(p.TemperatureC, p.DutyPercent), 12, 12); dc.Pop(); }
             dc.DrawEllipse(surface, new Pen(accent, active ? 3 : 2), Position(p.TemperatureC, p.DutyPercent), active ? 6 : 4.5, active ? 6 : 4.5);
         }
@@ -107,7 +120,7 @@ public sealed class FanCurveChart : FrameworkElement
             EditRejected?.Invoke("Fix the temperature order and fan duty values in the table before editing the chart."); return -1;
         }
         var hit = Array.FindIndex(profile.Points, p => (Position(p.TemperatureC, p.DutyPercent) - mouse).Length < 12);
-        if (hit >= 0) return selected = hit;
+        if (hit >= 0) { SelectedPointIndex = hit; return hit; }
         if (!new Rect(Position(0, 100), Position(100, 0)).Contains(mouse)) return -1;
         if (profile.StopBelowC >= 95) { EditRejected?.Invoke("Set a stop temperature below 95°C before adding points."); return -1; }
         int t = Math.Clamp((int)Math.Round((mouse.X - LeftPad) / Math.Max(1, ActualWidth - LeftPad - RightPad) * 100), Math.Max(1, profile.StopBelowC + 1), 95);
@@ -115,7 +128,7 @@ public sealed class FanCurveChart : FrameworkElement
         int at = Array.FindIndex(profile.Points, p => p.TemperatureC >= t);
         if (at >= 0 && profile.Points[at].TemperatureC == t)
         {
-            MovePoint(at, t, duty); return selected = at;
+            MovePoint(at, t, duty); SelectedPointIndex = at; return at;
         }
         if (profile.Points.Length >= 11) { EditRejected?.Invoke("This controller supports 11 points. Remove a point before adding another."); return -1; }
         if (at < 0) at = profile.Points.Length;
@@ -125,7 +138,8 @@ public sealed class FanCurveChart : FrameworkElement
         int count = profile.Points.Length;
         PointAdded?.Invoke(at, point);
         // A locked/invalid editor may refuse the edit. Never start dragging another point in that case.
-        return profile.Points.Length == count + 1 && profile.Points[at] == point ? selected = at : -1;
+        if (profile.Points.Length != count + 1 || profile.Points[at] != point) return -1;
+        SelectedPointIndex = at; return at;
     }
     internal void RemoveSelectedPoint()
     {
@@ -133,6 +147,23 @@ public sealed class FanCurveChart : FrameworkElement
         if (profile.Points.Length <= 2) { EditRejected?.Invoke("Keep at least two curve points."); return; }
         if (selected == profile.Points.Length - 1) { EditRejected?.Invoke("Keep the final 100% point; drag it to change the full-speed temperature."); return; }
         PointRemoved?.Invoke(selected);
+    }
+    internal ContextMenu? PointMenu(Point mouse)
+    {
+        if (profile == null || profile.Mode == FanCurveMode.Fixed) return null;
+        int hit = Array.FindIndex(profile.Points, p => (Position(p.TemperatureC, p.DutyPercent) - mouse).Length < 14);
+        if (hit < 0) return null;
+        SelectedPointIndex = hit;
+        var remove = new MenuItem { Header = "Remove point", InputGestureText = "Delete", IsEnabled = CanRemoveSelectedPoint };
+        remove.Click += (_, _) => RemoveSelectedPoint();
+        var menu = new ContextMenu(); menu.Items.Add(remove);
+        return menu;
+    }
+    protected override void OnMouseRightButtonDown(MouseButtonEventArgs e)
+    {
+        base.OnMouseRightButtonDown(e);
+        if (PointMenu(e.GetPosition(this)) is not { } menu) return;
+        Focus(); ContextMenu = menu; menu.PlacementTarget = this; menu.IsOpen = true; e.Handled = true;
     }
     protected override void OnMouseMove(MouseEventArgs e)
     {
@@ -165,7 +196,7 @@ public sealed class FanCurveChart : FrameworkElement
         var p = profile.Points[selected]; var step = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? 5 : 1;
         switch (e.Key)
         {
-            case Key.Space: selected = (selected + 1) % profile.Points.Length; break;
+            case Key.Space: SelectedPointIndex = (selected + 1) % profile.Points.Length; break;
             case Key.Left: MovePoint(selected, p.TemperatureC - step, p.DutyPercent); break;
             case Key.Right: MovePoint(selected, p.TemperatureC + step, p.DutyPercent); break;
             case Key.Up: MovePoint(selected, p.TemperatureC, p.DutyPercent + step); break;
