@@ -11,14 +11,12 @@ internal sealed class DesktopWallpaper : IDisposable
 {
     private const int ChildWindow = 0x40000000;
     private const int NoActivate = 0x08000000;
-    private const int Layered = 0x00080000;
     private const int Transparent = 0x00000020;
     private const int NoRedirectionBitmap = 0x00200000;
     private const int ExtendedStyleIndex = -20;
     private const uint CreateWallpaperLayer = 0x052C;
     private const uint AbortIfHung = 0x0002;
     private const uint NextWindow = 2;
-    private const uint LayeredAlpha = 2;
     private const uint NoActivatePosition = 0x0010;
     private const uint ShowWindow = 0x0040;
     private const uint NoZOrder = 0x0004;
@@ -41,13 +39,10 @@ internal sealed class DesktopWallpaper : IDisposable
         {
             ParentWindow = parent,
             WindowStyle = ChildWindow,
-            ExtendedWindowStyle = NoActivate | Transparent | Layered
+            ExtendedWindowStyle = NoActivate | Transparent,
+            // WPF manages the layered child and presents its pixels through UpdateLayeredWindow.
+            UsesPerPixelTransparency = true
         });
-        if (!SetLayeredWindowAttributes(surface.Handle, 0, 255, LayeredAlpha))
-        {
-            Dispose();
-            return false;
-        }
         var video = new VideoDrawing
         {
             Player = player,
@@ -136,6 +131,5 @@ internal sealed class DesktopWallpaper : IDisposable
     [DllImport("user32.dll")] private static extern bool EnumWindows(WindowCallback callback, IntPtr data);
     [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr window, out NativeRect bounds);
     [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
-    [DllImport("user32.dll")] private static extern bool SetLayeredWindowAttributes(IntPtr window, uint colorKey, byte alpha, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr SendMessageTimeout(IntPtr window, uint message, IntPtr wParam, IntPtr lParam, uint flags, uint timeout, out IntPtr result);
 }
