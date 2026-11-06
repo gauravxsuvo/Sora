@@ -12,8 +12,12 @@ on:
         description: 'Increasing feed sequence (leave blank to build without signing)'
         required: false
         type: string
+      qualify:
+        description: 'Run the installed lifecycle checks without requiring promotion'
+        type: boolean
+        default: false
       promote:
-        description: 'Upload and promote this already-qualified release to the selected channel'
+        description: 'Qualify, upload and promote this release to the selected channel'
         type: boolean
         default: false
 permissions:
@@ -76,7 +80,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Release metadata signing failed' }
           } finally { if (Test-Path -LiteralPath $keyFile) { Remove-Item -LiteralPath $keyFile -Force } }
       - name: Qualify these exact installer bytes before promotion
-        if: inputs.promote
+        if: inputs.qualify || inputs.promote
         shell: pwsh
         run: |
           $index = Invoke-RestMethod https://builds.dotnet.microsoft.com/dotnet/release-metadata/8.0/releases.json

@@ -22,6 +22,10 @@ The DeepCool LD360 page displays CPU temperature, utilization, and package power
 
 The cooler image's RGB strip follows **ARGB header 2** in Sora's Lighting page, including its color, brightness, effect and Off setting. Sora-driven animations share the color frames sent to the header. Controller-run effects match the selected look, with an approximate animation phase. Without a saved header-2 look, the preview strip stays unlit.
 
+## Animated wallpaper
+
+Open **Settings → Animated wallpaper → Choose video** and select a local MP4 or WMV. Sora loops it silently behind the desktop icons and restores it whenever Sora starts. Enable **Start at sign-in** to start playback when you sign in to Windows. Use **Turn off wallpaper** to stop playback and clear the selection.
+
 ## Connection changes
 
 New devices are detected automatically. Saved data remains local when a device is unplugged. Never apply another model's settings to a newly connected device. Unsupported features remain unavailable even if a device uses the same brand or protocol family.

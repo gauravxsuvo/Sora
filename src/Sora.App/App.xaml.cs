@@ -335,6 +335,11 @@ public partial class App : Application
         // A tray app that drives hardware should log and keep running rather than vanish.
         DispatcherUnhandledException += (_, error) => { host.Log("Unhandled: " + error.Exception); error.Handled = true; };
         host.Start(applyHardware: screenshot == null && measure == null);
+        if (screenshot == null && measure == null && !SoraData.IsIsolated)
+        {
+            Wallpaper = new WallpaperService(host);
+            _ = Wallpaper.RestoreAsync();
+        }
         if (measure == null && (screenshot == null || SoraData.IsIsolated))
         {
             ApplicationUpdates = new ApplicationUpdateService();
@@ -380,6 +385,7 @@ public partial class App : Application
 
     internal bool WindowOpen => window != null;
     internal ApplicationUpdateService? ApplicationUpdates { get; private set; }
+    internal WallpaperService? Wallpaper { get; private set; }
     private bool updatePrepared;
     internal bool CanPrepareUpdate => !exiting && !updatePrepared && host != null && (window == null || !window.KeepAliveWhenHidden);
     internal async Task<bool> PrepareUpdateAsync()
@@ -387,6 +393,7 @@ public partial class App : Application
         if (!CanPrepareUpdate || host == null) return false;
         updatePrepared = true;
         if (window != null) window.IsEnabled = false;
+        Wallpaper?.Dispose();
         await host.StopAsync();
         if (host.CleanupFailed)
         {
@@ -465,6 +472,7 @@ public partial class App : Application
         ApplicationUpdates?.Dispose();
         var failures = await CleanupSequence.RunAsync(
             ("Window", () => window?.ShutdownAsync() ?? Task.CompletedTask),
+            ("Wallpaper", () => { Wallpaper?.Dispose(); return Task.CompletedTask; }),
             ("Hardware", () => host?.StopAsync() ?? Task.CompletedTask),
             ("Tray", () => { tray?.Dispose(); return Task.CompletedTask; }));
         foreach (var failure in failures) host?.Log(failure.Part + " application exit: " + failure.Error);
@@ -475,7 +483,7 @@ public partial class App : Application
 
     // Windows is shutting down or signing out: Sora gets no normal exit, so a board that keeps its lighting gets its saved look now.
     protected override void OnSessionEnding(SessionEndingCancelEventArgs e) { host?.Lighting.SettleBoardForPowerOff(); base.OnSessionEnding(e); }
-    protected override void OnExit(ExitEventArgs e) { tray?.Dispose(); openRequests?.Dispose(); openedReply?.Dispose(); instance?.Dispose(); base.OnExit(e); }
+    protected override void OnExit(ExitEventArgs e) { Wallpaper?.Dispose(); tray?.Dispose(); openRequests?.Dispose(); openedReply?.Dispose(); instance?.Dispose(); base.OnExit(e); }
 
     private static async Task<bool> DiagnoseAsync(string output, int requestedSamples)
     {

@@ -21,6 +21,7 @@ namespace Sora.App;
 public partial class MainWindow : Window
 {
     private readonly SoraHost host;
+    private readonly WallpaperService? wallpaper;
     private readonly string? screenshotPath;
     private ComponentGallery? componentGallery;
     private Notice? developmentReadOnlyNotice;
@@ -32,6 +33,9 @@ public partial class MainWindow : Window
         this.screenshotPath = screenshotPath;
         ThemeManager.Apply(screenshotPath != null && Environment.GetCommandLineArgs().Contains("--light-theme") ? false : host.Settings.DarkMode);
         InitializeComponent();
+        wallpaper = (Application.Current as App)?.Wallpaper;
+        if (wallpaper != null) wallpaper.Changed += RenderWallpaper;
+        RenderWallpaper();
         WindowClose.Tag = TrafficLightVisual.CloseSymbol;
         WindowMinimize.Tag = TrafficLightVisual.MinimizeSymbol;
         WindowMaximize.Tag = TrafficLightVisual.MaximizeSymbol;
@@ -66,7 +70,13 @@ public partial class MainWindow : Window
         host.Watched = true;
         Loaded += OnLoaded;
         Closing += OnClosing;
-        Closed += (_, _) => { host.Updated -= Render; host.Watched = false; Wifi.Dispose(); };
+        Closed += (_, _) =>
+        {
+            host.Updated -= Render;
+            if (wallpaper != null) wallpaper.Changed -= RenderWallpaper;
+            host.Watched = false;
+            Wifi.Dispose();
+        };
         StateChanged += (_, _) =>
         {
             var maximized = WindowState == WindowState.Maximized;
@@ -89,6 +99,28 @@ public partial class MainWindow : Window
         StartupCheck.IsEnabled = inspection.Readable;
         return inspection.Task?.Enabled == true;
     }
+
+    private void RenderWallpaper()
+    {
+        WallpaperFileText.Text = wallpaper?.PathToVideo is { } path ? Path.GetFileName(path) : "No video selected";
+        WallpaperStatusText.Text = wallpaper?.Status ?? "Wallpaper playback is available during a normal Sora launch.";
+        ChooseWallpaperButton.IsEnabled = wallpaper is { Busy: false };
+        DisableWallpaperButton.IsEnabled = wallpaper is { Busy: false, PathToVideo: not null };
+    }
+
+    private async void ChooseWallpaperClick(object sender, RoutedEventArgs e)
+    {
+        if (wallpaper == null) return;
+        var picker = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Choose an animated wallpaper",
+            Filter = "Video files (*.mp4;*.wmv)|*.mp4;*.wmv",
+            CheckFileExists = true
+        };
+        if (picker.ShowDialog(this) == true) await wallpaper.ApplyAsync(picker.FileName);
+    }
+
+    private void DisableWallpaperClick(object sender, RoutedEventArgs e) => wallpaper?.Disable();
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
@@ -452,7 +484,7 @@ public partial class MainWindow : Window
         (NavWifi, "wi-fi wifi antenna wireless "),
         (NavUpdates, "updates bios drivers "),
         (NavLogitech, "logitech mouse g102 g203 g502 "),
-        (NavSettings, "settings app startup tray windows task scheduler")
+        (NavSettings, "settings app startup tray windows task scheduler animated wallpaper desktop background video")
     };
 
     private void NavSearchChanged(object sender, TextChangedEventArgs e)
